@@ -4,14 +4,13 @@
 			"path": "."
 		},
 		{
-			"name": "yo-core",
-			"path": "yo-core"
-		},
-		{
 			"path": "yoyo-phi"
 		},
 		{
 			"path": "baby-phi"
+		},
+		{
+			"path": "phi-core"
 		}
 	],
 	"settings": {}
