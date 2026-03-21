@@ -1,0 +1,6 @@
+[submodule "phi-core"]
+	path = phi-core
+	url = https://github.com/LazyBouy/phi-core.git
+[submodule "baby-phi"]
+	path = baby-phi
+	url = https://github.com/LazyBouy/baby-phi.git
