@@ -60,3 +60,41 @@ Architecture docs in `phi-core/docs/architecture/overview.md` include First Prin
 - **Session persistence**: `Session` → `LoopRecord` → `Turn` hierarchy. `SessionRecorder` materializes `Turn` structs from `TurnStart`/`TurnEnd` event pairs. All session types use `#[serde(default)]` for backward-compatible deserialization.
 - **Hook ordering**: Lifecycle callbacks fire strictly before their paired events. `Before*` hooks returning `false` abort the action. This ordering is a system invariant — never break it.
 - **Documentation–Code Alignment**: Documentation in `phi-core/docs/` must accurately reflect the current codebase. Code is the source of truth. When making code changes, update all affected documentation in the same commit. Status tags (`[EXISTS]`, `[PLANNED]`, `[CONCEPTUAL]`) must be kept current. Every doc file carries a `<!-- Last verified: YYYY-MM-DD by Claude Code -->` header updated on each review pass.
+
+## Multi-agent chunk pipeline (baby-phi)
+
+baby-phi chunks (CH-NN) run through a 4-agent pipeline orchestrated by Claude. The orchestrator (Claude with full conversation context) is the **reviewer / approver / process-refiner / retrospective-driver**, not a doer in the chunk lane. Specialized agents own their lanes; the orchestrator gates phase transitions, verifies diffs, audits audit reports, and drives retrospectives.
+
+**Agents** at `/root/projects/phi/.claude/agents/`:
+- `chunk-planner` (opus) — drafts the 12-section plan from a forward-scope row.
+- `chunk-implementer` (opus) — executes phases per the approved plan.
+- `chunk-auditor` (opus) — independent post-implementation audit; writes per-iteration audit log.
+- `chunk-retrospector` (opus) — consolidated retrospective + standards-update proposals.
+
+**Skills** at `/root/projects/phi/.claude/skills/`:
+- `phi-core-leverage-check`, `k8s-readiness-check`, `chunk-template-fill`, `ci-guards-run`, `chunk-archive-plan`, `audit-envelope-size`.
+
+**Cycle artifact layout** under `baby-phi/docs/specs/plan/build/<slug>-<8hex>/`:
+- `plan.md` — cycle plan
+- `audit-<letter>-iter<N>.md` — per-iteration audit logs
+- `cycle-audit.md` — orchestrator's consolidated final audit
+- `retrospective.md` — cycle retrospective
+
+Pre-existing chunks (CH-09, CH-10, CH-23) keep their flat-file legacy layout; the folder convention applies to new cycles only. Index at `baby-phi/docs/specs/plan/build/_cycle-index.md`.
+
+**Orchestrator's gates:**
+1. **Plan approval.** Read planner's draft. Auto-approve via ExitPlanMode when Direct-approval criteria hold (no locked forks, scope ≤ 1.5× forward-scope, zero phi-core leverage delta, no new K8s blocker class, audit envelope ≤ medium, confidence ≥ 9/10, no new migration). Otherwise escalate to user via AskUserQuestion + ExitPlanMode.
+2. **Per-phase implementation review.** Read diff, run cargo test + clippy myself, verify phi-core grep, confirm test count matches plan §8 expected.
+3. **Audit review.** Read each iteration's audit log; spot-check 1–2 random claims by reading cited file:line.
+4. **Final cycle re-audit (mandatory).** After all sub-agent audits go green, I personally re-read every diff, re-run full workspace tests + 4 CI guards, run phi-core-leverage-check + k8s-readiness-check skills, verify all paperwork. Write `cycle-audit.md`. May re-trigger Implementer or Planner re-spawn. Never skipped.
+5. **Retrospective review.** Read retrospector's draft; propose standards updates to user; apply approved updates with version bumps logged in `.claude/agents/_changelog.md`.
+
+**Audit-fix loop:**
+- **Tactical FAIL** — re-spawn Implementer with audit log path; re-spawn auditors (iter N+1).
+- **Architectural FAIL** — re-spawn Planner with audit log path; **always escalate to user**; re-spawn Implementer; re-spawn auditors.
+- **Trivial FAIL** — orchestrator patches inline; re-spawn auditors.
+- **Iteration cap**: ≥ 3 iterations on the same finding → STOP, escalate to user.
+
+**Meta-plan archive**: design rationale lives at `baby-phi/docs/specs/agentic-workflow/multi-agent-chunk-pipeline-0853574c.md`. Read this before extending the system (e.g., adding a `phase-planner` agent for M6+ milestone-to-chunks decomposition).
+
+**Quality is non-negotiable.** The user's locked principle: *quality and thoroughness over cycle completion*. The final cycle re-audit cannot be skipped. Every audit FAIL flows into the retrospective's audit-cycle gaps section with a proposed gap-closing change.
