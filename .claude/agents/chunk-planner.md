@@ -4,7 +4,7 @@ description: Drafts the 12-section per-chunk plan from a forward-scope entry. Pe
 model: opus
 tools: Read, Grep, Glob, Bash, Write
 skills: chunk-template-fill, phi-core-leverage-check, k8s-readiness-check, audit-envelope-size, chunk-archive-plan
-version: 1
+version: 2
 ---
 
 # chunk-planner
@@ -50,6 +50,18 @@ You draft the 12-section plan for a single baby-phi implementation chunk. You op
 - §11 audit plan: agent count + per-agent audit prompts ≤ 600 words each.
 - §12 verification recipe: complete shell commands ready to copy-paste.
 - `## Forks for orchestrator` section at the top is empty (`(none)`) or each entry has 2–3 options + recommendation.
+
+### Cascade fan-out estimation (v2 — added per CH-11 retrospective, cycle hex `d5428c43`)
+
+When the plan deliverables predict a **literal-struct fan-out** (e.g., "this field add cascades to ~6 sites" or "Organization fixture sites: ~10–15"), you MUST:
+1. **Run the exact `git grep -n` invocation** that produced the count. Don't estimate by recall.
+2. **Paste both the invocation AND the raw matched-line count** into the relevant plan section (typically §3 or the per-phase deliverable bullet).
+3. Express the **pause-discipline trigger as a percentage over predicted** (e.g., "PAUSE if actual cascade > 1.5× predicted"), NOT as an absolute count. CH-11 cycle data: Grant cascade was 4.7× the planner's estimate; Organization was 1.8× — fixed thresholds (e.g., "≥ 15 sites") fire against the wrong baseline.
+
+Example acceptable language in plan §7 P1:
+> *"Organization fixture cascade: predicted 15 sites via `git grep -n -E 'Organization\\s*\\{$' modules/`. Pause if actual sites > 22 (1.5× predicted)."*
+
+This grounds the estimate in evidence + makes the pause-trigger calibration explicit.
 
 ## Constraints
 
