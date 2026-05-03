@@ -1,0 +1,208 @@
+{
+  "permissions": {
+    "defaultMode": "acceptEdits",
+
+    "additionalDirectories": [
+      "/root/.claude/agents",
+      "/root/.claude/skills",
+      "/root/.claude/projects/-root-projects-phi/memory",
+      "/root/.claude/plans"
+    ],
+
+    "allow": [
+      "Bash(/root/rust-env/cargo/bin/cargo test:*)",
+      "Bash(/root/rust-env/cargo/bin/cargo fmt:*)",
+      "Bash(/root/rust-env/cargo/bin/cargo build:*)",
+      "Bash(/root/rust-env/cargo/bin/cargo check:*)",
+      "Bash(/root/rust-env/cargo/bin/cargo clippy:*)",
+      "Bash(/root/rust-env/cargo/bin/cargo run:*)",
+      "Bash(/root/rust-env/cargo/bin/cargo doc:*)",
+      "Bash(/root/rust-env/cargo/bin/cargo clean:*)",
+      "Bash(RUSTFLAGS=\"-Dwarnings\" /root/rust-env/cargo/bin/cargo clippy:*)",
+      "Bash(cargo test:*)",
+      "Bash(cargo build:*)",
+      "Bash(cargo fmt:*)",
+      "Bash(cargo clippy:*)",
+      "Bash(cargo check:*)",
+
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git show:*)",
+      "Bash(git grep:*)",
+      "Bash(git ls-files:*)",
+      "Bash(git rev-parse:*)",
+      "Bash(git submodule status)",
+      "Bash(git config --get:*)",
+      "Bash(git check-ignore:*)",
+      "Bash(git stash list)",
+
+      "Bash(bash scripts/check-doc-links.sh)",
+      "Bash(bash scripts/check-ops-doc-headers.sh)",
+      "Bash(bash scripts/check-phi-core-reuse.sh)",
+      "Bash(bash scripts/check-spec-drift.sh)",
+      "Bash(bash scripts/check-*.sh)",
+
+      "Bash(cd /root/projects/phi:*)",
+      "Bash(cd /root/projects/phi/baby-phi:*)",
+      "Bash(cd /root/projects/phi/phi-core:*)",
+
+      "Bash(mkdir -p:*)",
+      "Bash(cp:*)",
+      "Bash(mv:*)",
+      "Bash(touch:*)",
+      "Bash(openssl rand:*)",
+
+      "Bash(awk:*)",
+      "Bash(sed -n:*)",
+      "Bash(jq:*)",
+      "Bash(echo:*)",
+      "Bash(tr:*)",
+      "Bash(sort:*)",
+      "Bash(uniq:*)",
+      "Bash(cut:*)",
+      "Bash(test -f:*)",
+      "Bash(test -d:*)",
+      "Bash([ -f:*)",
+      "Bash([ -d:*)",
+
+      "Read(/**)",
+      "Read(//root/.claude/agents/**)",
+      "Read(//root/.claude/skills/**)",
+      "Read(//root/.claude/projects/-root-projects-phi/memory/**)",
+      "Read(//root/.claude/plans/**)",
+      "Read(//root/projects/phi/**)",
+
+      "Edit(/**)",
+      "Edit(//root/.claude/agents/*.md)",
+      "Edit(//root/.claude/skills/*.md)",
+      "Edit(//root/.claude/agents/_changelog.md)",
+      "Edit(//root/.claude/projects/-root-projects-phi/memory/**)",
+      "Edit(//root/.claude/plans/**)",
+      "Write(/**)",
+      "Write(//root/.claude/agents/**)",
+      "Write(//root/.claude/skills/**)",
+      "Write(//root/.claude/projects/-root-projects-phi/memory/**)",
+      "Write(//root/.claude/plans/**)",
+      "MultiEdit(/**)",
+      "MultiEdit(//root/.claude/agents/*.md)",
+      "MultiEdit(//root/.claude/skills/*.md)",
+
+      "WebFetch(domain:code.claude.com)",
+      "WebFetch(domain:docs.anthropic.com)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+
+      "Agent(chunk-planner)",
+      "Agent(chunk-implementer)",
+      "Agent(chunk-auditor)",
+      "Agent(chunk-retrospector)",
+      "Agent(claude-code-guide)",
+      "Agent(Explore)",
+      "Agent(general-purpose)",
+      "Agent(Plan)"
+    ],
+
+    "deny": [
+      "Bash(rm -rf:*)",
+      "Bash(rm -fr:*)",
+      "Bash(rm -r:*)",
+      "Bash(rm -f /:*)",
+      "Bash(sudo:*)",
+      "Bash(su:*)",
+      "Bash(chmod -R 777:*)",
+      "Bash(chown -R:*)",
+      "Bash(dd:*)",
+      "Bash(mkfs:*)",
+
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(git reset --hard:*)",
+      "Bash(git checkout --:*)",
+      "Bash(git clean -f:*)",
+      "Bash(git clean -d:*)",
+      "Bash(git rebase:*)",
+      "Bash(git merge:*)",
+      "Bash(git tag:*)",
+      "Bash(git branch -D:*)",
+      "Bash(git remote add:*)",
+      "Bash(git remote rm:*)",
+      "Bash(git stash drop:*)",
+      "Bash(git stash pop:*)",
+      "Bash(git config --set:*)",
+      "Bash(git config --unset:*)",
+      "Bash(git config --replace-all:*)",
+
+      "Bash(curl:*)",
+      "Bash(wget:*)",
+      "Bash(nc:*)",
+      "Bash(ssh:*)",
+      "Bash(scp:*)",
+      "Bash(rsync:*)",
+      "Bash(ftp:*)",
+      "Bash(sftp:*)",
+      "Bash(telnet:*)",
+
+      "Bash(npm install:*)",
+      "Bash(npm i:*)",
+      "Bash(yarn add:*)",
+      "Bash(yarn install:*)",
+      "Bash(pnpm add:*)",
+      "Bash(pnpm install:*)",
+      "Bash(cargo install:*)",
+      "Bash(pip install:*)",
+      "Bash(pip3 install:*)",
+      "Bash(brew install:*)",
+      "Bash(brew uninstall:*)",
+      "Bash(apt install:*)",
+      "Bash(apt-get install:*)",
+      "Bash(apt remove:*)",
+      "Bash(apt-get remove:*)",
+      "Bash(dpkg -i:*)",
+
+      "Edit(//root/.ssh/**)",
+      "Edit(//root/.aws/**)",
+      "Edit(//root/.gnupg/**)",
+      "Edit(//root/.netrc)",
+      "Edit(//root/.npmrc)",
+      "Edit(//root/.gitconfig)",
+      "Edit(//etc/**)",
+      "Edit(//usr/**)",
+      "Edit(//var/**)",
+      "Edit(/.env)",
+      "Edit(/.env.*)",
+      "Edit(/**/credentials.json)",
+      "Edit(/**/secrets.json)",
+      "Edit(/**/.git/config)",
+      "Write(//root/.ssh/**)",
+      "Write(//root/.aws/**)",
+      "Write(//root/.gnupg/**)",
+      "Write(//root/.netrc)",
+      "Write(/.env)",
+      "Write(/.env.*)",
+      "Write(/**/credentials.json)",
+      "Write(/**/secrets.json)",
+      "Read(/.env)",
+      "Read(/.env.*)",
+      "Read(//root/.ssh/**)",
+      "Read(//root/.aws/**)"
+    ]
+  },
+
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          { "type": "command", "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/scope-edits.sh", "timeout": 5 }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          { "type": "command", "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/block-destructive-bash.sh", "timeout": 5 }
+        ]
+      }
+    ]
+  }
+}
