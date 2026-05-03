@@ -203,6 +203,30 @@
           { "type": "command", "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/block-destructive-bash.sh", "timeout": 5 }
         ]
       }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": ".*",
+        "hooks": [
+          { "type": "command", "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/log-tool-use.sh PostToolUse", "timeout": 3 }
+        ]
+      }
+    ],
+    "PostToolUseFailure": [
+      {
+        "matcher": ".*",
+        "hooks": [
+          { "type": "command", "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/log-tool-use.sh PostToolUseFailure", "timeout": 3 }
+        ]
+      }
+    ],
+    "PermissionRequest": [
+      {
+        "matcher": ".*",
+        "hooks": [
+          { "type": "command", "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/log-tool-use.sh PermissionRequest", "timeout": 3 }
+        ]
+      }
     ]
   }
 }

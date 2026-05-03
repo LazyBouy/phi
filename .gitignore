@@ -1,1 +1,7 @@
 .vscode*
+
+# Tool-use telemetry log + rotations + lock file
+# Per plan baby-phi/docs/specs/permissions/tool-use-logging-and-permissions-audit-skill-18564835.md
+.claude/tool-use.log
+.claude/tool-use.log.*
+.claude/tool-use.log.lock

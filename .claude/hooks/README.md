@@ -1,10 +1,12 @@
-<!-- Last verified: 2026-05-03 by Claude Code -->
+<!-- Last verified: 2026-05-03 by Claude Code (added log-tool-use.sh per plan tool-use-logging-and-permissions-audit-skill-18564835.md) -->
 
-# `.claude/hooks/` — Claude Code PreToolUse hooks
+# `.claude/hooks/` — Claude Code hook scripts
 
-Two hook scripts that gate tool calls for the `/root/projects/phi/` project. They run **before** every Bash / Edit / Write / MultiEdit invocation and can deny the call with an explicit reason.
+Three hook scripts for the `/root/projects/phi/` project: two PreToolUse gates (deny destructive ops + scope edits) + one telemetry collector (PostToolUse / PostToolUseFailure / PermissionRequest).
 
-Companion design doc: [`baby-phi/docs/specs/permissions/project-permissions-hardening-478b9384.md`](../../baby-phi/docs/specs/permissions/project-permissions-hardening-478b9384.md).
+Companion design docs:
+- Gates: [`baby-phi/docs/specs/permissions/project-permissions-hardening-478b9384.md`](../../baby-phi/docs/specs/permissions/project-permissions-hardening-478b9384.md).
+- Telemetry: [`baby-phi/docs/specs/permissions/tool-use-logging-and-permissions-audit-skill-18564835.md`](../../baby-phi/docs/specs/permissions/tool-use-logging-and-permissions-audit-skill-18564835.md).
 
 ## Files
 
@@ -12,8 +14,9 @@ Companion design doc: [`baby-phi/docs/specs/permissions/project-permissions-hard
 |---|---|---|
 | `scope-edits.sh` | `PreToolUse` for `Edit`, `Write`, `MultiEdit` | Hard-deny edits to paths outside the union of allowed roots (project + agent/skill/memory/plan sister roots). Defense-in-depth on top of path-scoped allow rules in `settings.json`. |
 | `block-destructive-bash.sh` | `PreToolUse` for `Bash` | Regex-deny destructive commands (rm -rf, sudo, git push/commit/rebase, network I/O, package installs, disk ops). Defense-in-depth on top of `permissions.deny` Bash rules in `settings.json`. |
+| `log-tool-use.sh` | `PostToolUse`, `PostToolUseFailure`, `PermissionRequest` (matcher: `.*` — every tool) | Append a JSONL telemetry record per tool call to `.claude/tool-use.log`. **Never blocks the workflow** (always exits 0). Consumed by the `permissions-audit` skill at retro time. |
 
-Both are wired in `settings.json` under `hooks.PreToolUse`.
+All wired in `settings.json` under `hooks.{PreToolUse,PostToolUse,PostToolUseFailure,PermissionRequest}`.
 
 ## How they work
 
@@ -107,6 +110,82 @@ After editing either script, re-run the smoke tests and (if the change is non-tr
 - **Hook script crash** → same as timeout: non-blocking failure. Run shellcheck + bats unit tests if you suspect a bug.
 - **Hook outputs malformed JSON** → Claude Code logs the parse error and treats it as non-blocking. Always validate JSON output via `jq -n ...`.
 
+---
+
+## `log-tool-use.sh` — telemetry capture (PostToolUse + PostToolUseFailure + PermissionRequest)
+
+**Purpose:** capture every tool call's metadata so the `permissions-audit` skill can analyze patterns at retro time. Never blocks the workflow (always exits 0).
+
+**Wiring:** registered three times in `settings.json` (`hooks.PostToolUse` / `hooks.PostToolUseFailure` / `hooks.PermissionRequest`), each registration passing the event name as `$1`. The script differentiates events from the positional arg (schema-version-independent), with the stdin envelope's `hook_event_name` as belt-and-suspenders cross-check.
+
+**Output schema (JSONL, one line per call):**
+
+```json
+{
+  "ts": "2026-05-04T01:23:45.678Z",
+  "event": "PostToolUse | PostToolUseFailure | PermissionRequest",
+  "tool": "Bash | Edit | Write | MultiEdit | Read | Grep | Glob | Agent | WebFetch | ...",
+  "tool_use_id": "toolu_01...",
+  "turn_index": 12,
+  "input_signature": "cargo:test",
+  "input_full": "...",
+  "outcome": "success | failure | prompted",
+  "duration_ms": 8421,
+  "output_summary": "...",
+  "error_summary": null,
+  "redacted": false,
+  "version": 1
+}
+```
+
+Schema versioning: `version: 1`. Bump on breaking changes; the audit skill should tolerate older versions.
+
+**Output destination:** `.claude/tool-use.log` (gitignored — see `/root/projects/phi/.gitignore`).
+
+**Rotation:** when the log exceeds 10 MB, rotated to `.log.1`, `.log.2`, ..., `.log.5` (oldest dropped). Override via `ROTATE_BYTES_OVERRIDE` env var for testing.
+
+**Concurrency:** `flock -w 1` on `.claude/tool-use.log.lock` for the rotation+append critical section. On contention beyond 1s, the entry is silently skipped — never blocks the tool call.
+
+**Redaction:** env-var assignments matching `\b(SECRET|TOKEN|PASSWORD|KEY|CREDENTIAL)[A-Z_]*=[^[:space:]]+` have their values replaced with `<redacted>`. The `redacted: true` field flags affected entries.
+
+**Truncation:** `input_full` truncated to 1000 chars (with `…` marker). Full original input is NOT preserved.
+
+**Self-skip:** any envelope referencing `.claude/tool-use.log*` is silently skipped (avoids meta-recursion when reading/editing the log file itself).
+
+**Fail-safe contract:** if anything goes wrong (jq missing, flock contention, disk full, malformed envelope), the script still exits 0. Logging is best-effort; the workflow is sacred.
+
+**Consumed by:** `.claude/skills/permissions-audit.md` at retro time. The skill reads + filters by cycle window + cross-references against `settings.json` rules + emits the §A–§H markdown report that lands in §3.5 of the cycle retrospective.
+
+**Testing the script:**
+
+```bash
+# PostToolUse smoke
+echo '{"hook_event_name":"PostToolUse","tool_name":"Bash","tool_input":{"command":"echo hi"},"tool_output":"hi","duration_ms":42,"tool_use_id":"toolu_test","turn_index":0}' \
+  | bash .claude/hooks/log-tool-use.sh PostToolUse
+tail -1 .claude/tool-use.log | jq .
+
+# PostToolUseFailure smoke
+echo '{"hook_event_name":"PostToolUseFailure","tool_name":"Bash","tool_input":{"command":"false"},"error":"exit 1","tool_use_id":"toolu_test_2","turn_index":0}' \
+  | bash .claude/hooks/log-tool-use.sh PostToolUseFailure
+
+# PermissionRequest smoke
+echo '{"hook_event_name":"PermissionRequest","tool_name":"Bash","tool_input":{"command":"new-cmd --help"},"tool_use_id":"toolu_test_3","turn_index":0}' \
+  | bash .claude/hooks/log-tool-use.sh PermissionRequest
+
+# Redaction smoke
+echo '{"hook_event_name":"PostToolUse","tool_name":"Bash","tool_input":{"command":"SECRET_TOKEN=abc123 cargo run"},"tool_output":"","duration_ms":1,"tool_use_id":"toolu_redact","turn_index":0}' \
+  | bash .claude/hooks/log-tool-use.sh PostToolUse
+tail -1 .claude/tool-use.log | jq '.input_full, .redacted'
+# Expect: "SECRET_TOKEN=<redacted> cargo run", true
+```
+
+**When to update:**
+- Add a new redaction pattern → edit the script's `grep -qE` + `sed -E` regex.
+- Add a new tool that needs special signature handling → extend the `compute_signature` helper's case statement.
+- Schema change → bump `version: 1 → 2` in the JSONL line; update audit skill to handle both.
+
+---
+
 ## Future work
 
-See plan §13 in [`project-permissions-hardening-478b9384.md`](../../baby-phi/docs/specs/permissions/project-permissions-hardening-478b9384.md) for the open items list (PostToolUse telemetry, MCP allow rules, NotebookEdit coverage, shellcheck CI, retrospective revisit).
+See plan §13 in [`project-permissions-hardening-478b9384.md`](../../baby-phi/docs/specs/permissions/project-permissions-hardening-478b9384.md) and §9 in [`tool-use-logging-and-permissions-audit-skill-18564835.md`](../../baby-phi/docs/specs/permissions/tool-use-logging-and-permissions-audit-skill-18564835.md) for the open-items lists (MCP allow rules, NotebookEdit coverage, shellcheck CI, per-cycle log slicing, trend dashboards, prompt-outcome correlation).
