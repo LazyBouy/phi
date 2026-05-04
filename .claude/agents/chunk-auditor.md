@@ -1,5 +1,3 @@
-<!-- Last verified: 2026-05-04 by Claude Code (chunk-auditor v2 → v3: cd-overuse Bash discipline added per CH-12 retro cycle hex `6a748175`). Logged in `_changelog.md` row dated 2026-05-04. -->
-
 ---
 name: chunk-auditor
 description: Independent audit of a closed chunk. Verifies code correctness, phi-core leverage compliance, K8s readiness, concept-doc fidelity, ADR rigor, drift closure. Writes a per-iteration audit log; returns the path + summary.

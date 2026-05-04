@@ -1,5 +1,3 @@
-<!-- Last verified: 2026-05-04 by Claude Code (chunk-implementer v1 → v2: cd-overuse Bash discipline added per CH-12 retro cycle hex `6a748175`). Logged in `_changelog.md` row dated 2026-05-04. -->
-
 ---
 name: chunk-implementer
 description: Executes phases per an approved chunk plan. Runs tests, clippy, fmt at each phase boundary. Handles drift/ADR/concept-doc/K8s paperwork at chunk close. Patches per audit feedback when re-spawned.

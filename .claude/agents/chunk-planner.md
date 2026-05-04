@@ -1,5 +1,3 @@
-<!-- Last verified: 2026-05-04 by Claude Code (chunk-planner v2 → v3: 4 standards updates per CH-12 retro cycle hex `6a748175` — re-spawn re-verification on user-locked-divergent fork; additive-enum cascade discipline; tag-write Repository contract reading list; line-citation freshness pre-publish grep). Logged in `_changelog.md` row dated 2026-05-04. -->
-
 ---
 name: chunk-planner
 description: Drafts the 12-section per-chunk plan from a forward-scope entry. Performs phi-core leverage analysis, K8s readiness eval, ADR draft, audit-envelope sizing. Surfaces locked forks for orchestrator review.
