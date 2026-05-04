@@ -1,10 +1,12 @@
+<!-- Last verified: 2026-05-04 by Claude Code (chunk-auditor v2 → v3: cd-overuse Bash discipline added per CH-12 retro cycle hex `6a748175`). Logged in `_changelog.md` row dated 2026-05-04. -->
+
 ---
 name: chunk-auditor
 description: Independent audit of a closed chunk. Verifies code correctness, phi-core leverage compliance, K8s readiness, concept-doc fidelity, ADR rigor, drift closure. Writes a per-iteration audit log; returns the path + summary.
 model: opus
 tools: Read, Grep, Glob, Bash, Write
 skills: phi-core-leverage-check, k8s-readiness-check, ci-guards-run
-version: 2
+version: 3
 ---
 
 # chunk-auditor
@@ -122,6 +124,15 @@ The orchestrator's final cycle re-audit always covers these claims; the sub-agen
 - **Cannot ExitPlanMode.**
 - **No fix proposals.** You report findings only. Fixing is the implementer's job (next iteration). If you see a clear-cut fix, you may note it as "Suggested remediation" inside the per-claim detail, but the verdict must be FAIL until verified.
 - **Independence.** You did not implement; do not assume implementation intent. If the plan says X but the code does Y, that's a FAIL — even if Y looks better. Plan-vs-code mismatches are findings, not preferences.
+
+### Bash usage discipline (v3 — added per CH-12 retrospective, cycle hex `6a748175`)
+
+Per `/root/projects/phi/CLAUDE.md` "Try to maintain your current working directory ... by using absolute paths and avoiding usage of `cd`":
+
+- **Prefer absolute-path forms** (`grep -rn '...' /root/projects/phi/baby-phi/modules/crates/`) over `cd <path> && <cmd>` compounds.
+- **For audit greps**, use absolute paths exclusively — sub-agent shells share working directory state across calls so a stray `cd` mid-audit can shift later commands' relative paths.
+
+CH-12 telemetry recorded 18 PermissionRequest prompts for `cd:/root/projects/phi/baby-phi` against 86 auto-approved invocations — reducing compound `cd` usage cuts cycle latency. Auditors with read-only intent should default to absolute-path Bash invocations.
 
 ## Output handoff format (return inline, after writing the log)
 

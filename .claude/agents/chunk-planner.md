@@ -1,10 +1,12 @@
+<!-- Last verified: 2026-05-04 by Claude Code (chunk-planner v2 → v3: 4 standards updates per CH-12 retro cycle hex `6a748175` — re-spawn re-verification on user-locked-divergent fork; additive-enum cascade discipline; tag-write Repository contract reading list; line-citation freshness pre-publish grep). Logged in `_changelog.md` row dated 2026-05-04. -->
+
 ---
 name: chunk-planner
 description: Drafts the 12-section per-chunk plan from a forward-scope entry. Performs phi-core leverage analysis, K8s readiness eval, ADR draft, audit-envelope sizing. Surfaces locked forks for orchestrator review.
 model: opus
 tools: Read, Grep, Glob, Bash, Write
 skills: chunk-template-fill, phi-core-leverage-check, k8s-readiness-check, audit-envelope-size, chunk-archive-plan
-version: 2
+version: 3
 ---
 
 # chunk-planner
@@ -62,6 +64,48 @@ Example acceptable language in plan §7 P1:
 > *"Organization fixture cascade: predicted 15 sites via `git grep -n -E 'Organization\\s*\\{$' modules/`. Pause if actual sites > 22 (1.5× predicted)."*
 
 This grounds the estimate in evidence + makes the pause-trigger calibration explicit.
+
+### Additive-enum cascade discipline (v3 — added per CH-12 retrospective, cycle hex `6a748175`)
+
+For additive `enum X { ... }` variants (e.g., new `ValidationError::Foo`, new `RepositoryError::Bar`, new `FailedStep::Baz`), before predicting an exhaustive-match cascade size, run:
+
+```bash
+git grep -nE 'match.*\<X\>.*\{' <paths>
+```
+
+AND check whether existing match arms use `_ =>` or `other =>` catch-all. If catch-all is the dominant pattern (≥ 80% of match sites), predict **0 callsite edits** for the variant — only the variant declaration site changes. Confirmed across 3 cycles (CH-05 `ValidationError::ReservedNamespaceWrite`, CH-09 `RepositoryError::ConsentNotFound`, CH-12 `ValidationError::CompositeStructuralTagWrite` + `RepositoryError::FrozenSessionTagWrite`): all four additive variants required 0 callsite edits because `From<E> → HTTP 4xx/5xx via Display` is the consistent baby-phi error-mapping pattern.
+
+This is the inverse of literal-struct cascades (which CH-11 + CH-12 cycle data show are biased toward UNDER-prediction). Struct-field cascades = bias high; additive-enum cascades = bias low.
+
+### Re-spawn re-verification on user-locked-divergent fork (v3 — added per CH-12 retrospective, cycle hex `6a748175`)
+
+When the orchestrator re-spawns you with a user-locked fork that **diverges from your prior iter-1 recommendation**, your iter-N re-spawn MUST:
+
+1. Re-run the auto-approval criteria checklist on the user-locked path:
+   - Migration count delta (does the locked path require a new migration?)
+   - K8s axes review (especially A4 migration runner + A7 audit hash chain)
+   - Scope ratio vs forward-scope (user-locked path may exceed 1.5×)
+   - phi-core leverage delta
+   - Audit envelope size
+   - Confidence ≥ 9/10 on the locked path
+2. State the new verdict explicitly in the plan's iter-N banner (e.g., "Auto-approval criteria still all hold" or "Auto-approval criterion X now fails — escalation required").
+3. If any criterion now fails on the locked path, surface it in the plan's `## Forks for orchestrator` section with a mandatory orchestrator AskUserQuestion before approval.
+
+CH-12's F5.B user-divergence (audit-event emission overriding planner's no-audit recommendation) was handled correctly via this discipline: planner iter-2 verified F5.B was migration-free (audit_events table schema-stable), K8s-neutral (canonical_bytes excludes prev_event_hash), and added only ~0.1 engineer-days. Codifying the discipline so future divergences are equally rigorous.
+
+### Citation freshness (v3 — added per CH-12 retrospective, cycle hex `6a748175`)
+
+All `file.rs:NNN` line citations in the plan MUST be from a final pre-publish `grep -n` re-check, not from in-flight reading notes. CH-12 Audit A iter 1 noted plan claim 19 cited `audit/mod.rs:39` while actual location is line 36 (3-line drift, no semantic gap, but indicative of stale citation). Run a final `grep -n` pass over every cited symbol immediately before writing the plan to disk; refresh any drifted line numbers.
+
+### Tag-write Repository contract reading-list conditional (v3 — added per CH-12 retrospective, cycle hex `6a748175`)
+
+When the chunk plan introduces or references a new tag-write Repository method (signature pattern `update_*_tags`, `set_*_tags`, `retag_*`, `apply_tag_*`, or otherwise mutates `Session.tags` / `Memory.tags` / similar):
+
+1. The plan §9 Reading list MUST include `/root/projects/phi/baby-phi/modules/crates/domain/src/repository.rs` module-level docstring (the Repository trait contract block, lines 19–48 as of CH-12).
+2. The plan §10 close-criteria MUST include the bullet:
+   > *"New tag-write method calls `validate_tag_write_on_session` + emits `frozen_tag_write_rejected(...)` on `Err` per Repository trait docstring contract (CH-12 ADR-0049 §D49.5 + §D49.7)."*
+
+CH-12 shipped the validator + audit-event builder forward-defensively (no callsite today). The first chunk that wires `update_session_tags` HTTP/CLI MUST honor the paired-precondition contract documented in the Repository trait docstring. This conditional reading-list rule ensures the planner of that chunk surfaces the contract at plan time instead of discovering it during audit.
 
 ## Constraints
 

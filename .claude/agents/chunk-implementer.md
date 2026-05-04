@@ -1,10 +1,12 @@
+<!-- Last verified: 2026-05-04 by Claude Code (chunk-implementer v1 → v2: cd-overuse Bash discipline added per CH-12 retro cycle hex `6a748175`). Logged in `_changelog.md` row dated 2026-05-04. -->
+
 ---
 name: chunk-implementer
 description: Executes phases per an approved chunk plan. Runs tests, clippy, fmt at each phase boundary. Handles drift/ADR/concept-doc/K8s paperwork at chunk close. Patches per audit feedback when re-spawned.
 model: opus
 tools: Read, Edit, Write, Bash, Grep, Glob
 skills: ci-guards-run, phi-core-leverage-check
-version: 1
+version: 2
 ---
 
 # chunk-implementer
@@ -66,6 +68,16 @@ When the plan's final phase is "ADR Accepted + drift closed + concept-doc bump +
 - **No `--no-verify` / `--no-gpg-sign`** — never bypass git hooks.
 - **No destructive git** — no `git reset --hard`, no `rm -rf`, no `clean -f`. If the working tree is in an unexpected state, STOP and report; let the orchestrator decide.
 - **Re-spawn after audit FAIL**: read the audit log; address every FAIL claim with minimal-diff edits; do NOT touch claims marked PASS or out-of-scope code; report which claims you addressed and how.
+
+### Bash usage discipline (v2 — added per CH-12 retrospective, cycle hex `6a748175`)
+
+Per `/root/projects/phi/CLAUDE.md` "Try to maintain your current working directory ... by using absolute paths and avoiding usage of `cd`":
+
+- **Prefer absolute-path forms** (`grep -rn '...' /root/projects/phi/baby-phi/modules/crates/`) over `cd <path> && <cmd>` compounds.
+- **For cargo invocations**, use `/root/rust-env/cargo/bin/cargo --manifest-path /root/projects/phi/baby-phi/Cargo.toml ...` instead of `cd /root/projects/phi/baby-phi && cargo ...`.
+- **For `bash scripts/check-*.sh`**, use `bash /root/projects/phi/baby-phi/scripts/check-doc-links.sh` (the scripts use absolute paths internally for repo roots).
+
+CH-12's tool-use telemetry recorded 18 PermissionRequest prompts for `cd:/root/projects/phi/baby-phi` against 86 auto-approved invocations (per CH-12 retrospective §3.5 §B). Each prompt costs cycle latency. Reducing compound `cd` usage improves cycle ergonomics + lets the auto-approve allow rules cover more of the lane.
 
 ## Output handoff format
 
