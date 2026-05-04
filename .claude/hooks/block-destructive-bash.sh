@@ -45,5 +45,7 @@ echo "$COMMAND" | grep -qE '\b(npm|yarn|pnpm)\s+(install|i|add)\b|\bpip3?\s+inst
 echo "$COMMAND" | grep -qE '\bdd\s+(if|of)=|\bmkfs(\.|\b)|>\s*/dev/sd[a-z]' && deny "Disk-level operation blocked."
 # Permissive chmod
 echo "$COMMAND" | grep -qE '\bchmod\s+-?R?\s*777\b' && deny "chmod 777 blocked."
+# find -delete (blanket find:* allow-rule has this safety gap)
+echo "$COMMAND" | grep -qE '\bfind\b.*-delete\b' && deny "find -delete blocked; use rm via the Edit/Write tool or ask the user explicitly."
 
 exit 0

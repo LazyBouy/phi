@@ -76,6 +76,7 @@ Current blocked categories:
 | Package install | `\b(npm\|yarn\|pnpm)\s+(install\|i\|add)\b\|\bpip3?\s+install\b\|...` | User authorizes installs. |
 | Disk / FS | `\bdd\s+(if\|of)=\|\bmkfs(\.|\b)\|>\s*/dev/sd[a-z]` | Disk-level ops blocked. |
 | Permissive chmod | `\bchmod\s+-?R?\s*777\b` | chmod 777 blocked. |
+| Destructive find | `\bfind\b.*-delete\b` | `find -delete` blocked (closes the safety gap from the blanket `Bash(find:*)` allow rule added 2026-05-04 alongside read-only utility rules). |
 
 ## Testing
 
