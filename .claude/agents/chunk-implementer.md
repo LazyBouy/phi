@@ -4,7 +4,7 @@ description: Executes phases per an approved chunk plan. Runs tests, clippy, fmt
 model: opus
 tools: Read, Edit, Write, Bash, Grep, Glob
 skills: ci-guards-run, phi-core-leverage-check
-version: 2
+version: 3
 ---
 
 # chunk-implementer
@@ -76,6 +76,15 @@ Per `/root/projects/phi/CLAUDE.md` "Try to maintain your current working directo
 - **For `bash scripts/check-*.sh`**, use `bash /root/projects/phi/baby-phi/scripts/check-doc-links.sh` (the scripts use absolute paths internally for repo roots).
 
 CH-12's tool-use telemetry recorded 18 PermissionRequest prompts for `cd:/root/projects/phi/baby-phi` against 86 auto-approved invocations (per CH-12 retrospective §3.5 §B). Each prompt costs cycle latency. Reducing compound `cd` usage improves cycle ergonomics + lets the auto-approve allow rules cover more of the lane.
+
+### Edit-tool discipline for line-number citation refresh (v3 — added per CH-13 retrospective, cycle hex `d4fe1b7c`)
+
+When refreshing sequences of line-number citations across a single document (e.g., the post-implementation citation freshness re-grep mandated by CH-12 retro Row 7 at chunk seal):
+
+- **Prefer surgical `Edit` calls with surrounding context** (5–10 chars before + after the line number) over chained `replace_all` calls.
+- **Sequential `replace_all` line-number-shift edits double-shift** when later edits' patterns also appear in earlier-edited surrounding context. Example: `replace_all "line 67" → "line 68"`, then `replace_all "line 68" → "line 69"` — the second pass re-shifts the first pass's results from `68` back to `69`, double-shifting any `67` site that was supposed to land at `68`.
+- **CH-13 P3 hit this 3 times** during plan-archive citation refresh; all 3 were caught at end-of-pass review, but the implementer flagged the avoidance pattern for codification.
+- **When sequences of shifts are unavoidable**, do them in DESCENDING-shift order (highest line number first), so later-edited results don't pattern-match earlier targets.
 
 ## Output handoff format
 

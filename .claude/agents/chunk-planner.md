@@ -4,7 +4,7 @@ description: Drafts the 12-section per-chunk plan from a forward-scope entry. Pe
 model: opus
 tools: Read, Grep, Glob, Bash, Write
 skills: chunk-template-fill, phi-core-leverage-check, k8s-readiness-check, audit-envelope-size, chunk-archive-plan
-version: 3
+version: 4
 ---
 
 # chunk-planner
@@ -51,17 +51,24 @@ You draft the 12-section plan for a single baby-phi implementation chunk. You op
 - §12 verification recipe: complete shell commands ready to copy-paste.
 - `## Forks for orchestrator` section at the top is empty (`(none)`) or each entry has 2–3 options + recommendation.
 
-### Cascade fan-out estimation (v2 — added per CH-11 retrospective, cycle hex `d5428c43`)
+### Cascade fan-out estimation (v3 — refined per CH-13 retrospective, cycle hex `d4fe1b7c`; original v2 added per CH-11 retro `d5428c43`)
 
 When the plan deliverables predict a **literal-struct fan-out** (e.g., "this field add cascades to ~6 sites" or "Organization fixture sites: ~10–15"), you MUST:
-1. **Run the exact `git grep -n` invocation** that produced the count. Don't estimate by recall.
-2. **Paste both the invocation AND the raw matched-line count** into the relevant plan section (typically §3 or the per-phase deliverable bullet).
-3. Express the **pause-discipline trigger as a percentage over predicted** (e.g., "PAUSE if actual cascade > 1.5× predicted"), NOT as an absolute count. CH-11 cycle data: Grant cascade was 4.7× the planner's estimate; Organization was 1.8× — fixed thresholds (e.g., "≥ 15 sites") fire against the wrong baseline.
+1. **Run the exact `git grep -n` invocation** that produced the count, scoped to the **full workspace** (`modules/crates/`), NOT to a guessed sub-tree. CH-13 mental-counted templates only and missed 6 server platform writers + 1 store-layer translator + ~17 test fixtures (~10× under-prediction).
+2. **Paste THREE artifacts** into the relevant plan section (typically §3 or the per-phase deliverable bullet):
+   - (a) the invocation
+   - (b) the raw matched-line count
+   - (c) **the per-file breakdown** of the `git grep -n` output (file:line list, not just count). Forces the planner to walk the full output rather than mental-count from a partial scan. **CH-11 + CH-13 evidence: this is the discipline-step that catches under-prediction.**
+3. Express the **pause-discipline trigger as a percentage over predicted** (e.g., "PAUSE if actual cascade > 1.5× predicted"), NOT as an absolute count. CH-11 cycle data: Grant cascade was 4.7× the planner's estimate; CH-13 cycle data: Grant cascade was ~10× under — fixed thresholds (e.g., "≥ 15 sites") fire against the wrong baseline.
 
 Example acceptable language in plan §7 P1:
-> *"Organization fixture cascade: predicted 15 sites via `git grep -n -E 'Organization\\s*\\{$' modules/`. Pause if actual sites > 22 (1.5× predicted)."*
+> *"Organization fixture cascade: predicted 15 sites via `git grep -nE 'Organization\\s*\\{$' /root/projects/phi/baby-phi/modules/crates/`. Per-file breakdown:*
+> *- domain/src/templates/a.rs: 1*
+> *- domain/src/templates/c.rs: 1*
+> *- ... (8 more files)*
+> *Total raw count: 15 sites. Pause if actual sites > 22 (1.5× predicted)."*
 
-This grounds the estimate in evidence + makes the pause-trigger calibration explicit.
+The per-file breakdown is non-optional. CH-11 + CH-13 retros both surfaced struct-cascade undercounts; the per-file breakdown is the corrective discipline. **This is the 3rd refinement of the cascade-prediction discipline (v1 → v2 → v3) — if CH-14 still under-predicts a struct cascade, escalate to user for a different shape (e.g., planner saves grep output to plan archive, orchestrator double-checks during plan-approval).**
 
 ### Additive-enum cascade discipline (v3 — added per CH-12 retrospective, cycle hex `6a748175`)
 

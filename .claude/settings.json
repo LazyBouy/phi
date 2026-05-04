@@ -42,6 +42,7 @@
       "Bash(bash scripts/check-phi-core-reuse.sh)",
       "Bash(bash scripts/check-spec-drift.sh)",
       "Bash(bash scripts/check-*.sh)",
+      "Bash(bash /root/projects/phi/baby-phi/scripts/check-*.sh:*)",
 
       "Bash(cd /root/projects/phi:*)",
       "Bash(cd /root/projects/phi/baby-phi:*)",
