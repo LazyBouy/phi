@@ -4,7 +4,7 @@ description: Executes phases per an approved chunk plan. Runs tests, clippy, fmt
 model: opus
 tools: Read, Edit, Write, Bash, Grep, Glob
 skills: ci-guards-run, phi-core-leverage-check
-version: 3
+version: 4
 ---
 
 # chunk-implementer
@@ -67,24 +67,31 @@ When the plan's final phase is "ADR Accepted + drift closed + concept-doc bump +
 - **No destructive git** — no `git reset --hard`, no `rm -rf`, no `clean -f`. If the working tree is in an unexpected state, STOP and report; let the orchestrator decide.
 - **Re-spawn after audit FAIL**: read the audit log; address every FAIL claim with minimal-diff edits; do NOT touch claims marked PASS or out-of-scope code; report which claims you addressed and how.
 
-### Bash usage discipline (v2 — added per CH-12 retrospective, cycle hex `6a748175`)
+### Granular Bash discipline (v4 — refactored per `permissions/granular-bash-discipline-ab19399b.md` to lead with the granular principle; supersedes the v2/v3 cd-overuse + Edit-tool-citation-refresh subsections)
 
-Per `/root/projects/phi/CLAUDE.md` "Try to maintain your current working directory ... by using absolute paths and avoiding usage of `cd`":
+**Principle**: each Bash tool invocation runs ONE logical operation. Multiple operations = multiple invocations. Source-of-truth: `baby-phi/docs/specs/permissions/granular-bash-discipline-ab19399b.md`.
 
-- **Prefer absolute-path forms** (`grep -rn '...' /root/projects/phi/baby-phi/modules/crates/`) over `cd <path> && <cmd>` compounds.
-- **For cargo invocations**, use `/root/rust-env/cargo/bin/cargo --manifest-path /root/projects/phi/baby-phi/Cargo.toml ...` instead of `cd /root/projects/phi/baby-phi && cargo ...`.
-- **For `bash scripts/check-*.sh`**, use `bash /root/projects/phi/baby-phi/scripts/check-doc-links.sh` (the scripts use absolute paths internally for repo roots).
+Why: Claude Code's Bash matcher splits compound commands at shell operators (`&&`, `||`, `;`, `|`, `&`, `|&`, **and newlines**) and requires each subcommand to independently match an allow rule. Granular invocations match cleanly + produce one telemetry entry per intent.
 
-CH-12's tool-use telemetry recorded 18 PermissionRequest prompts for `cd:/root/projects/phi/baby-phi` against 86 auto-approved invocations (per CH-12 retrospective §3.5 §B). Each prompt costs cycle latency. Reducing compound `cd` usage improves cycle ergonomics + lets the auto-approve allow rules cover more of the lane.
+**Allowed shapes:**
+- Single command + flags + paths (`grep -rn 'X' /abs/path/`).
+- Single command + 1 trailing viewing/aggregating pipe (`cmd | head -N`, `cmd | wc -l`, `cmd | tail -N`).
+- Single command with redirects paired with a downstream pipe (`cargo test 2>&1 | tail -20`).
 
-### Edit-tool discipline for line-number citation refresh (v3 — added per CH-13 retrospective, cycle hex `d4fe1b7c`)
+**Discouraged shapes (break into separate Bash calls):**
+- Multi-line bash scripts (newlines split into fragments; ~48% of CH-13 prompts). For multi-step audit/research scripts, write to a file via the Write tool (e.g., `/root/projects/phi/baby-phi/scripts/audit-tmp.sh`) then `bash /abs/path/audit-tmp.sh` as one call.
+- `&&` / `||` / `;` chains (each statement = separate Bash call).
+- Pipelines beyond 2 stages.
+- Trailing `2>&1` without a downstream pipe (empirical quirk).
+- `cd <abs> && <cmd>` compounds — use absolute paths in the command itself.
 
-When refreshing sequences of line-number citations across a single document (e.g., the post-implementation citation freshness re-grep mandated by CH-12 retro Row 7 at chunk seal):
+**Tool-specific absolute-path forms:**
+- `git -C /root/projects/phi/baby-phi <subcmd>` instead of `cd ... && git <subcmd>`.
+- `cargo --manifest-path /root/projects/phi/baby-phi/Cargo.toml <subcmd>` instead of `cd ... && cargo <subcmd>`.
+- `bash /root/projects/phi/baby-phi/scripts/check-*.sh` instead of `cd ... && bash scripts/...`.
+- `grep -rn 'X' /root/projects/phi/baby-phi/modules/crates/` instead of `cd ... && grep -rn 'X' modules/crates/`.
 
-- **Prefer surgical `Edit` calls with surrounding context** (5–10 chars before + after the line number) over chained `replace_all` calls.
-- **Sequential `replace_all` line-number-shift edits double-shift** when later edits' patterns also appear in earlier-edited surrounding context. Example: `replace_all "line 67" → "line 68"`, then `replace_all "line 68" → "line 69"` — the second pass re-shifts the first pass's results from `68` back to `69`, double-shifting any `67` site that was supposed to land at `68`.
-- **CH-13 P3 hit this 3 times** during plan-archive citation refresh; all 3 were caught at end-of-pass review, but the implementer flagged the avoidance pattern for codification.
-- **When sequences of shifts are unavoidable**, do them in DESCENDING-shift order (highest line number first), so later-edited results don't pattern-match earlier targets.
+**Edit-tool discipline (carried forward from v3, CH-13 retro Row 4):** when refreshing sequences of line-number citations across a single document, prefer surgical `Edit` calls with surrounding context over chained `replace_all` calls. Sequential `replace_all` line-shift edits double-shift when later patterns also appear in earlier-edited context. When sequences are unavoidable, run in DESCENDING-shift order (highest line number first).
 
 ## Output handoff format
 

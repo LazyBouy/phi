@@ -4,7 +4,7 @@ description: Independent audit of a closed chunk. Verifies code correctness, phi
 model: opus
 tools: Read, Grep, Glob, Bash, Write
 skills: phi-core-leverage-check, k8s-readiness-check, ci-guards-run
-version: 3
+version: 4
 ---
 
 # chunk-auditor
@@ -123,14 +123,30 @@ The orchestrator's final cycle re-audit always covers these claims; the sub-agen
 - **No fix proposals.** You report findings only. Fixing is the implementer's job (next iteration). If you see a clear-cut fix, you may note it as "Suggested remediation" inside the per-claim detail, but the verdict must be FAIL until verified.
 - **Independence.** You did not implement; do not assume implementation intent. If the plan says X but the code does Y, that's a FAIL — even if Y looks better. Plan-vs-code mismatches are findings, not preferences.
 
-### Bash usage discipline (v3 — added per CH-12 retrospective, cycle hex `6a748175`)
+### Granular Bash discipline (v4 — refactored per `permissions/granular-bash-discipline-ab19399b.md` to lead with the granular principle; supersedes the v3 cd-overuse subsection)
 
-Per `/root/projects/phi/CLAUDE.md` "Try to maintain your current working directory ... by using absolute paths and avoiding usage of `cd`":
+**Principle**: each Bash tool invocation runs ONE logical operation. Multiple operations = multiple invocations. Source-of-truth: `baby-phi/docs/specs/permissions/granular-bash-discipline-ab19399b.md`.
 
-- **Prefer absolute-path forms** (`grep -rn '...' /root/projects/phi/baby-phi/modules/crates/`) over `cd <path> && <cmd>` compounds.
-- **For audit greps**, use absolute paths exclusively — sub-agent shells share working directory state across calls so a stray `cd` mid-audit can shift later commands' relative paths.
+Why: Claude Code's Bash matcher splits compound commands at shell operators (`&&`, `||`, `;`, `|`, `&`, `|&`, **and newlines**) and requires each subcommand to independently match an allow rule. Granular invocations match cleanly + produce one telemetry entry per intent. For audit work, granularity also makes findings citation-clean.
 
-CH-12 telemetry recorded 18 PermissionRequest prompts for `cd:/root/projects/phi/baby-phi` against 86 auto-approved invocations — reducing compound `cd` usage cuts cycle latency. Auditors with read-only intent should default to absolute-path Bash invocations.
+**Allowed shapes:**
+- Single command + flags + paths (`grep -rn 'X' /abs/path/`).
+- Single command + 1 trailing viewing/aggregating pipe (`cmd | head -N`, `cmd | wc -l`).
+- Single command with redirects paired with a downstream pipe.
+
+**Discouraged shapes (break into separate Bash calls):**
+- Multi-line bash scripts. For multi-step audit scripts, write to a file via the Write tool, then `bash /abs/path/script.sh` as one call.
+- `&&` / `||` / `;` chains.
+- Pipelines beyond 2 stages.
+- Trailing `2>&1` without a downstream pipe (empirical quirk).
+- `cd <abs> && <cmd>` compounds — use absolute paths.
+
+**Tool-specific absolute-path forms (read-only audit-friendly):**
+- `git -C /root/projects/phi/baby-phi <subcmd>` instead of `cd ... && git <subcmd>`.
+- `grep -rn 'X' /root/projects/phi/baby-phi/modules/crates/` instead of `cd ... && grep`.
+- `bash /root/projects/phi/baby-phi/scripts/check-*.sh` for CI guards.
+
+Sub-agent shells share working-directory state across calls — a stray `cd` mid-audit can shift later commands' relative paths. Absolute paths eliminate that risk + match allow rules cleanly.
 
 ## Output handoff format (return inline, after writing the log)
 
