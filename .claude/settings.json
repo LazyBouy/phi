@@ -43,6 +43,8 @@
       "Bash(bash scripts/check-spec-drift.sh)",
       "Bash(bash scripts/check-*.sh)",
       "Bash(bash /root/projects/phi/baby-phi/scripts/check-*.sh *)",
+      "Bash(bash /root/projects/phi/baby-phi/scripts/check-*.sh:*)",
+      "Bash(bash /root/projects/phi/baby-phi/scripts/check-*.sh 2>&1*)",
 
       "Bash(cd /root/projects/phi *)",
       "Bash(cd /root/projects/phi/baby-phi *)",

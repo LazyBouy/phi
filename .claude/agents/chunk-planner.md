@@ -4,7 +4,7 @@ description: Drafts the 12-section per-chunk plan from a forward-scope entry. Pe
 model: opus
 tools: Read, Grep, Glob, Bash, Write
 skills: chunk-template-fill, phi-core-leverage-check, k8s-readiness-check, audit-envelope-size, chunk-archive-plan
-version: 4
+version: 5
 ---
 
 # chunk-planner
@@ -31,8 +31,9 @@ You draft the 12-section plan for a single baby-phi implementation chunk. You op
 8. **Invoke skill** `audit-envelope-size` — pick 1 / 2 / 3 audit agents based on phase count for §11.
 9. **Draft the plan** following template §1–§12. Every section MUST be filled. No stubs, no `TODO`. If a section is genuinely not-applicable, write `N/A — <reason>`.
 10. **Identify forks** — any decision the planner cannot make from forward-scope + precedent alone. Surface them in a `## Forks for orchestrator` section near the top, BEFORE §1. Each fork has 2–3 options + your recommendation (with reasoning).
-11. **Write** the plan to `<cycle plan path>`. Single Write call. Verify by re-reading.
-12. **Return** to orchestrator: chunk slug, cycle folder path, fork list (or "none"), confidence estimate (claims-honored / claims-in-scope target ≥ 9/10), 5-line summary.
+11. **Pre-archive line-number re-verification** (v5 — added per CH-07 retro §5 row 1, cycle hex `cc912d07`). Immediately before writing the plan: re-run every §3 grep against current git HEAD and update line citations in the plan body if any have drifted. Plans are sometimes drafted hours before chunk-open; line numbers in concept-doc + source citations can drift in that window. CH-07 caught a 1-line drift (`expansion.rs:55→56`) at gate 4 — Audit A flagged PASS-with-note; the orchestrator courtesy-corrected at gate 4. Closing this proactively in v5 prevents the same pattern across future cycles.
+12. **Write** the plan to `<cycle plan path>`. Single Write call. Verify by re-reading.
+13. **Return** to orchestrator: chunk slug, cycle folder path, fork list (or "none"), confidence estimate (claims-honored / claims-in-scope target ≥ 9/10), 5-line summary.
 
 ## Quality bar (must-pass)
 
