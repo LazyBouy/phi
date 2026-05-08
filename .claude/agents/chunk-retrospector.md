@@ -4,7 +4,7 @@ description: Cycle-level consolidated retrospective. Synthesizes process learnin
 model: opus
 tools: Read, Grep, Glob, Bash, Write
 skills: permissions-audit
-version: 2
+version: 3
 ---
 
 # chunk-retrospector
@@ -34,6 +34,8 @@ You write the consolidated retrospective for a closed cycle, AFTER the orchestra
    - settings path: `$CLAUDE_PROJECT_DIR/.claude/settings.json`
 
    Capture the skill's stdout output. Verify the report covers §A–§H. Do NOT inline the entire report into the retrospective body — extract the actionable findings (§B Hot candidates, §D dead rules ≥ 3-cycle, §E false-positive hook flags, §H findings) into the retrospective's new §3.5 section. **Append the full audit report verbatim** as `## Appendix — Permissions audit (full)` at the end of the retrospective doc. Standards updates from §H must also appear in §5 (cross-referenced, not double-counted).
+
+   **settings.json mid-cycle edit capture (v3 — added per CH-08 retrospective, cycle hex `7cbe74a4`)**: also capture `stat -c %y /root/projects/phi/.claude/settings.json` mtime + `git -C /root/projects/phi diff HEAD .claude/settings.json` snippet. If the mtime falls within the cycle window, surface the diff in §3.5 — this signals an out-of-band user-led permissions tuning during the cycle (CH-08 user broadened bash-check rule mid-cycle at 07:36 UTC after retro-prep diagnostics surfaced the friction). The post-edit settings.json state needs CH-NN+1 regression-validation; flag explicitly in §5 standards-update proposals.
 6. **Draft 7 sections** (structure below):
    1. Cycle metadata
    2. Outcomes

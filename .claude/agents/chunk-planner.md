@@ -4,7 +4,7 @@ description: Drafts the 12-section per-chunk plan from a forward-scope entry. Pe
 model: opus
 tools: Read, Grep, Glob, Bash, Write
 skills: chunk-template-fill, phi-core-leverage-check, k8s-readiness-check, audit-envelope-size, chunk-archive-plan
-version: 5
+version: 6
 ---
 
 # chunk-planner
@@ -42,7 +42,7 @@ You draft the 12-section plan for a single baby-phi implementation chunk. You op
 - §3 phi-core leverage: BOTH positive greps AND forbidden greps explicit; predicted import-count delta as a number (0, +N, -N).
 - §3.B K8s readiness: 7-axis evaluation table complete (every axis classified `no impact` / `compatible` / `new blocker`); ledger entry drafted if a new blocker.
 - §3.C user-facing docs: 3-tier evaluation (architecture / operations / user-guide) with defer decisions justified.
-- §5 ADR: D-numbers (e.g., D47.1, D47.2, ...) used; ADR file path proposed; cross-references to prior ADRs cited.
+- §5 ADR: D-numbers (e.g., D47.1, D47.2, ...) used; ADR file path proposed; cross-references to prior ADRs cited. **(v6 — added per CH-08 retro §5 row 1, cycle hex `7cbe74a4`)**: when listing prior-ADRs cited in `(c)`, **MUST cite milestone-prefixed paths** for any ADR not in the chunk's home milestone (e.g., `m3/decisions/0022-...md`, `m4/decisions/0028-...md`). Closes the CH-08 P0 ADR-0052 broken-link bug — sibling-style relative paths to cross-milestone ADRs result in `check-doc-links.sh` 404s caught at P3 instead of P0.
 - §6 prior-chunk regression: every relevant upstream invariant listed with the verifying command.
 - §7 phases: each phase has goal + deliverables + tests + confidence + pause-discipline.
 - §8 tests: expected workspace test count delta as a number.

@@ -1,14 +1,12 @@
 {
   "permissions": {
-    "defaultMode": "acceptEdits",
-
+    "defaultMode": "dontAsk",
     "additionalDirectories": [
       "/root/.claude/agents",
       "/root/.claude/skills",
       "/root/.claude/projects/-root-projects-phi/memory",
       "/root/.claude/plans"
     ],
-
     "allow": [
       "Bash(/root/rust-env/cargo/bin/cargo test *)",
       "Bash(/root/rust-env/cargo/bin/cargo fmt *)",
@@ -24,7 +22,6 @@
       "Bash(cargo fmt *)",
       "Bash(cargo clippy *)",
       "Bash(cargo check *)",
-
       "Bash(git status *)",
       "Bash(git diff *)",
       "Bash(git log *)",
@@ -36,29 +33,25 @@
       "Bash(git config --get *)",
       "Bash(git check-ignore *)",
       "Bash(git stash list)",
-
       "Bash(bash scripts/check-doc-links.sh)",
       "Bash(bash scripts/check-ops-doc-headers.sh)",
       "Bash(bash scripts/check-phi-core-reuse.sh)",
       "Bash(bash scripts/check-spec-drift.sh)",
       "Bash(bash scripts/check-*.sh)",
-      "Bash(bash /root/projects/phi/baby-phi/scripts/check-*.sh *)",
-      "Bash(bash /root/projects/phi/baby-phi/scripts/check-*.sh:*)",
-      "Bash(bash /root/projects/phi/baby-phi/scripts/check-*.sh 2>&1*)",
-
+      "Bash(bash /root/projects/phi/baby-phi/scripts/*.sh *)",
+      "Bash(bash /root/projects/phi/baby-phi/scripts/*.sh 2>&1*)",
       "Bash(cd /root/projects/phi *)",
       "Bash(cd /root/projects/phi/baby-phi *)",
       "Bash(cd /root/projects/phi/phi-core *)",
-
       "Bash(mkdir -p *)",
       "Bash(cp *)",
       "Bash(mv *)",
       "Bash(touch *)",
       "Bash(openssl rand *)",
-
       "Bash(awk *)",
       "Bash(sed -n *)",
       "Bash(jq *)",
+      "Bash(jobs -l *)",
       "Bash(echo *)",
       "Bash(tr *)",
       "Bash(sort *)",
@@ -78,7 +71,6 @@
       "Bash(bc *)",
       "Bash(cargo --version *)",
       "Bash(cargo -V *)",
-
       "Bash(git -C /root/projects/phi *)",
       "Bash(git -C /root/projects/phi/baby-phi *)",
       "Bash(git -C /root/projects/phi/phi-core *)",
@@ -86,14 +78,12 @@
       "Bash(stat *)",
       "Bash(cat *)",
       "Bash(diff *)",
-
       "Read(/**)",
       "Read(//root/.claude/agents/**)",
       "Read(//root/.claude/skills/**)",
       "Read(//root/.claude/projects/-root-projects-phi/memory/**)",
       "Read(//root/.claude/plans/**)",
       "Read(//root/projects/phi/**)",
-
       "Edit(/**)",
       "Edit(//root/.claude/agents/*.md)",
       "Edit(//root/.claude/skills/*.md)",
@@ -108,12 +98,10 @@
       "MultiEdit(/**)",
       "MultiEdit(//root/.claude/agents/*.md)",
       "MultiEdit(//root/.claude/skills/*.md)",
-
       "WebFetch(domain:code.claude.com)",
       "WebFetch(domain:docs.anthropic.com)",
       "WebFetch(domain:github.com)",
       "WebFetch(domain:raw.githubusercontent.com)",
-
       "Agent(chunk-planner)",
       "Agent(chunk-implementer)",
       "Agent(chunk-auditor)",
@@ -123,7 +111,6 @@
       "Agent(general-purpose)",
       "Agent(Plan)"
     ],
-
     "deny": [
       "Bash(rm -rf *)",
       "Bash(rm -fr *)",
@@ -135,7 +122,6 @@
       "Bash(chown -R *)",
       "Bash(dd *)",
       "Bash(mkfs *)",
-
       "Bash(git commit *)",
       "Bash(git push *)",
       "Bash(git reset --hard *)",
@@ -153,7 +139,6 @@
       "Bash(git config --set *)",
       "Bash(git config --unset *)",
       "Bash(git config --replace-all *)",
-
       "Bash(curl *)",
       "Bash(wget *)",
       "Bash(nc *)",
@@ -163,7 +148,6 @@
       "Bash(ftp *)",
       "Bash(sftp *)",
       "Bash(telnet *)",
-
       "Bash(npm install *)",
       "Bash(npm i *)",
       "Bash(yarn add *)",
@@ -180,7 +164,6 @@
       "Bash(apt remove *)",
       "Bash(apt-get remove *)",
       "Bash(dpkg -i *)",
-
       "Edit(//root/.ssh/**)",
       "Edit(//root/.aws/**)",
       "Edit(//root/.gnupg/**)",
@@ -209,19 +192,26 @@
       "Read(//root/.aws/**)"
     ]
   },
-
   "hooks": {
     "PreToolUse": [
       {
         "matcher": "Edit|Write|MultiEdit",
         "hooks": [
-          { "type": "command", "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/scope-edits.sh", "timeout": 5 }
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/scope-edits.sh",
+            "timeout": 5
+          }
         ]
       },
       {
         "matcher": "Bash",
         "hooks": [
-          { "type": "command", "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/block-destructive-bash.sh", "timeout": 5 }
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/block-destructive-bash.sh",
+            "timeout": 5
+          }
         ]
       }
     ],
@@ -229,7 +219,11 @@
       {
         "matcher": ".*",
         "hooks": [
-          { "type": "command", "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/log-tool-use.sh PostToolUse", "timeout": 3 }
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/log-tool-use.sh PostToolUse",
+            "timeout": 3
+          }
         ]
       }
     ],
@@ -237,7 +231,11 @@
       {
         "matcher": ".*",
         "hooks": [
-          { "type": "command", "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/log-tool-use.sh PostToolUseFailure", "timeout": 3 }
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/log-tool-use.sh PostToolUseFailure",
+            "timeout": 3
+          }
         ]
       }
     ],
@@ -245,7 +243,11 @@
       {
         "matcher": ".*",
         "hooks": [
-          { "type": "command", "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/log-tool-use.sh PermissionRequest", "timeout": 3 }
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/log-tool-use.sh PermissionRequest",
+            "timeout": 3
+          }
         ]
       }
     ]

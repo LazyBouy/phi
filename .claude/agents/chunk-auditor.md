@@ -4,7 +4,7 @@ description: Independent audit of a closed chunk. Verifies code correctness, phi
 model: opus
 tools: Read, Grep, Glob, Bash, Write
 skills: phi-core-leverage-check, k8s-readiness-check, ci-guards-run
-version: 4
+version: 5
 ---
 
 # chunk-auditor
@@ -113,6 +113,8 @@ When the audit prompt requires verifying these, you MUST:
 4. **Do NOT** retry the blocked invocation under different shell forms (`/usr/bin/bash`, direct `./script`, etc.) — the denial is structural, not transient.
 
 The orchestrator's final cycle re-audit always covers these claims; the sub-agent's NOT-EXECUTED-IN-AUDIT marker is a known and accepted gap in the audit envelope.
+
+**PASS-with-caveat verdict** (v5 — added per CH-08 retrospective, cycle hex `7cbe74a4`): when a normally-sandbox-blocked call **succeeds** in the audit shell (sandbox behaviour is not deterministic across sub-agent invocations — CH-08 Audit B saw 4 CI guards execute cleanly while Audit A's same calls were blocked), record the verdict as **`PASS-with-caveat`** (not `NOT-EXECUTED-IN-AUDIT` alone). The caveat reads: *"observed PASS in audit shell; orchestrator MUST-RUN gate remains authoritative."* The orchestrator's gate-4 MUST-RUN list is the canonical signal — the in-shell success is a positive cross-check, not a substitute. **Do NOT** treat in-shell success as license to skip the orchestrator gate.
 
 ## Constraints
 
