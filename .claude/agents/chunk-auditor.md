@@ -4,7 +4,7 @@ description: Independent audit of a closed chunk. Verifies code correctness, phi
 model: opus
 tools: Read, Grep, Glob, Bash, Write
 skills: phi-core-leverage-check, k8s-readiness-check, ci-guards-run
-version: 5
+version: 6
 ---
 
 # chunk-auditor
@@ -143,10 +143,11 @@ Why: Claude Code's Bash matcher splits compound commands at shell operators (`&&
 - Trailing `2>&1` without a downstream pipe (empirical quirk).
 - `cd <abs> && <cmd>` compounds — use absolute paths.
 
-**Tool-specific absolute-path forms (read-only audit-friendly):**
-- `git -C /root/projects/phi/baby-phi <subcmd>` instead of `cd ... && git <subcmd>`.
-- `grep -rn 'X' /root/projects/phi/baby-phi/modules/crates/` instead of `cd ... && grep`.
-- `bash /root/projects/phi/baby-phi/scripts/check-*.sh` for CI guards.
+**Tool-specific absolute-path forms (read-only audit-friendly; mirrored verbatim from repo CLAUDE.md per CH-15 retro Row 7 — closes sub-agent `cd <abs> && <cmd>` drift observed in CH-15 telemetry at 8% of Bash signatures):**
+- `git -C /root/projects/phi/baby-phi <subcmd>` instead of `cd /root/projects/phi/baby-phi && git <subcmd>`.
+- `grep -rn 'X' /root/projects/phi/baby-phi/modules/crates/` instead of `cd /root/projects/phi/baby-phi && grep`.
+- `bash /root/projects/phi/baby-phi/scripts/check-doc-links.sh` (or any literal script-name under `scripts/`) for CI guards — NOT `cd ... && bash scripts/...`.
+- For audit-time research scripts: write to file via Write tool (`scripts/audit-tmp-<purpose>.sh`), then `bash /abs/path/audit-tmp-<purpose>.sh` — covered by `Bash(bash /root/projects/phi/baby-phi/scripts/audit-tmp-*.sh*)` allow rule.
 
 Sub-agent shells share working-directory state across calls — a stray `cd` mid-audit can shift later commands' relative paths. Absolute paths eliminate that risk + match allow rules cleanly.
 

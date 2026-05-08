@@ -4,7 +4,7 @@ description: Drafts the 12-section per-chunk plan from a forward-scope entry. Pe
 model: opus
 tools: Read, Grep, Glob, Bash, Write
 skills: chunk-template-fill, phi-core-leverage-check, k8s-readiness-check, audit-envelope-size, chunk-archive-plan
-version: 7
+version: 8
 ---
 
 # chunk-planner
@@ -102,6 +102,20 @@ CH-12's F5.B user-divergence (audit-event emission overriding planner's no-audit
 ### Citation freshness (v3 — added per CH-12 retrospective, cycle hex `6a748175`)
 
 All `file.rs:NNN` line citations in the plan MUST be from a final pre-publish `grep -n` re-check, not from in-flight reading notes. CH-12 Audit A iter 1 noted plan claim 19 cited `audit/mod.rs:39` while actual location is line 36 (3-line drift, no semantic gap, but indicative of stale citation). Run a final `grep -n` pass over every cited symbol immediately before writing the plan to disk; refresh any drifted line numbers.
+
+### Forward-scope-vs-concept-doc precedence detection (v8 — added per CH-15 retrospective, cycle hex `c3f46f17`)
+
+When reading the forward-scope row at chunk-open, grep concept-doc invariants for closed-set / fixed-order / frozen-schema language. If the forward-scope row's literal terms (e.g., specific action names, fundamental kinds, audit-event names, migration order) are NOT present in the concept-doc canonical set, **flag this in plan §"Forks for orchestrator" as CRITICAL fork requiring user-lock** with explicit re-interpretation rationale documented in the ADR sub-decision body. Mechanical procedure:
+
+1. Identify each literal artifact name in the forward-scope row (action names, struct fields, ID strings, migration numbers, etc.).
+2. Grep the relevant concept-doc(s) for the canonical set: `permissions/03-action-vocabulary.md` for actions, `permissions/01-fundamental-kinds.md` for fundamentals, `permissions/06-grammar-and-selectors.md` for selector forms, `m1/architecture/audit-events.md` for audit-event names, `store/migrations/` for migration order.
+3. If a forward-scope literal term is NOT in the canonical set:
+   - **Option (a)**: re-interpret the forward-scope wording as scoping-gloss describing logical reaches, not literal artifacts. Document in ADR sub-decision (CH-15 ADR-0054 §D54.2 + §D54.8 precedent).
+   - **Option (b)**: extend the canonical set in this chunk's scope (concept-doc body update + closed-set invariant break). This is heavy — cascades into concept-audit-matrix flips + invariant-test updates.
+   - **Surface BOTH options** in plan §"Forks for orchestrator" as **CRITICAL** fork. User-lock decides.
+4. **Auto-approval blocker**: a forward-scope-vs-concept-doc contradiction always triggers user-escalation. Direct-approval is not available when the forward-scope literal text disagrees with concept-doc canonical phrasing.
+
+Rationale: CH-15 caught the forward-scope row's literal `session.start` / `session.tool_invoke` / `session.read_memory` action names contradicting concept-doc 03's closed 34-verb vocabulary. Without this discipline, the planner could have silently added 3 new Action variants, breaking `Action::CANONICAL.len() == 34` invariant + cascading through every Action-based test fixture. Cross-ref per-chunk-planning-template §3.D + ADR-0054 §D54.2 + §D54.8 (CH-15 first instance).
 
 ### Type-derive pre-checks for typed-equality forks (v7 — added per CH-14 retrospective, cycle hex `5803bb94`)
 

@@ -4,7 +4,7 @@ description: Executes phases per an approved chunk plan. Runs tests, clippy, fmt
 model: opus
 tools: Read, Edit, Write, Bash, Grep, Glob
 skills: ci-guards-run, phi-core-leverage-check
-version: 5
+version: 6
 ---
 
 # chunk-implementer
@@ -96,11 +96,12 @@ Why: Claude Code's Bash matcher splits compound commands at shell operators (`&&
 - Trailing `2>&1` without a downstream pipe (empirical quirk).
 - `cd <abs> && <cmd>` compounds — use absolute paths in the command itself.
 
-**Tool-specific absolute-path forms:**
-- `git -C /root/projects/phi/baby-phi <subcmd>` instead of `cd ... && git <subcmd>`.
-- `cargo --manifest-path /root/projects/phi/baby-phi/Cargo.toml <subcmd>` instead of `cd ... && cargo <subcmd>`.
-- `bash /root/projects/phi/baby-phi/scripts/check-*.sh` instead of `cd ... && bash scripts/...`.
-- `grep -rn 'X' /root/projects/phi/baby-phi/modules/crates/` instead of `cd ... && grep -rn 'X' modules/crates/`.
+**Tool-specific absolute-path forms** (mirrored verbatim from repo CLAUDE.md per CH-15 retro Row 7 — closes sub-agent `cd <abs> && <cmd>` drift observed in CH-15 telemetry at 8% of Bash signatures):
+- `git -C /root/projects/phi/baby-phi <subcmd>` instead of `cd /root/projects/phi/baby-phi && git <subcmd>`.
+- `cargo --manifest-path /root/projects/phi/baby-phi/Cargo.toml <subcmd>` instead of `cd /root/projects/phi/baby-phi && cargo <subcmd>`.
+- `bash /root/projects/phi/baby-phi/scripts/check-doc-links.sh` (or any literal script-name under `scripts/`) instead of `cd /root/projects/phi/baby-phi && bash scripts/check-doc-links.sh`.
+- `grep -rn 'X' /root/projects/phi/baby-phi/modules/crates/` instead of `cd /root/projects/phi/baby-phi && grep -rn 'X' modules/crates/`.
+- For multi-step audit/research scripts: write the script to a file via the Write tool (e.g., `/root/projects/phi/baby-phi/scripts/audit-tmp-<purpose>.sh`), then run `bash /abs/path/audit-tmp-<purpose>.sh` as a single Bash call. The `Bash(bash /root/projects/phi/baby-phi/scripts/audit-tmp-*.sh*)` allow rule covers this family per settings.json (CH-14 retro Row 6 + CH-15 retro Row 6 validation).
 
 **Edit-tool discipline (carried forward from v3, CH-13 retro Row 4):** when refreshing sequences of line-number citations across a single document, prefer surgical `Edit` calls with surrounding context over chained `replace_all` calls. Sequential `replace_all` line-shift edits double-shift when later patterns also appear in earlier-edited context. When sequences are unavoidable, run in DESCENDING-shift order (highest line number first).
 
