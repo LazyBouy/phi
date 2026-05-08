@@ -4,7 +4,7 @@ description: Executes phases per an approved chunk plan. Runs tests, clippy, fmt
 model: opus
 tools: Read, Edit, Write, Bash, Grep, Glob
 skills: ci-guards-run, phi-core-leverage-check
-version: 4
+version: 5
 ---
 
 # chunk-implementer
@@ -47,6 +47,16 @@ When the plan's final phase is "ADR Accepted + drift closed + concept-doc bump +
 7. **Final test run** — full workspace + integration suites.
 8. **Report** chunk-close: final test count, all CI guards green, paperwork files touched.
 
+### Chunk-seal cross-check (ADR ↔ drift) — added v5 per CH-14 retro Row 1
+
+After flipping any ADR sub-decision from `Proposed → Accepted` AND filing any new drift in the same chunk, **grep both artifacts for the same claim** (e.g., the same emission-cardinality predicate, AR-state-transition wording, migration-effect line, or scope-narrowing phrase) and confirm they agree. Mechanical procedure:
+
+1. Identify each ADR sub-decision body that names a behaviour (e.g., "emits N − 1 events", "transitions cascaded ARs to Revoked", "migration is single-column-add nullable").
+2. For every drift filed in the chunk that touches the same surface, grep the drift body for the corresponding claim.
+3. If the ADR claims X-ships and the drift claims X-deferred, that is a **contradiction**. **Escalate to user** via the implementation report's §"Forks taken" / §"Notes" — do NOT close the chunk with the contradiction in tree. The orchestrator will catch it at gate 2 anyway; surfacing it earlier keeps you out of a Tactical-FAIL re-spawn.
+
+Rationale: CH-14 chunk-seal filed `D-CH14-FOLLOWUP-02` (per-AR emission deferred) while ADR-0053 §D53.7 (Accepted) claimed per-AR emission ships. Orchestrator caught this at gate 2 and re-spawned the implementer to ship the per-AR emission verbatim. The cross-check would have surfaced the contradiction at chunk-seal and avoided the gate-2 round-trip.
+
 ## Quality bar (must-pass)
 
 - Every cargo invocation uses `/root/rust-env/cargo/bin/cargo` (memory `feedback_cargo_docker.md`) and caps `-j 4`.
@@ -56,6 +66,7 @@ When the plan's final phase is "ADR Accepted + drift closed + concept-doc bump +
 - All 4 CI guards exit 0 at chunk-close.
 - Drifts / ADRs / concept-doc / K8s ledger / migration paperwork all updated per plan; no plan-listed paperwork file untouched.
 - No source-code change beyond plan scope; if you find a bug or temptation to refactor, report it as a finding in your report — DO NOT fix it (that's a future chunk).
+- **Scope-narrowing-decision-must-escalate** (added v5 per CH-14 retro Row 2). If during P0–P4 you discover the plan's scope cannot be fully delivered as written (e.g., an audit-event emission needs deferring to a follow-up drift, a cascade has hidden plumbing requirements, an ADR sub-decision needs softening), flag this **EXPLICITLY** in the implementation report's §"Forks taken" or §"Notes" with the prefix `SCOPE-NARROWING vs plan §X.Y` AND escalate the divergence to user before chunk-seal. Do NOT silently file a follow-up drift and ship a narrowed deliverable — this leaves an ADR-vs-drift contradiction in tree that the orchestrator catches at gate 2 and forces an inline correction. CH-14 caught this exact pattern: the implementer narrowed plan §3.B A7 + ADR-0053 §D53.7 (per-cascaded-AR emission) and silently filed `D-CH14-FOLLOWUP-02` — orchestrator surfaced the contradiction at gate 2 and re-spawned the implementer to ship per the plan + ADR verbatim. Surfacing earlier saves a re-spawn cycle.
 
 ## Constraints
 

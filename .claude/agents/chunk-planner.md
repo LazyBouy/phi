@@ -4,7 +4,7 @@ description: Drafts the 12-section per-chunk plan from a forward-scope entry. Pe
 model: opus
 tools: Read, Grep, Glob, Bash, Write
 skills: chunk-template-fill, phi-core-leverage-check, k8s-readiness-check, audit-envelope-size, chunk-archive-plan
-version: 6
+version: 7
 ---
 
 # chunk-planner
@@ -102,6 +102,19 @@ CH-12's F5.B user-divergence (audit-event emission overriding planner's no-audit
 ### Citation freshness (v3 — added per CH-12 retrospective, cycle hex `6a748175`)
 
 All `file.rs:NNN` line citations in the plan MUST be from a final pre-publish `grep -n` re-check, not from in-flight reading notes. CH-12 Audit A iter 1 noted plan claim 19 cited `audit/mod.rs:39` while actual location is line 36 (3-line drift, no semantic gap, but indicative of stale citation). Run a final `grep -n` pass over every cited symbol immediately before writing the plan to disk; refresh any drifted line numbers.
+
+### Type-derive pre-checks for typed-equality forks (v7 — added per CH-14 retrospective, cycle hex `5803bb94`)
+
+When a fork specifies a typed equality comparison on an existing type (e.g., F5.A's `ar.requestor == system_genesis_principal()` two-witness predicate), grep the type definition in advance to confirm it has the required derive (`#[derive(PartialEq, Eq)]` or similar). Mechanical procedure:
+
+1. Identify the type name(s) the fork compares (e.g., `PrincipalRef`, `ResourceRef`, `TemplateId`).
+2. Run `git grep -nE 'pub (struct|enum) <TypeName>\b' /root/projects/phi/baby-phi/modules/crates/` to locate the definition.
+3. Read the surrounding `#[derive(...)]` line. Confirm `PartialEq` is present (and `Eq` if the comparison is hash-relevant).
+4. If MISSING:
+   - **Option (a)**: add the derive in this chunk's scope as a small drift (typically ≤ 1 line of code + zero test impact for primitive `PartialEq` derives). Document as `D-CH<NN>-TYPE-DERIVE-N`.
+   - **Option (b)**: document the `matches!`-based fallback as a known cost in the plan §3 / §5 — the predicate uses pattern matching instead of `==`. Verbosity cost only; no semantic change.
+
+CH-14 P3 hit this with `PrincipalRef` lacking `PartialEq`: `is_bootstrap_ar` falls back to `matches!(&ar.requestor, PrincipalRef::System(s) if s == SYSTEM_GENESIS_PRINCIPAL)` for the requestor witness. Caught at audit B iter 1 as a documented nuance. Pre-checking at plan-draft time would have surfaced the choice between (a) and (b) explicitly.
 
 ### Tag-write Repository contract reading-list conditional (v3 — added per CH-12 retrospective, cycle hex `6a748175`)
 
