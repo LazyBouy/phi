@@ -4,7 +4,7 @@ description: Drafts the 12-section per-chunk plan from a forward-scope entry. Pe
 model: opus
 tools: Read, Grep, Glob, Bash, Write
 skills: chunk-template-fill, phi-core-leverage-check, k8s-readiness-check, audit-envelope-size, chunk-archive-plan
-version: 8
+version: 9
 ---
 
 # chunk-planner
@@ -39,7 +39,7 @@ You draft the 12-section plan for a single baby-phi implementation chunk. You op
 
 - Every one of §1–§12 is filled — none skipped, none stubbed.
 - §2 concept alignment table cites concept-doc line numbers, not just headings.
-- §3 phi-core leverage: BOTH positive greps AND forbidden greps explicit; predicted import-count delta as a number (0, +N, -N).
+- §3 phi-core leverage: BOTH positive greps AND forbidden greps explicit; predicted import-count delta as a number (0, +N, -N). **(v9 per CH-17 retro Row 7)**: when a phi-core type is shared across multiple sites (the chunk's surface change touches ≥ 2 distinct files importing the same `phi_core::*` type), §3 MUST anticipate Δ ≥ N rather than +1, with a per-site enumeration column in the leverage map. CH-17 had `AgentEvent` shared across `state.rs:11` (registry value type for `broadcast::Sender<AgentEvent>`) + `events.rs:48` (SSE handler wire-serialisation); plan predicted +1 (events.rs only), actual was +2 — both canonical re-uses, neither duplicates a phi-core type. Not a violation, but predictability hardens auditor's gate-4 verification + closes a measurement-method drift class.
 - §3.B K8s readiness: 7-axis evaluation table complete (every axis classified `no impact` / `compatible` / `new blocker`); ledger entry drafted if a new blocker.
 - §3.C user-facing docs: 3-tier evaluation (architecture / operations / user-guide) with defer decisions justified.
 - §5 ADR: D-numbers (e.g., D47.1, D47.2, ...) used; ADR file path proposed; cross-references to prior ADRs cited. **(v6 — added per CH-08 retro §5 row 1, cycle hex `7cbe74a4`)**: when listing prior-ADRs cited in `(c)`, **MUST cite milestone-prefixed paths** for any ADR not in the chunk's home milestone (e.g., `m3/decisions/0022-...md`, `m4/decisions/0028-...md`). Closes the CH-08 P0 ADR-0052 broken-link bug — sibling-style relative paths to cross-milestone ADRs result in `check-doc-links.sh` 404s caught at P3 instead of P0.
@@ -103,7 +103,17 @@ CH-12's F5.B user-divergence (audit-event emission overriding planner's no-audit
 
 All `file.rs:NNN` line citations in the plan MUST be from a final pre-publish `grep -n` re-check, not from in-flight reading notes. CH-12 Audit A iter 1 noted plan claim 19 cited `audit/mod.rs:39` while actual location is line 36 (3-line drift, no semantic gap, but indicative of stale citation). Run a final `grep -n` pass over every cited symbol immediately before writing the plan to disk; refresh any drifted line numbers.
 
-### Forward-scope-vs-concept-doc precedence detection (v8 — added per CH-15 retrospective, cycle hex `c3f46f17`)
+### Forward-scope-vs-concept-doc precedence detection (v8 — added per CH-15 retrospective, cycle hex `c3f46f17`; **strengthened v9 per CH-17 retrospective, cycle hex `40c4d759`** — 2-cycle pattern of iter-2 re-spawn from incorrect closed-set claims)
+
+**MANDATORY pre-flight check (v9)** — BEFORE writing any §3.D contradiction claim about a closed action vocabulary, fundamental kinds, audit-event names, or migration order, you MUST:
+
+1. Run `git -C /root/projects/phi/baby-phi grep -nE '^\s*<verb>,$' modules/crates/domain/src/permissions/action.rs` against EVERY action verb the forward-scope row mentions. If the verb appears in `Action::CANONICAL` array (currently lines 250-285 as of CH-17), the closed-set invariant `Action::CANONICAL.len() == 34` is NOT broken — DO NOT claim contradiction.
+2. Verbatim-cite concept-doc 03 line 22 (Action × Category table) AND line 44 (universal-applicability claim: *"Discovery, Authority, and Observability apply universally — every fundamental has list/inspect, delegate/allocate/transfer, and observe/log/attest"*) BEFORE issuing any "X breaks the closed action set" claim. If the verb falls under an Observability / Discovery / Authority verb-class with universal-applicability, the §3.D "extends-the-closed-set" framing is INCORRECT.
+3. Same pre-flight check applies to other concept-doc closed sets: fundamental kinds (concept-doc 01); selector grammar predicates (concept-doc 06); audit-event class tiers (m1/architecture/audit-events.md).
+
+**Failure-mode codified**: CH-15 (cycle hex `c3f46f17`) iter-1 incorrectly framed F5.B as a closed-set break (asked to add new `session.read_events` verb); the retro corrected once user requested clarification + revealed Observe was already canonical. CH-17 (cycle hex `40c4d759`) iter-1 repeated the SAME framing error on F5.B (`Action::Observe`); orchestrator caught it after gate-1 user-lock by greping `action.rs:73,282,322`. Both cycles required iter-2 re-spawn.
+
+**Pattern-watch**: if CH-18+ continues to exhibit, escalate to a `phi-core-leverage-check`-style hard-gate skill (planner cannot ship plan with §3.D contradiction-claim without skill output proving the verb is NOT canonical).
 
 When reading the forward-scope row at chunk-open, grep concept-doc invariants for closed-set / fixed-order / frozen-schema language. If the forward-scope row's literal terms (e.g., specific action names, fundamental kinds, audit-event names, migration order) are NOT present in the concept-doc canonical set, **flag this in plan §"Forks for orchestrator" as CRITICAL fork requiring user-lock** with explicit re-interpretation rationale documented in the ADR sub-decision body. Mechanical procedure:
 

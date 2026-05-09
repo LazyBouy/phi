@@ -4,7 +4,7 @@ description: Executes phases per an approved chunk plan. Runs tests, clippy, fmt
 model: opus
 tools: Read, Edit, Write, Bash, Grep, Glob
 skills: ci-guards-run, phi-core-leverage-check
-version: 6
+version: 7
 ---
 
 # chunk-implementer
@@ -45,7 +45,10 @@ When the plan's final phase is "ADR Accepted + drift closed + concept-doc bump +
 5. **Migration test bumps** — if §3 includes a new migration, update `migrations_test.rs` row count + version/slug assertions.
 6. **CI guards** — invoke skill `ci-guards-run`. All 4 must exit 0.
 7. **Final test run** — full workspace + integration suites.
-8. **Report** chunk-close: final test count, all CI guards green, paperwork files touched.
+8. **Cycle-index row insertion** (added v7 per CH-17 retro Row 4) — add a row for this cycle to `/root/projects/phi/baby-phi/docs/specs/plan/build/_cycle-index.md` "Active cycles" table. Verification: `grep -n <cycle-hex> /root/projects/phi/baby-phi/docs/specs/plan/build/_cycle-index.md` must return ≥ 1 hit. Failure-mode CH-17 hit: implementer-spawn that runs the seal phase forks attention (e.g., to integration-test scope expansion) and the cycle-index row gets dropped — orchestrator-applied Trivial-1L closed inline. NOT an implicit follow-on of plan §7 P-seal; explicit MANDATORY paperwork item.
+9. **Report** chunk-close: final test count, all CI guards green, paperwork files touched, cycle-index row added.
+
+> **Disk reclamation**: do NOT run `cargo clean` here. The orchestrator runs it as the final step of gate-5 close (after standards updates landed, retrospective written, cycle-index flipped to retro-complete), because gate-4 MUST-RUN + retrospector's permissions-audit scripts both rebuild. See repo CLAUDE.md §"Orchestrator's gates" gate-5 final step.
 
 ### Chunk-seal cross-check (ADR ↔ drift) — added v5 per CH-14 retro Row 1
 
@@ -67,6 +70,7 @@ Rationale: CH-14 chunk-seal filed `D-CH14-FOLLOWUP-02` (per-AR emission deferred
 - Drifts / ADRs / concept-doc / K8s ledger / migration paperwork all updated per plan; no plan-listed paperwork file untouched.
 - No source-code change beyond plan scope; if you find a bug or temptation to refactor, report it as a finding in your report — DO NOT fix it (that's a future chunk).
 - **Scope-narrowing-decision-must-escalate** (added v5 per CH-14 retro Row 2). If during P0–P4 you discover the plan's scope cannot be fully delivered as written (e.g., an audit-event emission needs deferring to a follow-up drift, a cascade has hidden plumbing requirements, an ADR sub-decision needs softening), flag this **EXPLICITLY** in the implementation report's §"Forks taken" or §"Notes" with the prefix `SCOPE-NARROWING vs plan §X.Y` AND escalate the divergence to user before chunk-seal. Do NOT silently file a follow-up drift and ship a narrowed deliverable — this leaves an ADR-vs-drift contradiction in tree that the orchestrator catches at gate 2 and forces an inline correction. CH-14 caught this exact pattern: the implementer narrowed plan §3.B A7 + ADR-0053 §D53.7 (per-cascaded-AR emission) and silently filed `D-CH14-FOLLOWUP-02` — orchestrator surfaced the contradiction at gate 2 and re-spawned the implementer to ship per the plan + ADR verbatim. Surfacing earlier saves a re-spawn cycle.
+- **MUST-SHIP-tests-are-blocking** (added v7 per CH-17 retro Row 6). Plan §8 splits test enumeration into `MUST-SHIP` (named test files that MUST exist as files-on-disk by chunk-seal — e.g., `server/tests/sse_live_stream_test.rs`) vs `MAY-COVER` (band-floor surrogates that count toward test-count target but are not MUST-SHIP). When MUST-SHIP files are absent at chunk-seal, you MUST flag this as a chunk-seal **blocker** in the implementation report; do NOT silently substitute MAY-COVER coverage to meet the band-floor. CH-17 first implementer-spawn dropped `sse_live_stream_test.rs` (the named MUST-SHIP file) per band-floor surrogate substitution; user-driven gate-3 re-dispatch closed the gap with +4h scope. The MUST-SHIP set is the planner's contract about what the chunk delivers; substituting surrogates is scope-narrowing and must escalate per the rule above.
 
 ## Constraints
 
