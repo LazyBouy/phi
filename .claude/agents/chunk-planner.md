@@ -4,7 +4,7 @@ description: Drafts the 12-section per-chunk plan from a forward-scope entry. Pe
 model: opus
 tools: Read, Grep, Glob, Bash, Write
 skills: chunk-template-fill, phi-core-leverage-check, k8s-readiness-check, audit-envelope-size, chunk-archive-plan
-version: 10
+version: 11
 ---
 
 # chunk-planner
@@ -90,6 +90,22 @@ When the plan claims **"X is definitionally true at every callsite of pattern Y"
 3. If ANY callsite has a different field source (e.g., `requestor: ceo` vs `requestor: input.actor`), the claim is partially-wrong — flag as a **scope-narrowing risk** in plan §"Forks for orchestrator" with a sub-fork capturing the structural-mismatch site.
 
 **Failure-mode codified**: CH-18 v2 plan §3 row 12 + F3.B.create-side.a fork claimed `ar.requestor == input.actor` is definitionally true at all 9 `create_auth_request` callsites. Reality: 8/9 sites use `requestor: input.actor`; the 9th (`adopt.rs:96`) uses `requestor: ceo` (the org's CEO from `build_adoption_request:90`) — distinct agent ID from `input.actor` (the platform-admin). The structural mismatch surfaced at P2b implementation time, requiring a synthetic-Draft probe pattern + filing of D-CH18-FOLLOWUP-02. Per-callsite literal-field verification at plan-draft time would have surfaced it earlier.
+
+### Pre-existing-behaviour preservation note formula relaxation (v11 — refined per CH-19 retrospective, cycle hex `2c520ba7`; canonical rule lives in per-chunk-planning-template §5 deliverable 3)
+
+The strict CH-14 retro Row 10 formula ("Shipped at M5/P<n> close (date YYYY-MM-DD); CH-NN does not change this") covers the common case of a sub-decision that ratifies a pre-existing runtime behaviour shipped at a single date. CH-19 ADR-0057 surfaced 3 sub-decision shapes that don't fit the strict formula:
+- §D57.8 / §D57.9 ratify deferrals (Inbox/Outbox M6-DEFERRED-02; token-economy M6-or-M7-DEFERRED) — no shipped-at date because the implementation surface is deferred.
+- §D57.10 ratifies a multi-milestone pattern (Org/Project template-as-config refresh) — emerged across multiple M-tags, not a single shipped-at date.
+- §D57.6 ratifies an absence (no new web tests, defer to Playwright) — no shipped behaviour to change.
+
+Audit B classified all 3 as PASS-with-caveat (spirit honored). v11 codifies 3 documented variations:
+- **(a) Deferred-scope variation**: *"Pre-existing scaffold preserved: <X> (deferred-marker chunk-assignment unchanged at <M6-target>; CH-NN ratifies the deferral, does not implement)"*
+- **(b) Multi-milestone-pattern variation**: *"Pre-existing implementation preserved: <X> (pattern emerged across <M1-M5 tags>; CH-NN ratifies the convention as canonical, does not change shipped code)"*
+- **(c) Never-shipped-yet variation**: *"Pre-existing absence preserved: <X> (no shipped behaviour to change; CH-NN ratifies the deferral as canonical convention)"*
+
+**Spirit-of-rule check (unchanged)**: regardless of strict-vs-variation, every Pre-existing-behaviour preservation note MUST identify (i) what was the case before this chunk, (ii) whether this chunk changes it, (iii) where the historical evidence lives. The 3 variations don't loosen the spirit — they accommodate sub-decision shapes that lack a single shipped-at date.
+
+See per-chunk-planning-template §5 deliverable 3 for the canonical rule text + v11 variation list.
 
 ### Cascade-grep extension to wire-mapping functions (v10 — added per CH-18 retrospective, cycle hex `c77937bc`; CH-18 P2a 4 inline enumerative additions)
 
