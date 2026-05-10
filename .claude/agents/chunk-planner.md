@@ -4,7 +4,7 @@ description: Drafts the 12-section per-chunk plan from a forward-scope entry. Pe
 model: opus
 tools: Read, Grep, Glob, Bash, Write
 skills: chunk-template-fill, phi-core-leverage-check, k8s-readiness-check, audit-envelope-size, chunk-archive-plan
-version: 9
+version: 10
 ---
 
 # chunk-planner
@@ -70,6 +70,38 @@ Example acceptable language in plan §7 P1:
 > *Total raw count: 15 sites. Pause if actual sites > 22 (1.5× predicted)."*
 
 The per-file breakdown is non-optional. CH-11 + CH-13 retros both surfaced struct-cascade undercounts; the per-file breakdown is the corrective discipline. **This is the 3rd refinement of the cascade-prediction discipline (v1 → v2 → v3) — if CH-14 still under-predicts a struct cascade, escalate to user for a different shape (e.g., planner saves grep output to plan archive, orchestrator double-checks during plan-approval).**
+
+### Cross-cycle user-lock-divergence cross-reference (v10 — added per CH-18 retrospective, cycle hex `c77937bc`; 3-cycle pattern: CH-15 + CH-17 + CH-18 all diverged from planner-recommendation at gate-1)
+
+When presenting `## Forks for orchestrator` AND your planner-recommendation differs from the **`tighter-scope` option** (i.e., the option that expands wiring depth, adds Repository-layer enforcement, or otherwise tightens scope vs. forward-defensive ship), AND prior 3 cycles show user-divergence pattern (CH-15 F5.B over F5.A; CH-17 F5.B over F5.A; CH-18 F3.B over F3.A), you MUST prepend a **Cross-cycle pattern note** under the fork:
+
+> *"**Cross-cycle pattern note**: planner-recommendation has diverged from user-lock in 3 of last 4 cycles (CH-15 cycle hex `c3f46f17` / CH-17 cycle hex `40c4d759` / CH-18 cycle hex `c77937bc`). User systematically prefers tighter scope when audit envelope ≤ medium. User is free to lock either option without anchoring on planner-recommendation."*
+
+The recommendation field stays — planner continues to surface judgment per existing v9 surfacing-not-suppressing approach. The note explicitly de-anchors the recommendation so user lock is informed by cross-cycle context, not anchored to planner default.
+
+**Update the cycle list in the note as new data accumulates**: when CH-19+ closes, append `(if continued)` or remove old cycles if the pattern resolves. If the pattern flips (e.g., user systematically follows planner-recommendation for 3 cycles), drop the note entirely.
+
+### Pre-flight grep precision for "definitionally redundant" claims (v10 — added per CH-18 retrospective, cycle hex `c77937bc`; CH-18 P2b `adopt.rs:96` admin-on-behalf-of-CEO mismatch)
+
+When the plan claims **"X is definitionally true at every callsite of pattern Y"** (e.g., "`ar.requestor == input.actor` is definitionally true at every `create_auth_request` callsite"), the pre-flight grep MUST verify the literal field assignment at EACH callsite, not just count callsite count. Mechanical procedure:
+
+1. Run the callsite-enumeration grep: `git -C ... grep -nE '<pattern Y>' <paths>`.
+2. For each enumerated callsite, **read the AR-construction body** (typically the helper called immediately upstream, e.g., `build_<thing>_request`) and verify the literal field assignment. Cite the verifying line in plan §3.
+3. If ANY callsite has a different field source (e.g., `requestor: ceo` vs `requestor: input.actor`), the claim is partially-wrong — flag as a **scope-narrowing risk** in plan §"Forks for orchestrator" with a sub-fork capturing the structural-mismatch site.
+
+**Failure-mode codified**: CH-18 v2 plan §3 row 12 + F3.B.create-side.a fork claimed `ar.requestor == input.actor` is definitionally true at all 9 `create_auth_request` callsites. Reality: 8/9 sites use `requestor: input.actor`; the 9th (`adopt.rs:96`) uses `requestor: ceo` (the org's CEO from `build_adoption_request:90`) — distinct agent ID from `input.actor` (the platform-admin). The structural mismatch surfaced at P2b implementation time, requiring a synthetic-Draft probe pattern + filing of D-CH18-FOLLOWUP-02. Per-callsite literal-field verification at plan-draft time would have surfaced it earlier.
+
+### Cascade-grep extension to wire-mapping functions (v10 — added per CH-18 retrospective, cycle hex `c77937bc`; CH-18 P2a 4 inline enumerative additions)
+
+When predicting cascade for a NEW variant on a typed enum (e.g., `TemplateError::AccessDenied(...)`, `ProjectError::AccessDenied(...)`, `ValidationError::Foo`), the cascade-grep MUST also check **wire-mapping functions** — NOT just typed-error-`match` blocks. Wire-mapping functions enumerate every variant explicitly for HTTP-status / display purposes; new variants ALWAYS require enumerative addition there (no `_` catch-all to absorb them).
+
+Cascade-vector enumeration:
+
+1. **Typed-handler-side `match` blocks** — `git grep -nE 'match.*\<X\>.*\{' <paths>` (existing v3 additive-enum discipline). Catch-all dominant ≥ 80% → predict 0 cascade.
+2. **Wire-mapping functions** (NEW v10) — `git grep -nE 'fn (http_status_for|wire_code_for|error_to_api_error)\b' <paths>` AND any `impl Display for X` blocks. These functions enumerate every variant for HTTP/display purposes; new variants ALWAYS need enumerative addition. Predict cascade ≥ count of distinct wire-mapping functions.
+3. **From impls** — `git grep -nE 'impl From<.*> for <X>' <paths>`. New variants may need new `From` impls (or extension of existing chain).
+
+**Failure-mode codified**: CH-18 v2 plan §7 P2a predicted 0-cascade via the v3 `_.to_string()` catch-all pattern (`match TemplateError` blocks all use catch-all). Reality: `templates/mod.rs::http_status_for` + `templates/mod.rs::wire_code_for` + `projects/mod.rs::Display::fmt` + `handlers/projects.rs::error_to_api_error` all enumerate every variant — 4 inline enumerative additions absorbed in-cycle (Trivial-multi-style). Codifying the v10 wire-mapping cascade-grep prevents recurrence.
 
 ### Additive-enum cascade discipline (v3 — added per CH-12 retrospective, cycle hex `6a748175`)
 

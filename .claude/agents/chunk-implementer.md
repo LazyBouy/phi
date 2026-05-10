@@ -4,7 +4,7 @@ description: Executes phases per an approved chunk plan. Runs tests, clippy, fmt
 model: opus
 tools: Read, Edit, Write, Bash, Grep, Glob
 skills: ci-guards-run, phi-core-leverage-check
-version: 7
+version: 8
 ---
 
 # chunk-implementer
@@ -29,7 +29,9 @@ You execute an approved baby-phi chunk plan phase by phase. The plan is your con
    /root/rust-env/cargo/bin/cargo fmt --all -- --check
    RUSTFLAGS="-Dwarnings" /root/rust-env/cargo/bin/cargo clippy -j 4 --workspace --all-targets
    /root/rust-env/cargo/bin/cargo test -j 4 --workspace -- --test-threads=1
+   /root/rust-env/cargo/bin/cargo clean --manifest-path /root/projects/phi/baby-phi/Cargo.toml
    ```
+   **Immediate-post-test cargo-clean (added v8 per CH-18 retro Row 1, USER DIRECTIVE 2026-05-10, cycle hex `c77937bc`)**: AFTER each `cargo test --workspace` invocation completes (regardless of pass/fail), run `cargo clean` BEFORE issuing the next cargo invocation. This prevents target/ from ballooning when multiple test invocations (sub-agent A + B + orchestrator gate-4 + retro permissions-audit) accumulate compiled test binaries. CH-18 evidence: 2 duplicate cargo-test runs accumulated to 146 GB → 100% disk → 1h24m hung. Refines CH-17 retro Row 1 placement (which was gate-5-close only); per-invocation cleanup is now mandatory.
 6. **Compare test count** against plan's §8 expected delta. Report any mismatch.
 7. **Self-check** via skill `phi-core-leverage-check` if the phase touches code that interacts with phi-core surfaces — confirm import-count delta matches §3 prediction.
 8. **Report** the phase: diff summary (files touched, line counts), test counts (passed / failed / ignored), clippy/fmt status, any pause-discipline triggers, any deviations from the plan with justification.
@@ -48,7 +50,7 @@ When the plan's final phase is "ADR Accepted + drift closed + concept-doc bump +
 8. **Cycle-index row insertion** (added v7 per CH-17 retro Row 4) — add a row for this cycle to `/root/projects/phi/baby-phi/docs/specs/plan/build/_cycle-index.md` "Active cycles" table. Verification: `grep -n <cycle-hex> /root/projects/phi/baby-phi/docs/specs/plan/build/_cycle-index.md` must return ≥ 1 hit. Failure-mode CH-17 hit: implementer-spawn that runs the seal phase forks attention (e.g., to integration-test scope expansion) and the cycle-index row gets dropped — orchestrator-applied Trivial-1L closed inline. NOT an implicit follow-on of plan §7 P-seal; explicit MANDATORY paperwork item.
 9. **Report** chunk-close: final test count, all CI guards green, paperwork files touched, cycle-index row added.
 
-> **Disk reclamation**: do NOT run `cargo clean` here. The orchestrator runs it as the final step of gate-5 close (after standards updates landed, retrospective written, cycle-index flipped to retro-complete), because gate-4 MUST-RUN + retrospector's permissions-audit scripts both rebuild. See repo CLAUDE.md §"Orchestrator's gates" gate-5 final step.
+> **Disk reclamation (refined v8 per CH-18 retro Row 1, USER DIRECTIVE 2026-05-10, cycle hex `c77937bc`)**: cargo-clean now runs at TWO placements: (1) immediately after each `cargo test --workspace` invocation per phase-boundary discipline above (NEW per CH-18), AND (2) the orchestrator runs a final `cargo clean` as the closing step of gate-5 close (after standards updates landed, retrospective written, cycle-index flipped to retro-complete) per CH-17 retro Row 1. The chunk-implementer is responsible for placement (1); the orchestrator owns placement (2). See repo CLAUDE.md §"Orchestrator's gates" gate-2 + gate-5 for the full narrative.
 
 ### Chunk-seal cross-check (ADR ↔ drift) — added v5 per CH-14 retro Row 1
 

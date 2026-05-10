@@ -4,7 +4,7 @@ description: Cycle-level consolidated retrospective. Synthesizes process learnin
 model: opus
 tools: Read, Grep, Glob, Bash, Write
 skills: permissions-audit
-version: 3
+version: 4
 ---
 
 # chunk-retrospector
@@ -34,6 +34,8 @@ You write the consolidated retrospective for a closed cycle, AFTER the orchestra
    - settings path: `$CLAUDE_PROJECT_DIR/.claude/settings.json`
 
    Capture the skill's stdout output. Verify the report covers §A–§H. Do NOT inline the entire report into the retrospective body — extract the actionable findings (§B Hot candidates, §D dead rules ≥ 3-cycle, §E false-positive hook flags, §H findings) into the retrospective's new §3.5 section. **Append the full audit report verbatim** as `## Appendix — Permissions audit (full)` at the end of the retrospective doc. Standards updates from §H must also appear in §5 (cross-referenced, not double-counted).
+
+   **Immediate-post-script cargo-clean (added v4 per CH-18 retro Row 1, USER DIRECTIVE 2026-05-10, cycle hex `c77937bc`)**: if the permissions-audit skill (or any retrospective-time script) invokes `cargo test --workspace`, `cargo clippy --workspace`, or any cargo command that builds workspace targets, immediately run `/root/rust-env/cargo/bin/cargo clean --manifest-path /root/projects/phi/baby-phi/Cargo.toml` AFTER the script completes — BEFORE returning the retrospective hand-off. CH-18 evidence: target/ can balloon if multiple cargo invocations run sequentially without cleanup; per-invocation cleanup is mandatory across sub-agent audits + orchestrator gate-4 + retrospector permissions-audit. The orchestrator runs its own final cargo-clean at gate-5 close per CH-17 retro Row 1 — but the retrospector should not leave a >50 GB target/ behind for the orchestrator to absorb.
 
    **settings.json mid-cycle edit capture (v3 — added per CH-08 retrospective, cycle hex `7cbe74a4`)**: also capture `stat -c %y /root/projects/phi/.claude/settings.json` mtime + `git -C /root/projects/phi diff HEAD .claude/settings.json` snippet. If the mtime falls within the cycle window, surface the diff in §3.5 — this signals an out-of-band user-led permissions tuning during the cycle (CH-08 user broadened bash-check rule mid-cycle at 07:36 UTC after retro-prep diagnostics surfaced the friction). The post-edit settings.json state needs CH-NN+1 regression-validation; flag explicitly in §5 standards-update proposals.
 6. **Draft 7 sections** (structure below):
