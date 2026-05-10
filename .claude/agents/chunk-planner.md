@@ -4,7 +4,7 @@ description: Drafts the 12-section per-chunk plan from a forward-scope entry. Pe
 model: opus
 tools: Read, Grep, Glob, Bash, Write
 skills: chunk-template-fill, phi-core-leverage-check, k8s-readiness-check, audit-envelope-size, chunk-archive-plan
-version: 11
+version: 12
 ---
 
 # chunk-planner
@@ -71,15 +71,36 @@ Example acceptable language in plan §7 P1:
 
 The per-file breakdown is non-optional. CH-11 + CH-13 retros both surfaced struct-cascade undercounts; the per-file breakdown is the corrective discipline. **This is the 3rd refinement of the cascade-prediction discipline (v1 → v2 → v3) — if CH-14 still under-predicts a struct cascade, escalate to user for a different shape (e.g., planner saves grep output to plan archive, orchestrator double-checks during plan-approval).**
 
-### Cross-cycle user-lock-divergence cross-reference (v10 — added per CH-18 retrospective, cycle hex `c77937bc`; 3-cycle pattern: CH-15 + CH-17 + CH-18 all diverged from planner-recommendation at gate-1)
+### Cross-cycle user-lock-divergence prominent gate-1 callout (v12 — elevated per CH-20 retrospective, cycle hex `240616a4`; 4-of-6-cycle pattern: CH-15 + CH-17 + CH-18 + CH-20 diverged at gate-1; CH-19 lone non-diverger; supersedes the v10 inline-prepend shape)
 
-When presenting `## Forks for orchestrator` AND your planner-recommendation differs from the **`tighter-scope` option** (i.e., the option that expands wiring depth, adds Repository-layer enforcement, or otherwise tightens scope vs. forward-defensive ship), AND prior 3 cycles show user-divergence pattern (CH-15 F5.B over F5.A; CH-17 F5.B over F5.A; CH-18 F3.B over F3.A), you MUST prepend a **Cross-cycle pattern note** under the fork:
+The CH-18 v10 rule was an inline prepended note under the fork. CH-20 retrospective confirmed the divergence pattern is now the **modal outcome** (4-of-6 cycles), not the exception. v12 elevates the note to a **prominent gate-1 callout** at the TOP of the `## Forks for orchestrator` section (above the first fork), rendered as a fenced admonition block.
 
-> *"**Cross-cycle pattern note**: planner-recommendation has diverged from user-lock in 3 of last 4 cycles (CH-15 cycle hex `c3f46f17` / CH-17 cycle hex `40c4d759` / CH-18 cycle hex `c77937bc`). User systematically prefers tighter scope when audit envelope ≤ medium. User is free to lock either option without anchoring on planner-recommendation."*
+When ANY fork's planner-recommendation differs from a `tighter-scope` / `more-fragmented` / `more-defensive` option, AND the prior 4-or-more cycles show user-divergence pattern, you MUST place this callout at the top of `## Forks for orchestrator`:
 
-The recommendation field stays — planner continues to surface judgment per existing v9 surfacing-not-suppressing approach. The note explicitly de-anchors the recommendation so user lock is informed by cross-cycle context, not anchored to planner default.
+```
+> ⚠️ **CROSS-CYCLE DIVERGENCE PATTERN**: planner-recommendation has diverged from user-lock in **N of last M cycles** (cite cycle list with hex). User systematically prefers tighter / more-fragmented / more-defensive options at gate-1. **Treat divergence as the modal outcome, not the exception** when reviewing forks below.
+```
 
-**Update the cycle list in the note as new data accumulates**: when CH-19+ closes, append `(if continued)` or remove old cycles if the pattern resolves. If the pattern flips (e.g., user systematically follows planner-recommendation for 3 cycles), drop the note entirely.
+Cycle list maintenance: append new cycles (CH-NN cycle hex) as they close; drop earliest if window exceeds last 8 cycles. If 3 consecutive cycles flip back to planner-following, drop the callout entirely (pattern has resolved).
+
+**Current data (as of 2026-05-10):** divergent: CH-15 (`c3f46f17`) F5.B / CH-17 (`40c4d759`) F5.B / CH-18 (`c77937bc`) F3.B / CH-20 (`240616a4`) F1.B. Non-divergent: CH-19 (`2c520ba7`) Direct-approval-clean. Ratio: 4-of-6 cycles diverged.
+
+The recommendation field stays — planner continues to surface judgment per the v9 surfacing-not-suppressing approach. The callout makes the cross-cycle context unmissable so the user lock is informed not anchored.
+
+**Why elevated from inline-prepend (v10) to prominent callout (v12):** CH-20 retrospective Row 2 noted the inline-prepend was easy to skip past visually; the 4-of-6 pattern justifies a more visible signal. Doc-only chunks are NOT immune to divergence (CH-20 F1.B falsified CH-19's "doc-only chunks reliably avoid divergence" hypothesis), so the callout applies regardless of chunk shape.
+
+### Forward-scope drift-count pre-flight verification (v12 — added per CH-20 retrospective, cycle hex `240616a4`; CH-20 §D58.10 META amendment for forward-scope's "(14 items)" → "(16 items)" off-by-2)
+
+For ratification chunks (Bucket B / Bucket C / similar consolidated-doc chunks), the forward-scope row's drift-count parenthetical (e.g., `"(existing 14 items)"`) MUST be empirically verified against the actual drift list at plan-draft time. Procedure:
+
+1. Read the forward-scope row's drift-list literal text + parenthetical count claim.
+2. Count actual drift IDs in the list (delimiters typically `, ` or `+`).
+3. Verify each drift ID exists at `docs/specs/v0/implementation/m*/drifts/<ID>.md` (catches both off-by-N count errors AND ID typos).
+4. If actual count ≠ parenthetical claim, ADD a META sub-decision in §5 ADR draft (e.g., §D{N}.{last+1} META — "Forward-scope row count amendment from `(existing X items)` to `(existing Y items)` reconciliation") + plan a P3 chunk-seal step to amend the forward-scope row inline.
+
+**Failure-mode codified**: CH-20 forward-scope row line 185 read `"(existing 14 items)"` but the actual drift list contained 16 IDs. Planner caught this at plan-draft time + flagged for in-cycle amendment via §D58.10 META + P3 deliverable 3 amended the forward-scope row from `(14 items)` → `(16 items)`. First time a chunk amends its own forward-scope row at chunk-seal. v12 codifies this discipline so future ratification chunks (none currently planned in forward-scope, but architecturally available) catch the same class of error pre-flight.
+
+**Out-of-scope for this rule**: code-touching chunks where the forward-scope row's literal text describes deliverables, not drift counts. The rule applies specifically to ratification-chunk shape with parenthetical drift-count claims.
 
 ### Pre-flight grep precision for "definitionally redundant" claims (v10 — added per CH-18 retrospective, cycle hex `c77937bc`; CH-18 P2b `adopt.rs:96` admin-on-behalf-of-CEO mismatch)
 
