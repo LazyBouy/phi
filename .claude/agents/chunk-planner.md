@@ -4,7 +4,7 @@ description: Drafts the 12-section per-chunk plan from a forward-scope entry. Pe
 model: opus
 tools: Read, Grep, Glob, Bash, Write
 skills: chunk-template-fill, phi-core-leverage-check, k8s-readiness-check, audit-envelope-size, chunk-archive-plan
-version: 12
+version: 13
 ---
 
 # chunk-planner
@@ -71,6 +71,63 @@ Example acceptable language in plan §7 P1:
 
 The per-file breakdown is non-optional. CH-11 + CH-13 retros both surfaced struct-cascade undercounts; the per-file breakdown is the corrective discipline. **This is the 3rd refinement of the cascade-prediction discipline (v1 → v2 → v3) — if CH-14 still under-predicts a struct cascade, escalate to user for a different shape (e.g., planner saves grep output to plan archive, orchestrator double-checks during plan-approval).**
 
+### Plan-time precision triad (v13 — added per CH-24 retrospective Rows 1+2+3, cycle hex `5778bb77`; 4-cycle pattern at planner-tier for plan-text precision; closes Audit-A #1+#2+#3 + Audit-C #1+#4)
+
+CH-24's audit cycle surfaced 3 distinct plan-text precision gaps, all caught by sub-agents but representing failure modes that v13 mechanically guards against at plan-time. The triad applies to EVERY new plan draft, regardless of chunk shape.
+
+**(R1) Closed-set audit-prompt verification.** When drafting Audit-A/B/C prompts (§11) that span a closed set of subcommands, HTTP routes, trait methods, ADR sub-decisions, or enum variants, the planner MUST verify each member against actually-shipping code BEFORE finalising the audit-prompt items. Mechanical procedure:
+
+1. For CLI subcommand claims: `git -C /root/projects/phi/baby-phi grep -nE '#\[derive\(Subcommand\)\]|#\[command' modules/crates/cli/src/commands/` to enumerate extant subcommand enums.
+2. For HTTP route claims: `git -C /root/projects/phi/baby-phi grep -nE '\.route\(' modules/crates/server/src/` to enumerate extant routes.
+3. For trait-method claims: `git -C /root/projects/phi/baby-phi grep -nE 'async fn [a-z_]+' modules/crates/domain/src/repository.rs` (or wherever trait lives).
+4. Each closed-set member named in the audit-prompt MUST appear in the enumerated output. If a member is named in the prompt but not in extant code, REMOVE from prompt OR explicitly flag as "intentionally absent / out-of-scope" to avoid auditor-overreach.
+
+**Failure-mode codified**: CH-24 Audit-C audit-prompt claim 1 named `phi session tail` as a CH-24-shipping subcommand; CH-17 ADR-0055 folded `tail` into Launch (no extant `tail` subcommand). Auditor classified as PARTIAL (vs FAIL). 3-cycle pattern at audit-prompt-tier (CH-20 + CH-22/23 + CH-24).
+
+**(R2) Source-map PRODUCTION-vs-TEST-FIXTURE classification + enum-string verification.** §3 phi-core leverage maps + §7 phase deliverable cascade tables MUST classify every cited `file.rs:NNN` call-site as PRODUCTION or TEST-FIXTURE — never conflate. Additionally, every plan-text claim about an enum string (e.g., `"completed"`, `"ended"`, `"running"`) MUST be verified against the canonical `as_str()` body or equivalent string-rendering site at plan-draft time. Mechanical procedure:
+
+1. For every cited `<file>.rs:NNN` in §3 / §7 cascade maps, run `grep -n "^#\[cfg(test)\]\|^mod tests" <file>` and confirm whether the cited line is in a `#[cfg(test)]` block. If so, mark TEST-FIXTURE; do NOT wire it as a production call-site in the chunk's deliverables.
+2. For every enum-string claim, find the canonical rendering site via `git -C /root/projects/phi/baby-phi grep -nE 'fn as_str|impl Display for' <enum-tier paths>` and verbatim-cite the matched arm. Quote the actual string, not a paraphrase.
+
+**Failure-mode codified**: CH-24 Audit-A surfaced (i) plan §3 cascade map line 235-236 over-specified `detail.rs:654` as a production call-site; reality: `:654` is inside `#[cfg(test)] mod tests::wire_shape_strips_phi_core`. (ii) Plan §7 P-FLIP-RECENT-SESSIONS deliverable 6 enumerated `"ended"` as a possible recent-session status; actual `SessionGovernanceState::as_str()` renders `"completed"`. Implementer correctly applied both fixes inline. 4-cycle pattern at plan-precision-tier (CH-14 cargo-test cardinality + CH-15 doc-sync widened sweep + CH-17 closed-set + CH-24 source-map).
+
+**(R3) Struct-placement dependency-direction verification.** When the plan specifies a struct location (§7 deliverable lines like *"NEW struct `X` at `server::platform::Y`"*), AND that struct sits in a position where it's referenced by a trait-method-return signature, the planner MUST verify the dependency direction. Trait-tier return types CANNOT reference server-tier or higher-tier structs (server depends on domain, not vice versa). Mechanical procedure:
+
+1. Identify the proposed struct's home module + the trait-method-return-type signature that uses it.
+2. Verify `(struct-module-tier) ≤ (trait-module-tier)` in the dependency-flow direction (e.g., `domain → store → server` strict downward per `phi/CLAUDE.md`).
+3. If the proposed location violates dependency direction, route the struct to the lowest-tier module that the trait-tier can reference. For trait-tier returns in `domain::repository::Repository`, the canonical home is `domain::model::composites_m<N>` (alongside `SessionDetail`, `AgentCatalogEntry`, etc.).
+
+**Failure-mode codified**: CH-24 plan §7 v4 deliverable 2 indicated `RecentSessionEntry` lives at `server::platform::projects::detail` (consumer module). Architecturally infeasible: the `Repository::list_recent_sessions_for_project` trait method returns `Vec<RecentSessionEntry>`; the trait lives in `domain`; a `domain` trait cannot name a `server` type. Implementer correctly placed the struct in `domain::model::composites_m5` (alongside `SessionDetail`); orchestrator approved at gate-2. CH-17 ADR-0055 (`tail` folded into Launch) is a related precedent for dependency-direction-consciousness applied at subcommand-level; v13 lifts the same principle to struct-placement.
+
+### Drift M*-DEFERRED-NN allocation requirement (v13 — added per CH-24 retrospective Row 4, cycle hex `5778bb77`; closes Audit-C #7 7-of-12-non-terminal-drift `TBD` accretion)
+
+Non-terminal drifts (`Status: discovered` / `scoped`) MUST cite an explicit `M*-DEFERRED-NN` allocation in their `Impl chunk` / `Closing chunk` field — NOT `TBD` / `TBD — likely M6+` / `TBD pending design`. This applies to NEW drift files filed at chunk-implementation time AND to existing drift files touched at chunk-seal paperwork.
+
+Mechanical procedure at plan-draft time:
+1. For every drift the plan touches (§4 Drifts closed + §7 mid-flight-discovery routing), inspect the drift file's `Impl chunk` line.
+2. If `Impl chunk` reads `TBD` / `TBD — ...` / `TBD pending ...`, plan a P-DOCS or P-SEAL deliverable that promotes it to an explicit `M<N>-DEFERRED-<NN>` allocation by cross-referencing the relevant forward-scope §M6+/M7+/M7b section.
+3. For NEW drift files filed by the chunk (mid-flight discovery), the planner MUST populate `Impl chunk` with an explicit allocation at file-creation time. Never write `TBD`.
+
+**Failure-mode codified**: CH-24 Audit-C claim 7 surfaced 12 non-terminal drifts at M5 close: 4 cite explicit `M*-DEFERRED-NN`; 7 cite `TBD — likely M6+`; 1 (`D-new-28`) cited stale `CH-19 (+ M6 review)` pointer. The `TBD` accretion was tolerated through CH-23; M5 close exposes the maintenance debt as M6 inherits drift-routing ambiguity. CH-24 retro housekeeping applied a 1-line patch to `D-new-28` (→ `M6-DEFERRED-01`). v13 codifies the discipline so future cycles never re-accrue `TBD` markers.
+
+**M6 housekeeping recommendation**: M6 plan-mode open should spend ~0.5 ed mapping all current `TBD`-marked drifts to explicit allocations (4 cycle-FOLLOWUP drifts + 7 D-new drifts = 11 carry-forward items per CH-24 retro §3).
+
+### Gate-2.5 mid-cycle scope-expansion lane + v9 re-evaluation (v13 — added per CH-24 retrospective Row 6, cycle hex `5778bb77`; closes cycle-audit §6.3 row 6; 5-cycle divergence pattern ratified at 7-of-9 / 78% cumulative)
+
+CH-24 demonstrated **mid-cycle architectural scope expansion** as a viable workflow: P-NEW-TESTS authoring surfaced a load-bearing finding (`recent_sessions: Vec::new()` placeholder); user locked close-in-chunk at gate-2.5; new phase `P-FLIP-RECENT-SESSIONS` inserted; ADR-0059 ratified + drift remediated in-cycle. The pattern is first-of-kind across all chunks. v13 formalizes it:
+
+**(a) Gate-2.5 mid-cycle scope-expansion lane.** Planner v13 SHOULD anticipate gate-2.5 fork candidates at plan-draft time. New optional plan section `§3.E — Anticipated gate-2.5 candidates`:
+- Enumerate surfaces likely to be touched by P-NEW-TESTS / P-DOCS authoring that might surface mid-flight discoveries.
+- Common candidates: doc-comments referencing deferred-but-shipping behaviour (e.g., "deferred to M5 per Dxx" — likely flips during authoring); placeholder `Vec::new()` / `Default::default()` returns matching a "ships at M5+" inline comment; stale `RecentSessionStub`-style transitional shapes.
+- Per candidate: surface a "if surfaced at gate-2.5, route to <option-A close-in-chunk via P-FLIP-<X> phase OR option-B file follow-up drift + retrospective routing>" recommendation.
+
+**(b) v9 surfacing-not-suppressing re-evaluation.** The v9 approach surfaces planner-recommendation alongside fork options (vs hiding the recommendation to avoid anchoring). With 7-of-9 cumulative cross-cycle divergence (78%), the v9 approach has empirically reached its asymptote — users systematically prefer tighter/richer/more-defensive options. v13 introduces an optional **divergence-aware recommendation framing**:
+- For forks where the cross-cycle pattern (5+ cycles of divergence on similar-shape forks) suggests user-preference, planner v13 MAY frame the planner-recommendation as **"strict-reading recommendation: F<x>.a; but cross-cycle pattern suggests user-preferred F<x>.b — surface both with parity weighting at gate-1"**.
+- This is NOT a blanket reversal of v9; it's a divergence-aware framing applied selectively when the cross-cycle pattern is overwhelming.
+- The current 78% rate justifies parity-weighting for tighter/richer/more-defensive forks; if a future 3-cycle stretch flips back to planner-following, the framing reverts to strict v9.
+
+**Failure-mode codified**: CH-24 closed at composite ≥99% despite 3 within-cycle divergent forks (F1.B + F-D59.2.b + F-D59.3.b) AND first mid-cycle scope expansion (gate-2.5 closure for C-M5-3 API-surface flip). 4 successive plan re-spawns (v1→v2→v3→v4 — most plan revisions in single chunk) — operational, no quality regression. The workflow CAN absorb mid-cycle scope expansion; the v13 formalization gives it explicit lane support rather than treating each instance as ad-hoc.
+
 ### Cross-cycle user-lock-divergence prominent gate-1 callout (v12 — elevated per CH-20 retrospective, cycle hex `240616a4`; 4-of-6-cycle pattern: CH-15 + CH-17 + CH-18 + CH-20 diverged at gate-1; CH-19 lone non-diverger; supersedes the v10 inline-prepend shape)
 
 The CH-18 v10 rule was an inline prepended note under the fork. CH-20 retrospective confirmed the divergence pattern is now the **modal outcome** (4-of-6 cycles), not the exception. v12 elevates the note to a **prominent gate-1 callout** at the TOP of the `## Forks for orchestrator` section (above the first fork), rendered as a fenced admonition block.
@@ -83,7 +140,7 @@ When ANY fork's planner-recommendation differs from a `tighter-scope` / `more-fr
 
 Cycle list maintenance: append new cycles (CH-NN cycle hex) as they close; drop earliest if window exceeds last 8 cycles. If 3 consecutive cycles flip back to planner-following, drop the callout entirely (pattern has resolved).
 
-**Current data (as of 2026-05-10):** divergent: CH-15 (`c3f46f17`) F5.B / CH-17 (`40c4d759`) F5.B / CH-18 (`c77937bc`) F3.B / CH-20 (`240616a4`) F1.B. Non-divergent: CH-19 (`2c520ba7`) Direct-approval-clean. Ratio: 4-of-6 cycles diverged.
+**Current data (as of 2026-05-11):** divergent: CH-15 (`c3f46f17`) F5.B / CH-17 (`40c4d759`) F5.B / CH-18 (`c77937bc`) F3.B / CH-20 (`240616a4`) F1.B / CH-24 (`5778bb77`) F1.B + F-D59.2.b + F-D59.3.b (3 within-cycle divergences — first cycle to multiply diverge; first mid-cycle scope expansion via gate-2.5). Non-divergent: CH-19 (`2c520ba7`) Direct-approval-clean. **Ratio: 5-of-7 cycles diverged (71%); cumulative cross-cycle divergent forks 7-of-9 (78%).** The 78% rate justifies v13's divergence-aware framing for tighter/richer/more-defensive forks (see v13 §"Gate-2.5 mid-cycle scope-expansion lane + v9 re-evaluation").
 
 The recommendation field stays — planner continues to surface judgment per the v9 surfacing-not-suppressing approach. The callout makes the cross-cycle context unmissable so the user lock is informed not anchored.
 
