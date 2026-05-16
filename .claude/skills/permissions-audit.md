@@ -1,8 +1,32 @@
 ---
 name: permissions-audit
 description: Read .claude/tool-use.log + settings.json, classify findings (hot allow-rule candidates, dead rules, hook denials, workflow issues), output a markdown report for the retrospector. Used at end-of-cycle.
-version: 3
+version: 4
 ---
+
+<!--
+v4 — fixed at CH-25 (cycle hex `1e01618e`) per CH-24 retro R5 carry-forward
+(now widened at P-R5-INVESTIGATE per user-lock 2026-05-15).
+
+(1) The Step 1 jq predicate was previously
+    `select(.ts >= "$start_ts" and .ts <= "$end_ts") | .version == 1`
+    which evaluates `.version == 1` as a boolean EXPRESSION on each entry returned by
+    `select(...)`, producing a stream of `true`/`false` literals rather than filtering.
+    `wc -l` then counted boolean literals (1 per filtered entry) — appearing correct for
+    some windows but masking the predicate bug.
+    Fix: fold both predicates into ONE `select(...)` filter using `and` so the version
+    filter is part of the select expression, not a downstream transform.
+
+(2) Step 1 widening at P-R5-INVESTIGATE: replace `jq -c '<filter>'` with
+    `jq -cR 'fromjson? | <filter>'`. `fromjson?` swallows parse errors on malformed
+    entries (e.g., line 4727's parse error in CH-24's log) so a single corrupt JSONL line
+    no longer halts the entire pipeline. Combined with the `select` predicate refactor in
+    (1), the stream now: reads each line as raw text (`-R`), attempts `fromjson?` (yields
+    no output on parse failure, vs erroring out), then applies the unified select filter.
+    Verified empirically against CH-24's tool-use.log window (2026-05-11T12:48:36Z →
+    2026-05-11T19:36:05Z) — expect ≥ 781 valid entries (was 0 under the broken-predicate
+    form pre-CH-25).
+-->
 
 # permissions-audit
 
@@ -26,13 +50,24 @@ Reference: design specifies in plan archive `baby-phi/docs/specs/permissions/too
 
 ```bash
 LOG_PATH="${CLAUDE_PROJECT_DIR}/.claude/tool-use.log"
-# Concat current + rotations.
+# Concat current + rotations. Robust JSONL parse: read each line as raw text
+# (`jq -cR`), attempt `fromjson?` (yields no output on parse failure — a single
+# corrupt JSONL line cannot halt the pipeline), then apply a single-predicate
+# `select(...)` filter for the cycle window + version-1 entries. The
+# single-predicate form is load-bearing: an earlier broken variant piped
+# `.version == 1` AFTER `select(...)`, producing a stream of boolean literals
+# instead of filtered entries. The current form folds both predicates into
+# one expression with `and`, so the output is entries (compact JSON, 1 line
+# each) — `wc -l` gives a true entry count.
 cat "${LOG_PATH}" "${LOG_PATH}".* 2>/dev/null \
-  | jq -c "select(.ts >= \"$start_ts\" and .ts <= \"$end_ts\") | .version == 1" \
+  | jq -cR "fromjson? | select(.ts >= \"$start_ts\" and .ts <= \"$end_ts\" and .version == 1)" \
   > /tmp/audit-cycle-${cycle_hex}.jsonl
 ```
 
-If parsing fails on a line, skip silently (`jq -c '. // empty'`) — never block on malformed entries.
+The `fromjson?` form swallows JSON parse errors silently on malformed entries — no extra
+guard is needed. Validate the fix is live by counting `2026-05-11` entries (CH-24's
+window) against `grep -c "2026-05-11" ${LOG_PATH}` — the two counts should match within
+a few entries (the difference accounts for malformed lines that `fromjson?` rejects).
 
 ### Step 2 — aggregate
 

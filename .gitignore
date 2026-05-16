@@ -5,3 +5,5 @@
 .claude/tool-use.log
 .claude/tool-use.log.*
 .claude/tool-use.log.lock
+
+.env

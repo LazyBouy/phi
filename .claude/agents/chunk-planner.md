@@ -4,7 +4,7 @@ description: Drafts the 12-section per-chunk plan from a forward-scope entry. Pe
 model: opus
 tools: Read, Grep, Glob, Bash, Write
 skills: chunk-template-fill, phi-core-leverage-check, k8s-readiness-check, audit-envelope-size, chunk-archive-plan
-version: 13
+version: 14
 ---
 
 # chunk-planner
@@ -70,6 +70,48 @@ Example acceptable language in plan §7 P1:
 > *Total raw count: 15 sites. Pause if actual sites > 22 (1.5× predicted)."*
 
 The per-file breakdown is non-optional. CH-11 + CH-13 retros both surfaced struct-cascade undercounts; the per-file breakdown is the corrective discipline. **This is the 3rd refinement of the cascade-prediction discipline (v1 → v2 → v3) — if CH-14 still under-predicts a struct cascade, escalate to user for a different shape (e.g., planner saves grep output to plan archive, orchestrator double-checks during plan-approval).**
+
+### Handler-gating verification at plan-draft (v14 — added per CH-25 retrospective Row 1, cycle hex `1e01618e`; closes Audit-C #6 PARTIAL; 5-cycle pattern at planner-tier for plan-text precision)
+
+When the plan claims that a scenario "exercises permission-check via handler `Y`" (typically in §7 phase deliverables OR §11 audit-prompt items OR ADR §"Acceptance scope"), the planner MUST verify the handler actually invokes the permission-check gate at plan-draft time. Without this verification, plan-text describes scenarios that don't actually exercise the surface they claim — implementer surfaces the gap at P2/P3 implementation time + ships in load-bearing form, requiring Trivial-multi orchestrator patch at gate-3.
+
+Mechanical procedure (extends v13 R1 closed-set audit-prompt verification):
+
+1. Identify each plan claim of the form "via handler Y" / "through handler Y" / "in the Y handler" / "Y handler invokes check_permission".
+2. Run: `git -C /root/projects/phi/baby-phi grep -nE 'check_permission' modules/crates/server/src/handlers/<Y>.rs` (or equivalent server-tier handler module).
+3. **If the grep returns 0 hits**: the handler is gated only by `AuthenticatedSession` (or equivalent identity gate), NOT by Permission Check engine. The literal scenario cannot exercise the surface as written. **Re-frame the plan claim as an engine-level test** (call `handler_support::check_permission` directly + assert the Allow/Deny verdict) BEFORE plan-locking the ADR §"Acceptance scope".
+4. **If the grep returns ≥ 1 hit**: verify the citation passes through to the named handler's check_permission body. The literal scenario form is exercisable; proceed.
+5. **Document the verification at plan-draft time**: cite the `grep` command + result in plan §3 (cascade map) AND/OR §7 phase deliverable text. **Pre-flight artifact**: the verification grep is non-optional for claims spanning handler-engine invocation paths.
+
+**Failure-mode codified**: CH-25 plan §7 P3 deliverable + ADR-0060 §D60.4 described literal scenario "A1 disables A2 via `disable_system_agent` handler WITHOUT explicit `[disable]` grant; engine synth-owner-grant rule fires". Implementer at P3 implementation discovered `disable_system_agent` at `server/src/handlers/system_agents.rs:123-144` does NOT invoke `check_permission` (gated only by `AuthenticatedSession`); literal scenario as written CANNOT exercise the synth-owner-grant. Implementer correctly re-framed to load-bearing engine-level form. Audit-C surfaced this as PARTIAL (ADR §D60.4 body still described literal form despite implementer's re-interpretation). Orchestrator applied Trivial-multi patch appending "Load-bearing-form re-interpretation" paragraph + M6 follow-up note at gate-3. v14 codifies the discipline so future cycles catch this class of mismatch at plan-draft time, NOT at implementation-discovery time.
+
+**Pattern extension**: this rule complements v13 R1 (closed-set audit-prompt verification). v13 R1 verifies that named members exist (e.g., `phi session tail` subcommand); v14 R1 verifies that named handlers invoke the claimed gate (e.g., `disable_system_agent` invokes `check_permission`). Together they form a 2-tier plan-time precision check: existence (v13) + behaviour (v14).
+
+### Phi-core HEAD delta pre-flight at chunk-open (v14 — added per CH-25 retrospective Row 3, cycle hex `1e01618e`; NEW pattern — first cycle to surface workspace-health carrier-fix for phi-core API evolution)
+
+At P0 chunk-open, the planner MUST enumerate phi-core HEAD changes since the last cycle close. New phi-core API surface (added/removed/renamed fields on `AgentLoopConfig` / `StreamConfig` / `AgentEvent` / similar) typically requires baby-phi-side carrier-fixes at the field-construction call-sites. Surfacing these at plan-draft time prevents implementer from framing them as "out-of-scope" deviations during P1/P2.
+
+Mechanical procedure:
+
+1. At P0 (after reading the forward-scope row + per-chunk-template), run:
+   ```bash
+   LAST_CLOSE_SHA=$(grep -m1 -oE 'phi-core HEAD \`[a-f0-9]+\`' baby-phi/docs/specs/plan/build/_cycle-index.md | head -1 | grep -oE '[a-f0-9]+$')
+   git -C /root/projects/phi/phi-core log --oneline "${LAST_CLOSE_SHA}..HEAD"
+   ```
+   (Substitute the actual cycle-index-extracted SHA. If no prior phi-core SHA is recorded, use the SHA from the most-recent cycle's `cycle-audit.md`.)
+
+2. Read each commit's summary; classify each as:
+   - **API-additive**: new field / method / type — baby-phi may need carrier-fix to set the new field at construction sites (e.g., `response_format: ResponseFormat::default()`).
+   - **API-breaking**: removed / renamed field — baby-phi MUST update all references.
+   - **API-internal**: phi-core-internal refactor / fix — no baby-phi-side impact expected.
+
+3. **For each API-additive or API-breaking change**, plan §7 P0 deliverable adds an explicit carrier-fix task with the file:line + the construction site that needs the field. The carrier-fix is in-CH-NN-scope (not deferred).
+
+4. **If phi-core HEAD has uncommitted feature work** (visible via `git -C /root/projects/phi/phi-core status --short`), pause via AskUserQuestion + escalate to user: "phi-core working tree is dirty — confirm if the WIP work should be incorporated into CH-NN's carrier-fix or held until phi-core stabilises."
+
+**Failure-mode codified**: CH-25 P0 did NOT run the phi-core HEAD delta enumeration. At P-NEW-TESTS implementation time, implementer discovered `phi-core HEAD d6f6998` added `response_format: ResponseFormat` to `AgentLoopConfig` (0.7.0 structured-output feature). Implementer applied carrier-fix at `launch.rs:567` setting `ResponseFormat::default()` (= Text, preserves prior behaviour). Implementer initially framed as "out-of-scope phi-core WIP-state breakage" — orchestrator re-classified at gate-3 dispatch as routine cross-submodule API integration. v14 codifies the pre-flight check so future cycles surface required carrier-fixes at plan-draft time, NOT as mid-flight deviations.
+
+**Operational note** (CH-25 user-provided context, surfaced at gate-5 retrospective): phi-core 0.7.0 is published to crates.io; baby-phi MAY migrate from git-submodule to `phi-core = "0.7.0"` dependency to isolate from phi-core HEAD churn. This is a separate architectural decision (NOT a v14 standards-update); track as a forward-routing candidate for M6 plan-open OR a dedicated M5.3 carve-out chunk.
 
 ### Plan-time precision triad (v13 — added per CH-24 retrospective Rows 1+2+3, cycle hex `5778bb77`; 4-cycle pattern at planner-tier for plan-text precision; closes Audit-A #1+#2+#3 + Audit-C #1+#4)
 

@@ -4,7 +4,7 @@ description: Independent audit of a closed chunk. Verifies code correctness, phi
 model: opus
 tools: Read, Grep, Glob, Bash, Write
 skills: phi-core-leverage-check, k8s-readiness-check, ci-guards-run
-version: 7
+version: 8
 ---
 
 # chunk-auditor
@@ -31,6 +31,7 @@ You are an independent auditor. You did not write the code. You read what's ther
 4. **Run the workspace test suite** with the same command the plan §12 specifies. **Use canonical scripts where they exist** (added v7 per CH-18 retro Row 5):
    - For full-workspace cardinality extraction, INVOKE `bash /root/projects/phi/baby-phi/scripts/audit-tmp-cargo-counts.sh` — this is the canonical script (CH-14 retro Row 8). It runs cargo test workspace internally + emits a single `passed=N failed=M ignored=K` line. **Do NOT author a duplicate extraction script** (CH-18 Audit A authored an orphan `scripts/audit-tmp-cardinality.sh` duplicating the canonical one — flagged as Row 5; chunk-auditor v7 forbids this).
    - If a NEW extraction script IS required for a specialized purpose (different than full-workspace cardinality), commit it via the Write tool with a path matching the `audit-tmp-*.sh` glob — settings.json line 45 `Bash(bash /root/projects/phi/baby-phi/scripts/audit-tmp-*.sh*)` covers the invocation. Document why the canonical script was insufficient.
+   - **(v8 per CH-25 retro Row 4 — canonical-script reuse strengthening)**: BEFORE authoring any new `audit-tmp-*.sh` script, FIRST run `ls /root/projects/phi/baby-phi/scripts/audit-tmp-*.sh` to enumerate existing canonical scripts. Compare your need to each existing script's purpose (read the script's header comment). If an existing script covers your need with minor parameterization, ADAPT THE INVOCATION (env var, command-line arg) instead of authoring a new script. Only author a new script if no existing canonical script covers the diagnostic specialization need. Canonical script set currently in `scripts/audit-tmp-cargo-counts.sh` (full-workspace cardinality extraction); any additional canonical scripts MUST be documented in this list at chunk-retrospective time. Cumulative audit-tmp count trends upward across cycles; the v8 mandate slows the trend by encouraging adaptation over authorship.
    - **After the test run completes, immediately run `cargo clean`** (added v7 per CH-18 retro Row 1, USER DIRECTIVE 2026-05-10): `/root/rust-env/cargo/bin/cargo clean --manifest-path /root/projects/phi/baby-phi/Cargo.toml`. This prevents target/ accumulation across multiple test invocations (sub-agent A + B + orchestrator gate-4 + retro permissions-audit). CH-18 evidence: 2 duplicate cargo-test runs accumulated to 146 GB → 100% disk → 1h24m hung.
    - Compare test count to plan §8's expected delta. PASS if match, FAIL if mismatch.
 5. **Invoke skill** `ci-guards-run` — all 4 guards must exit 0. Any non-zero is a FAIL.
