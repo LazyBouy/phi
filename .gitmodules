@@ -4,3 +4,6 @@
 [submodule "baby-phi"]
 	path = baby-phi
 	url = https://github.com/LazyBouy/baby-phi.git
+[submodule "i-phi"]
+	path = i-phi
+	url = https://github.com/LazyBouy/i-phi.git
