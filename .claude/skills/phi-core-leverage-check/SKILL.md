@@ -1,7 +1,6 @@
 ---
 name: phi-core-leverage-check
 description: Verify phi-core leverage compliance for a baby-phi chunk. Runs the §3 positive + forbidden greps from the cycle plan, confirms check-phi-core-reuse.sh exits 0, computes the import-count delta. Used at plan-time (predict), implementation-time (self-check), and audit-time (verify).
-version: 1
 ---
 
 # phi-core-leverage-check

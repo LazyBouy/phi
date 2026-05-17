@@ -1,7 +1,6 @@
 ---
 name: chunk-initiate
 description: Orchestrate an end-to-end chunk implementation cycle (plan → user-approval gate → implement → audit → final cycle re-audit → cleanup → optional retrospective) for either baby-phi or i-phi. Wraps the chunk-planner / chunk-implementer / chunk-auditor / chunk-retrospector agents under the orchestrator gates documented in CLAUDE.md.
-version: 1
 ---
 
 # chunk-initiate

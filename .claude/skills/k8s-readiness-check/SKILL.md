@@ -1,7 +1,6 @@
 ---
 name: k8s-readiness-check
 description: Walk the 7-axis K8s microservice readiness evaluation for a baby-phi chunk. Classifies each axis (in-process state, IPC, pod-local resources, migration runner, trait-shape, cross-pod state, audit hash-chain symmetry). Drafts CHK8S-D-NN deferred-ledger entries when new blocker classes are discovered.
-version: 1
 ---
 
 # k8s-readiness-check

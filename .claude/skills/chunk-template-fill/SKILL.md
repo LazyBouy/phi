@@ -1,7 +1,6 @@
 ---
 name: chunk-template-fill
 description: Read the canonical 12-section per-chunk-planning-template and emit a fully-filled scaffold draft. Every required subsection populated; no stubs or TODO lines. Used by chunk-planner to bootstrap a new cycle plan.
-version: 1
 ---
 
 # chunk-template-fill

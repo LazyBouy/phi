@@ -1,7 +1,6 @@
 ---
 name: audit-envelope-size
 description: Pick the audit envelope (1, 2, or 3 audit agents) and draft per-letter audit prompt scaffolds for plan §11. Used by chunk-planner only.
-version: 1
 ---
 
 # audit-envelope-size

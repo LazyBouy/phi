@@ -1,7 +1,6 @@
 ---
 name: permissions-audit
 description: Read .claude/tool-use.log + settings.json, classify findings (hot allow-rule candidates, dead rules, hook denials, workflow issues), output a markdown report for the retrospector. Used at end-of-cycle.
-version: 4
 ---
 
 <!--

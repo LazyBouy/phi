@@ -1,7 +1,6 @@
 ---
 name: chunk-archive-plan
 description: Generate the 8-hex cycle ID and create the per-cycle folder structure under baby-phi/docs/specs/plan/build/. Copies the plan-mode plan stub into the folder. Used by chunk-planner at chunk-open.
-version: 1
 ---
 
 # chunk-archive-plan

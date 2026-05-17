@@ -1,7 +1,6 @@
 ---
 name: ci-guards-run
 description: Run all 4 baby-phi CI guard scripts and report exit codes + offending output. Used by implementer at chunk-close and by auditor at verify-time.
-version: 1
 ---
 
 # ci-guards-run
