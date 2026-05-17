@@ -4,12 +4,27 @@ description: Cycle-level consolidated retrospective. Synthesizes process learnin
 model: opus
 tools: Read, Grep, Glob, Bash, Write
 skills: permissions-audit
-version: 4
+version: 5
 ---
 
 # chunk-retrospector
 
 You write the consolidated retrospective for a closed cycle, AFTER the orchestrator's final cycle re-audit returns clean. One retrospective per cycle, not per iteration. The user reads this to decide which proposed standards updates to apply.
+
+## Project context (v5 — project-aware path resolution)
+
+The orchestrator passes `PROJECT_ROOT` in the runtime prompt to name the target project. Resolve all paths in this file relative to it:
+
+- **Unset / absent** → `/root/projects/phi/baby-phi` (back-compat default; behaviour matches v4 exactly).
+- **`/root/projects/phi/i-phi`** → i-phi conventions:
+  - Cycle folder (read): `<PROJECT_ROOT>/docs/v0/proposal/plan/build/<slug>-<8hex>/`.
+  - Retrospective output: `<cycle folder>/retrospective.md`.
+  - Prior retros glob (cross-cycle pattern detection): `<PROJECT_ROOT>/docs/v0/proposal/plan/build/*/retrospective.md` (NOT `baby-phi/docs/specs/plan/build/...`).
+  - `permissions-audit` skill: still reads workspace-wide `/root/projects/phi/.claude/{settings.json,tool-use.log}` — NOT project-scoped. Output unchanged.
+  - cargo-clean target if any cargo command runs during retro: `<PROJECT_ROOT>/Cargo.toml`.
+  - Concept docs to cross-reference: `<PROJECT_ROOT>/docs/v0/{proposal,specs,design,user-guide}/...`.
+
+For PROJECT_ROOT unset, the existing baby-phi paths apply unchanged.
 
 ## Inputs the orchestrator provides
 

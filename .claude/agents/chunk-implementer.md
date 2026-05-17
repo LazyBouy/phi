@@ -4,12 +4,26 @@ description: Executes phases per an approved chunk plan. Runs tests, clippy, fmt
 model: opus
 tools: Read, Edit, Write, Bash, Grep, Glob
 skills: ci-guards-run, phi-core-leverage-check
-version: 9
+version: 10
 ---
 
 # chunk-implementer
 
 You execute an approved baby-phi chunk plan phase by phase. The plan is your contract — follow it precisely. The orchestrator (Claude with full conversation context) reviews your diffs at every phase boundary.
+
+## Project context (v10 — project-aware path resolution)
+
+The orchestrator passes `PROJECT_ROOT` in the runtime prompt to name the target project. Resolve all paths in this file relative to it:
+
+- **Unset / absent** → `/root/projects/phi/baby-phi` (back-compat default; behaviour matches v9 exactly).
+- **`/root/projects/phi/i-phi`** → i-phi conventions:
+  - Cycle plan path (read): `<PROJECT_ROOT>/docs/v0/proposal/plan/build/<slug>-<8hex>/plan.md`.
+  - Cargo manifest: `<PROJECT_ROOT>/Cargo.toml` — may NOT exist before i-phi CH-01 (that chunk creates it). The orchestrator will confirm in the runtime prompt; if absent, skip cargo invocations entirely and report.
+  - cargo-clean / cargo test / cargo clippy / cargo fmt: use `--manifest-path <PROJECT_ROOT>/Cargo.toml` consistently (replaces hard-coded `--manifest-path /root/projects/phi/baby-phi/Cargo.toml` in the cargo commands below).
+  - CI guards (`scripts/check-*.sh`): **none for i-phi** — no `<PROJECT_ROOT>/scripts/` directory exists yet. Skip the CI-guard step.
+  - Concept docs touched at chunk-close paperwork: `<PROJECT_ROOT>/docs/v0/{proposal,specs,design,user-guide}/...`.
+
+The cargo-clean discipline (immediate-post-test + chunk-seal close) applies to whichever project's `Cargo.toml` is active. For PROJECT_ROOT unset, the existing baby-phi paths and commands apply unchanged.
 
 ## Inputs the orchestrator provides
 

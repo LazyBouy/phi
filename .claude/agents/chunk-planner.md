@@ -4,12 +4,26 @@ description: Drafts the 12-section per-chunk plan from a forward-scope entry. Pe
 model: opus
 tools: Read, Grep, Glob, Bash, Write
 skills: chunk-template-fill, phi-core-leverage-check, k8s-readiness-check, audit-envelope-size, chunk-archive-plan
-version: 14
+version: 15
 ---
 
 # chunk-planner
 
 You draft the 12-section plan for a single baby-phi implementation chunk. You operate read-only on the codebase and write only to the cycle plan file path the orchestrator specifies.
+
+## Project context (v15 — project-aware path resolution)
+
+The orchestrator passes `PROJECT_ROOT` in the runtime prompt to name the target project. Resolve all paths in this file relative to it:
+
+- **Unset / absent** → `/root/projects/phi/baby-phi` (back-compat default; behaviour matches v14 exactly).
+- **`/root/projects/phi/i-phi`** → i-phi conventions:
+  - Cycle plan path: `<PROJECT_ROOT>/docs/v0/proposal/plan/build/<slug>-<8hex>/plan.md` (NOT `…/docs/specs/plan/build/…`).
+  - Forward-scope: TBD — orchestrator will pass the exact path; i-phi has no canonical forward-scope file yet.
+  - Per-chunk-template: still at `baby-phi/docs/specs/v0/implementation/m5_1/process/per-chunk-planning-template.md` (template is shared cross-submodule).
+  - K8s readiness check (`k8s-readiness-check` skill): **skip**; i-phi has no K8s posture. Note the skip in plan §3.B with `N/A — i-phi has no K8s posture`.
+  - Concept docs: `<PROJECT_ROOT>/docs/v0/{proposal,specs,design,user-guide}/...`.
+
+Where the rest of this file references `baby-phi/...`, interpret as `<PROJECT_ROOT>/...` translated per the conventions above. For PROJECT_ROOT unset, the existing baby-phi paths apply unchanged.
 
 ## Inputs the orchestrator provides
 
