@@ -72,7 +72,13 @@ Until those updates ship, running `/chunk-initiate project=i-phi` requires passi
 4. **i-phi special case**: if `project=i-phi` AND `chunk=CH-01` AND no `Cargo.toml` exists yet → expected, proceed.
 5. Check the project's working tree is clean (`git -C <root> status` returns clean) unless `dry_run=yes` or `resume_from_phase != plan`.
 6. Confirm current branch is `dev`. If not, abort with instructions to switch.
-7. Look up the chunk's forward-scope row. If missing, abort with the file path the user should populate.
+7. Look up the chunk's forward-scope row. If missing, do **not** abort outright — first surface an inline-draft offer via `AskUserQuestion` (added 2026-05-17 per CH-01-i-phi retro Row 2; the strict-abort behaviour was the v1 default and forced an extra orchestrator-side draft cycle on every new project's chunk-zero):
+   - **Option A — Draft inline (Recommended)**: orchestrator drafts the forward-scope file (mirroring baby-phi's row shape + adapted to the project's conventions) and surfaces it for user review. On user approval, commits the forward-scope as a prerequisite artifact (so the chunk's own diff stays scoped to chunk deliverables), then resumes Phase 0 step 8.
+   - **Option B — Pause for user-authored draft**: aborts the current invocation; user authors the forward-scope file out-of-band, then re-invokes `/chunk-initiate`. (This was the v1 strict-abort behaviour.)
+   - **Option C — Use chunk-graph row as stand-in**: treat the upstream chunk-graph's one-liner as a forward-scope substitute; planner runs on thinner inputs. Logs the deviation in `cycle-audit.md` §6.
+   - **Option D — Abort the whole cycle**.
+
+   On Option A: the inline-draft sub-step writes the file to `<PROJECT_ROOT>/docs/specs/plan/forward-scope/<slug>.md` (baby-phi) or `<PROJECT_ROOT>/docs/v0/proposal/plan/forward-scope/<slug>.md` (i-phi), per the project's convention. The draft includes the standard sections (Purpose, Inputs consumed, Drifts closed, Prerequisites, Deliverables, Acceptance criteria, Forks for the planner, Audit envelope hint, Unblocks, Risks, Direct-approval criteria fit). Use the canonical reference: `/root/projects/phi/baby-phi/docs/specs/plan/forward-scope/22035b2a-remaining-scope-post-m5-p7.md` as the baby-phi shape; `/root/projects/phi/i-phi/docs/v0/proposal/plan/forward-scope/ch-01-phi-core-consumption-foundation.md` as the i-phi shape.
 8. Verify ≥ 30 GB free on the volume holding `<root>/target/` (`df -h /root | head -3`). If less, prompt the user before continuing.
 9. If `resume_from_phase != plan`, verify the expected cycle-folder + plan.md exist (or fail).
 

@@ -4,7 +4,7 @@ description: Independent audit of a closed chunk. Verifies code correctness, phi
 model: opus
 tools: Read, Grep, Glob, Bash, Write
 skills: phi-core-leverage-check, k8s-readiness-check, ci-guards-run
-version: 9
+version: 10
 ---
 
 # chunk-auditor
@@ -50,6 +50,7 @@ For PROJECT_ROOT unset, the existing baby-phi paths and skill invocations apply 
    - **(v8 per CH-25 retro Row 4 — canonical-script reuse strengthening)**: BEFORE authoring any new `audit-tmp-*.sh` script, FIRST run `ls /root/projects/phi/baby-phi/scripts/audit-tmp-*.sh` to enumerate existing canonical scripts. Compare your need to each existing script's purpose (read the script's header comment). If an existing script covers your need with minor parameterization, ADAPT THE INVOCATION (env var, command-line arg) instead of authoring a new script. Only author a new script if no existing canonical script covers the diagnostic specialization need. Canonical script set currently in `scripts/audit-tmp-cargo-counts.sh` (full-workspace cardinality extraction); any additional canonical scripts MUST be documented in this list at chunk-retrospective time. Cumulative audit-tmp count trends upward across cycles; the v8 mandate slows the trend by encouraging adaptation over authorship.
    - **After the test run completes, immediately run `cargo clean`** (added v7 per CH-18 retro Row 1, USER DIRECTIVE 2026-05-10): `/root/rust-env/cargo/bin/cargo clean --manifest-path /root/projects/phi/baby-phi/Cargo.toml`. This prevents target/ accumulation across multiple test invocations (sub-agent A + B + orchestrator gate-4 + retro permissions-audit). CH-18 evidence: 2 duplicate cargo-test runs accumulated to 146 GB → 100% disk → 1h24m hung.
    - Compare test count to plan §8's expected delta. PASS if match, FAIL if mismatch.
+   - **(v10 per CH-01-i-phi retro Row 5 — clippy cache-invalidation via mtime-touch is acceptable)**: when the implementer's preceding `cargo build` populated the incremental compilation cache, a `cargo clippy` re-run by the auditor may return early ("Finished in <small>s") without actually re-checking new lint configurations. To force clippy to re-evaluate the source tree under fresh-cache state, you MAY run `touch <PROJECT_ROOT>/src/lib.rs` (metadata-only — no file content changes; mtime bump only) before re-invoking clippy. This is an acceptable cache-invalidation pattern that does NOT violate the read-only-on-source discipline (the file content is byte-identical pre and post `touch`; only the inode mtime changes). Document the touch in your audit log if used. Alternative cache-invalidation: `cargo clean` (heavier but fully canonical — preferred if the auditor's clippy result is suspect AND time permits a full re-compile). CH-01-i-phi Audit A used this technique once successfully on `src/lib.rs`; reuse it for surgical clippy cache-busts when full clean is overkill.
 5. **Invoke skill** `ci-guards-run` — all 4 guards must exit 0. Any non-zero is a FAIL.
 6. **Invoke skill** `phi-core-leverage-check` (if your audit letter covers code) — confirm §3 grep table.
 7. **Invoke skill** `k8s-readiness-check` (if your audit letter covers K8s) — confirm §3.B table.
