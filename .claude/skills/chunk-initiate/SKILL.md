@@ -343,17 +343,17 @@ On a successful run, the skill produces:
 
 - `/root/projects/phi/CLAUDE.md` — outer orchestrator conventions (gates 1–5, audit-fix tiers, cargo-clean two-placement, doc-sync widened sweep, granular Bash discipline).
 - `/root/projects/phi/baby-phi/CLAUDE.md` — baby-phi-specific overlay.
-- `/root/projects/phi/.claude/agents/chunk-planner.md` (v14) — planner contract + sub-skills it invokes.
-- `/root/projects/phi/.claude/agents/chunk-implementer.md` (v9) — implementer contract.
-- `/root/projects/phi/.claude/agents/chunk-auditor.md` (v8) — auditor contract.
-- `/root/projects/phi/.claude/agents/chunk-retrospector.md` (v4) — retrospector contract.
-- `/root/projects/phi/.claude/skills/chunk-archive-plan.md` — produces `<cycle folder>/plan.md` + cycle-index row.
-- `/root/projects/phi/.claude/skills/chunk-template-fill.md` — used by planner to bootstrap the 12-section plan.
-- `/root/projects/phi/.claude/skills/audit-envelope-size.md` — sizes the auditor count.
-- `/root/projects/phi/.claude/skills/phi-core-leverage-check.md` — phi-core reuse compliance check.
-- `/root/projects/phi/.claude/skills/k8s-readiness-check.md` — K8s posture check (baby-phi only).
-- `/root/projects/phi/.claude/skills/ci-guards-run.md` — runs the 4 CI guards (baby-phi).
-- `/root/projects/phi/.claude/skills/permissions-audit.md` — used by retrospector at §3.5.
+- `/root/projects/phi/.claude/agents/chunk-planner.md` (v15) — planner contract + sub-skills it invokes.
+- `/root/projects/phi/.claude/agents/chunk-implementer.md` (v10) — implementer contract.
+- `/root/projects/phi/.claude/agents/chunk-auditor.md` (v9) — auditor contract.
+- `/root/projects/phi/.claude/agents/chunk-retrospector.md` (v5) — retrospector contract.
+- `/root/projects/phi/.claude/skills/chunk-archive-plan/SKILL.md` — produces `<cycle folder>/plan.md` + cycle-index row.
+- `/root/projects/phi/.claude/skills/chunk-template-fill/SKILL.md` — used by planner to bootstrap the 12-section plan.
+- `/root/projects/phi/.claude/skills/audit-envelope-size/SKILL.md` — sizes the auditor count.
+- `/root/projects/phi/.claude/skills/phi-core-leverage-check/SKILL.md` — phi-core reuse compliance check.
+- `/root/projects/phi/.claude/skills/k8s-readiness-check/SKILL.md` — K8s posture check (baby-phi only).
+- `/root/projects/phi/.claude/skills/ci-guards-run/SKILL.md` — runs the 4 CI guards (baby-phi).
+- `/root/projects/phi/.claude/skills/permissions-audit/SKILL.md` — used by retrospector at §3.5.
 - `/root/projects/phi/baby-phi/docs/specs/v0/implementation/m5_1/process/per-chunk-planning-template.md` — canonical 12-section plan template.
 - `/root/projects/phi/baby-phi/docs/specs/plan/build/_cycle-index.md` — baby-phi cycle-index format reference.
 - `/root/projects/phi/baby-phi/docs/specs/plan/build/ch-17-*/cycle-audit.md` — example cycle-audit shape.
@@ -361,9 +361,5 @@ On a successful run, the skill produces:
 
 ## Follow-up TODOs (deferred to next cycle)
 
-- Update `chunk-planner` v14 → v15 to honour `$PROJECT_ROOT` parameter (default baby-phi).
-- Update `chunk-implementer` v9 → v10 similarly.
-- Update `chunk-auditor` v8 → v9 similarly.
-- Update `chunk-retrospector` v4 → v5 similarly.
 - Create the i-phi forward-scope file structure (currently TBD).
 - Decide on i-phi's CI guard set as the project matures past CH-01.

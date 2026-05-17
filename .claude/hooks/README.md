@@ -155,7 +155,7 @@ Schema versioning: `version: 1`. Bump on breaking changes; the audit skill shoul
 
 **Fail-safe contract:** if anything goes wrong (jq missing, flock contention, disk full, malformed envelope), the script still exits 0. Logging is best-effort; the workflow is sacred.
 
-**Consumed by:** `.claude/skills/permissions-audit.md` at retro time. The skill reads + filters by cycle window + cross-references against `settings.json` rules + emits the §A–§H markdown report that lands in §3.5 of the cycle retrospective.
+**Consumed by:** `.claude/skills/permissions-audit/SKILL.md` at retro time. The skill reads + filters by cycle window + cross-references against `settings.json` rules + emits the §A–§H markdown report that lands in §3.5 of the cycle retrospective.
 
 **Testing the script:**
 
