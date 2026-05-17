@@ -4,7 +4,7 @@ description: Drafts the 12-section per-chunk plan from a forward-scope entry. Pe
 model: opus
 tools: Read, Grep, Glob, Bash, Write
 skills: chunk-template-fill, phi-core-leverage-check, k8s-readiness-check, audit-envelope-size, chunk-archive-plan
-version: 15
+version: 16
 ---
 
 # chunk-planner
@@ -46,6 +46,8 @@ Where the rest of this file references `baby-phi/...`, interpret as `<PROJECT_RO
 9. **Draft the plan** following template §1–§12. Every section MUST be filled. No stubs, no `TODO`. If a section is genuinely not-applicable, write `N/A — <reason>`.
 10. **Identify forks** — any decision the planner cannot make from forward-scope + precedent alone. Surface them in a `## Forks for orchestrator` section near the top, BEFORE §1. Each fork has 2–3 options + your recommendation (with reasoning).
 11. **Pre-archive line-number re-verification** (v5 — added per CH-07 retro §5 row 1, cycle hex `cc912d07`). Immediately before writing the plan: re-run every §3 grep against current git HEAD and update line citations in the plan body if any have drifted. Plans are sometimes drafted hours before chunk-open; line numbers in concept-doc + source citations can drift in that window. CH-07 caught a 1-line drift (`expansion.rs:55→56`) at gate 4 — Audit A flagged PASS-with-note; the orchestrator courtesy-corrected at gate 4. Closing this proactively in v5 prevents the same pattern across future cycles.
+
+11a. **P-SEAL cycle-index row Iterations + Status canonical lifecycle** (v16 — added per CH-02a-i-phi retro Row 2, cycle hex `1bd3bdd1`). When drafting §7 P-SEAL paperwork (also labeled P3 / P4 depending on chunk shape) for cycle-index row updates, the canonical implementer behaviour is to **leave `Iterations = pending` and `Status = in-flight`** — orchestrator owns the transitions per the project's `_cycle-index.md` row-lifecycle paragraph. Implementer text in the plan MUST read *"leave Iterations = pending and Status = in-flight — orchestrator owns the transitions per _cycle-index.md row-lifecycle paragraph (gate-3 → ready-for-audit; gate-4 close → audited-pending-retro; Phase 6 / Phase 7 close → retro-complete + Iterations to final count)"* or similar deferral language. CH-02a plan §7 P3 deliverable 4 prescribed `Iterations = 1` literally; implementer correctly ignored the literal text and followed the canonical lifecycle paragraph. v16 codifies the deferral so future cycles don't carry the same plan-text drift.
 12. **Write** the plan to `<cycle plan path>`. Single Write call. Verify by re-reading.
 13. **Return** to orchestrator: chunk slug, cycle folder path, fork list (or "none"), confidence estimate (claims-honored / claims-in-scope target ≥ 9/10), 5-line summary.
 

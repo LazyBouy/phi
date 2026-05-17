@@ -83,6 +83,7 @@
       "Bash(stat *)",
       "Bash(cat *)",
       "Bash(diff *)",
+      "Bash(ps *)",
       "Read(/**)",
       "Read(//root/.claude/agents/**)",
       "Read(//root/.claude/skills/**)",
