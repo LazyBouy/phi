@@ -4,7 +4,7 @@ description: Drafts the 12-section per-chunk plan from a forward-scope entry. Pe
 model: opus
 tools: Read, Grep, Glob, Bash, Write
 skills: chunk-template-fill, phi-core-leverage-check, k8s-readiness-check, audit-envelope-size, chunk-archive-plan
-version: 17
+version: 18
 ---
 
 # chunk-planner
@@ -183,6 +183,36 @@ Mechanical procedure:
 **Failure-mode codified**: CH-25 P0 did NOT run the phi-core HEAD delta enumeration. At P-NEW-TESTS implementation time, implementer discovered `phi-core HEAD d6f6998` added `response_format: ResponseFormat` to `AgentLoopConfig` (0.7.0 structured-output feature). Implementer applied carrier-fix at `launch.rs:567` setting `ResponseFormat::default()` (= Text, preserves prior behaviour). Implementer initially framed as "out-of-scope phi-core WIP-state breakage" — orchestrator re-classified at gate-3 dispatch as routine cross-submodule API integration. v14 codifies the pre-flight check so future cycles surface required carrier-fixes at plan-draft time, NOT as mid-flight deviations.
 
 **Operational note** (CH-25 user-provided context, surfaced at gate-5 retrospective): phi-core 0.7.0 is published to crates.io; baby-phi MAY migrate from git-submodule to `phi-core = "0.7.0"` dependency to isolate from phi-core HEAD churn. This is a separate architectural decision (NOT a v14 standards-update); track as a forward-routing candidate for M6 plan-open OR a dedicated M5.3 carve-out chunk.
+
+### Handler-refactor cascade CheckContext-build cost addendum (v18 — added per CH-26 retro Row 1, cycle hex `d1cb9e1f`; closes CH-26 mid-cycle scope-revision pattern)
+
+When a chunk's deliverables refactor ≥ 2 handlers to invoke `check_permission` (or any Permission-Check engine entry point) from a bespoke-gated baseline, the planner MUST enumerate each handler's **CheckContext-build cost** at plan-time. Default per-handler cost estimate: **~1.5-2 engineer-days per handler**, decomposed as:
+
+- `Manifest` construction (ResourceRef + Action + Subject wiring): ~0.5-1 ed per handler.
+- Bespoke-gate threading (preserving the existing gate as defence-in-depth or routing the engine's verdict to the bespoke surface): ~0.5-1 ed per handler.
+- Metric injection (e.g., `NoopMetrics` or `default()` parameter): ~0.1-0.2 ed per handler.
+- Acceptance-suite blast-radius (per-handler test rebuild): ~0.3-0.5 ed per handler.
+
+Plan §7 phase scoping MUST absorb this cost. **If the WIDE-handler-refactor scope spans ≥ 7 handlers, the cycle SHOULD be split** (e.g., ship advisory-only invocations in cycle N + blocking-gate tightening in cycle N+1) BEFORE plan-locking, NOT discovered mid-cycle.
+
+**Failure-mode codified**: CH-26 F1.b WIDE planner v2 estimate was ~5 ed across ≥ 7 handlers; actual was ~12-15 ed. CheckContext-build cost per handler (~1.5-2 ed) compounded over 7 handlers to ~10-14 ed, exceeding v2 estimate by 2-3×. Implementer surfaced at Partial-P2 boundary; user-routed to advisory-only F1.b + NEW CH-27 carve-out. v18 codifies the cost framework so future cycles surface the split-decision at plan-time rather than mid-cycle.
+
+### Composite-resource extension fork-pattern reference table (v18 — added per CH-26 retro Row 2, cycle hex `d1cb9e1f`)
+
+When the chunk introduces a NEW Composite variant + needs to back the variant with an instance-identity discovery mechanism, the gate-1 fork is typically one of three patterns. Surface ALL three at gate-1 with this reference table:
+
+| Path | Effort | Pros | Cons | Precedent |
+|---|---|---|---|---|
+| (a) Catalogue-entry-only | ~0.5-0.8 ed | Single migration body; reuses existing `seed_catalogue_entry_for_composite` callsite; URI-keyed lookup remains canonical | Less-visible (catalogue is separate doc surface); cross-pod state symmetry already in place via SurrealDB | CH-09 / CH-10 / CH-16 catalogue path |
+| (b) Tag-field-on-struct + backfill migration | ~1.5-2 ed | Wire-format-explicit (tag on the row); easier to grep + audit; matches existing 5-node-type precedent (Session/Memory/Channel/AgentCredential `.tags`) | Larger fixture-cascade (every test-mode Org/Project struct-literal needs `tags: vec![]`); 2 migration concerns (column + backfill) | CH-26 (F2.b) — first usage |
+| (c) Hybrid (tag-field + catalogue-seed at-creation-time) | ~1.5-2.5 ed | Combines visibility + discovery + at-creation-time idempotence; defensive against future schema drift | Highest cost; double-source for instance-identity (tag + catalogue) | CH-26 §D61.4 (combination shipped) |
+
+**Default recommendation framework**:
+- **(a)** for ≤ 2 cross-cutting concerns
+- **(b)** for cross-cutting concerns needing wire-format-explicit state
+- **(c)** for load-bearing-philosophy resources (Org/Project, future Tenant, future User)
+
+**Failure-mode codified**: CH-26 F2.b user-locked path (b) over planner v1 F2.a path (a). Both work; the tradeoff was implicit at gate-1. Codifying the matrix surfaces the choice up-front, reducing planner v→user-lock friction. Honors the 83% cumulative cross-cycle divergence pattern (user consistently prefers wire-format-explicit options) while still surfacing all 3 paths.
 
 ### Plan-time precision triad (v13 — added per CH-24 retrospective Rows 1+2+3, cycle hex `5778bb77`; 4-cycle pattern at planner-tier for plan-text precision; closes Audit-A #1+#2+#3 + Audit-C #1+#4)
 

@@ -4,7 +4,7 @@ description: Executes phases per an approved chunk plan. Runs tests, clippy, fmt
 model: opus
 tools: Read, Edit, Write, Bash, Grep, Glob
 skills: ci-guards-run, phi-core-leverage-check
-version: 11
+version: 12
 ---
 
 # chunk-implementer
@@ -62,7 +62,15 @@ When the plan's final phase is "ADR Accepted + drift closed + concept-doc bump +
 6. **CI guards** — invoke skill `ci-guards-run`. All 4 must exit 0.
 7. **Final test run** — full workspace + integration suites.
 8. **Cycle-index row insertion** (added v7 per CH-17 retro Row 4; refined v9 per CH-25 retro Row 2) — add a row for this cycle to `/root/projects/phi/baby-phi/docs/specs/plan/build/_cycle-index.md` "Active cycles" table. Verification: `grep -n <cycle-hex> /root/projects/phi/baby-phi/docs/specs/plan/build/_cycle-index.md` must return ≥ 1 hit. **(v9 paperwork sub-item — explicit per CH-25 retro Row 2)**: ALSO prepend a NEW verified-header line at the TOP of `_cycle-index.md` describing this chunk-seal (above the prior cycle's verified-header line). Format mirrors the prior CH-NN-stamped header lines: `<!-- Last verified: YYYY-MM-DD by Claude Code (CH-NN-<hex> chunk-seal: ...) -->`. Two-step verification: (a) `grep -n <cycle-hex> _cycle-index.md` returns ≥ 1 hit (the row); (b) `head -1 _cycle-index.md | grep -c <cycle-hex>` returns 1 (the verified-header prepend). Failure-mode CH-25 hit: implementer-spawn that runs the seal phase forks attention to scope-expansion phases (P-FLIP-RECENT-SESSIONS / P-R5-INVESTIGATE etc.) and skips the verified-header prepend — orchestrator-applied Trivial-1L closed inline at gate-3. NOT an implicit follow-on of plan §7 P-seal; explicit MANDATORY paperwork item. **Trivial-1L recurrence**: CH-25 was the 1st cycle to surface this Trivial-1L since CH-17 (3-cycle delta). v9 codifies the two-step verification so future cycles never re-incur the Trivial-1L for this surface.
-9. **Report** chunk-close: final test count, all CI guards green, paperwork files touched, cycle-index row added + cycle-index top verified-header line prepended.
+8a. **Cardinality-reference + section-anchor cascade greps (added v12 per CH-26 retro Rows 3+4, cycle hex `d1cb9e1f`)** — when the chunk flips an enum/struct cardinality (e.g., `Composite::ALL.len()` 8 → 10, `EDGE_KIND_NAMES.len()` 71 → 72, `Action::CANONICAL.len()` 33 → 34) AND/OR changes a concept-doc section anchor (e.g., `#composite-classes-8` → `#composite-classes-10`), grep + update the cross-references BEFORE marking P-SEAL complete:
+
+   - **Cardinality-reference cascade grep**: `git -C /root/projects/phi/baby-phi grep -nE '[0-9]+ (Composite|Fundamental|EdgeKind|Action) (variants|kinds)' modules/crates/ docs/` — verify all matches reflect the new cardinality. Cardinality refs frequently live in `_concept-audit-matrix.md` matrix-table rows that are NOT in plan §3.C's touch map. CH-26 Audit-B Side Observation 1 surfaced `_concept-audit-matrix.md:25` "8 Composite" → "10 Composite" as Trivial-1L; v12 catches this at P-SEAL.
+
+   - **Section-anchor cross-reference cascade grep**: `git -C /root/projects/phi/baby-phi grep -nE '#(composite-classes|edge-kinds|action-canonical|fundamental-classes)-[0-9]+' docs/` — verify all matches reflect the new anchor. CH-26 Audit-B Side Observation 2 surfaced `permissions/01-resource-ontology.md:189` `#composite-classes-8` cross-ref stale post-cardinality-flip; orchestrator-applied Trivial-multi (2-line patch). v12 catches this at P-SEAL.
+
+   - **Both greps are no-op if the chunk doesn't flip cardinality / change anchors.** Run them anyway as a P-SEAL hygiene step; cost is < 5 seconds; recurrence prevention.
+
+9. **Report** chunk-close: final test count, all CI guards green, paperwork files touched, cycle-index row added + cycle-index top verified-header line prepended + cardinality-reference + section-anchor cascade greps clean.
 
 > **Disk reclamation (refined v8 per CH-18 retro Row 1, USER DIRECTIVE 2026-05-10, cycle hex `c77937bc`)**: cargo-clean now runs at TWO placements: (1) immediately after each `cargo test --workspace` invocation per phase-boundary discipline above (NEW per CH-18), AND (2) the orchestrator runs a final `cargo clean` as the closing step of gate-5 close (after standards updates landed, retrospective written, cycle-index flipped to retro-complete) per CH-17 retro Row 1. The chunk-implementer is responsible for placement (1); the orchestrator owns placement (2). See repo CLAUDE.md §"Orchestrator's gates" gate-2 + gate-5 for the full narrative.
 
