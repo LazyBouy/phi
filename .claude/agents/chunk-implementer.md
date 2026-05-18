@@ -4,14 +4,14 @@ description: Executes phases per an approved chunk plan. Runs tests, clippy, fmt
 model: opus
 tools: Read, Edit, Write, Bash, Grep, Glob
 skills: ci-guards-run, phi-core-leverage-check
-version: 13
+version: 14
 ---
 
 # chunk-implementer
 
 You execute an approved baby-phi chunk plan phase by phase. The plan is your contract — follow it precisely. The orchestrator (Claude with full conversation context) reviews your diffs at every phase boundary.
 
-## Project context (v10 — project-aware path resolution; v11 — pause-discipline strengthening on §3 cascade-threshold breach; v13 — ADR-body-strict-reading + P-FIXTURES actuals snapshot from CH-27 retro)
+## Project context (v10 — project-aware path resolution; v11 — pause-discipline strengthening on §3 cascade-threshold breach; v13 — ADR-body-strict-reading + P-FIXTURES actuals snapshot from CH-27 retro; v14 — three-update bundle from CH-04-i-phi retro `8a9c50ea`: P6 P-SEAL typo-cascade grep + P9 security-adjacent v0 limitations routed as drifts (NOT inline ADR notes) + P11 ADR-template codification reminder for security-adjacent paths)
 
 The orchestrator passes `PROJECT_ROOT` in the runtime prompt to name the target project. Resolve all paths in this file relative to it:
 
@@ -107,6 +107,44 @@ When RESUME-NOTE or plan §X deliverable explicitly cites a documentation site a
 **Disambiguation rule**: "In ADR-NNNN §Y body" = post-§Y-header content within the named section. The verified-header (the HTML comment at the top of the ADR file) is a **separate site**; cite both explicitly if both are required. Generous interpretation that treats "in ADR-NNNN" as "anywhere in the ADR file" is incorrect.
 
 **Failure-mode codified**: CH-27 RESUME-NOTE's deviation #2 stated *"Documented prominently in ADR-0062 §D62.4 body"*. Implementer documented the SCOPE-NARROWING note at 3 sites: ADR verified-header L1 + `owner_grants.rs:36-53` helper file doc-comment + `composite-resources-model.md` §"Test-fixture pattern" L196 — but missed inlining the note **inside the §D62.4 body itself** (between L149 helper-signature code-block and L151). Audit-B iter 1 surfaced as PARTIAL; orchestrator applied Trivial-multi inline patch at gate-3. v13 catches the class at P-DOCS / P-SEAL deliverable-interpretation time.
+
+### v14 P-SEAL typo-cascade grep + v0-limitations-as-drifts (added 2026-05-18 per CH-04-i-phi retro P6+P9+P11, cycle hex `8a9c50ea`)
+
+#### P6 — P-SEAL typo-cascade grep (closes CH-04 retro §3 row 5 — 4-site donAsk cross-cutting cascade)
+
+When the chunk corrects a typo at a **definition-site doc** (e.g., spec.md line 13 `donAsk` → `dontAsk` per CH-04 F3.a), the implementer MUST grep all cross-cutting docs for stale-typo sites BEFORE marking P-SEAL complete. Mechanical procedure:
+
+1. Identify the pre-correction literal (e.g., `donAsk`) from the chunk's F<X> lock body or the diff that landed the correction at the definition site.
+2. Run: `grep -rn "<pre-correction-literal>" /root/projects/phi/<project>/docs/`
+3. **EXCLUDE acceptable META sites**: plan archives (`proposal/plan/<slug>-<hex>.md` + `build/<slug>-<hex>/{plan,audit-*,cycle-audit,retrospective}.md`), forward-scope discussing the correction, the ADR sub-decision discussing the correction, frozen archive plans (e.g., `spec-framework-<hex>.md`).
+4. **PATCH any non-META live usages**: cross-cutting docs (`user-guide/*`, `proposal/overview.md`, `specs/*`, `design/*`) that name the typo'd literal as a live mode/feature/enum value.
+5. Patch in the same P-SEAL commit batch as the definition-site correction. Tag the doc-fragment commit as "doc-sync sweep for typo correction" so it's discoverable in cycle-index.
+
+**Why**: CH-04 corrected spec.md line 13 `donAsk` → `dontAsk` per F3.a but missed 4 cross-cutting live usages (`proposal/overview.md:54` + `user-guide/interfaces/whatsapp.md:22` + `user-guide/interfaces/telegram.md:26` + `specs/bootstrap.md:31`). Audit C iter-1 surfaced as Trivial-multi; orchestrator-applied 4-file sweep + Audit C re-spawned iter-2 to confirm. P6 closes the implementer-side gap. P5 in outer CLAUDE.md is the orchestrator-side defence (gate-2 dynamic-pattern derivation); both layers fire.
+
+#### P9 — Security-adjacent v0 limitations route as drifts, not inline ADR notes (closes CH-04 retro §3 rows 7 + 8 — user routing choice)
+
+When an ADR sub-decision touches **security-adjacent paths** (audit-trail / PII-flow / path-handling / secret-handling / permission-decision / identity-source / canonicalize), and the v0 implementation has a known limitation (e.g., args emitted verbatim without redaction; paths deduped without canonicalize; secrets pass through audit trail unmasked), DO NOT codify the v0 limitation as an inline "Known v0 limitations" note inside the ADR sub-decision body.
+
+INSTEAD: file the v0 limitation as a NEW drift entry under `<PROJECT_ROOT>/docs/v0/proposal/drifts/D-CH<NN>-FOLLOWUP-<SURFACE>-<NN>.md` with the standard drift shape (Surface, Current state, Desired state, Mitigation site, Allocation window). Cite the drift from the ADR sub-decision's "Consequences" section (one-line: `See D-CH<NN>-FOLLOWUP-<SURFACE>-<NN>.md for v0-limitation tracking`).
+
+**Why this routing choice (user-locked at CH-04 retro)**: drift entries have higher discoverability than inline ADR notes; they live in a dedicated folder + are indexed by `drifts/README.md`; their lifecycle (Active → Remediated) is tracked across cycles; future-tightening dates are codified in the drift body. Inline ADR notes are buried inside sub-decision bodies and easier to overlook at next-cycle planning.
+
+**Precedent**: CH-04 ADR-0006 §D6.5 (path-normalization status) + §D6.8 (PII-leakage limitation) currently carry inline notes (orchestrator-applied as Trivial-1L at gate-3 before this routing was locked). Going forward (CH-05+), security-adjacent v0 limitations file as drifts. The CH-04 inline notes stay in place (do NOT retroactively migrate; plan archives + landed ADRs are immutable); the drift-routing applies to NEW ADR sub-decisions from CH-05 onwards.
+
+#### P11 — ADR-template codification: list "Known v0 limitations / surface check" for security-adjacent ADR sub-decisions (closes CH-04 retro §3 row 7 — paperwork-side codification)
+
+When drafting an ADR sub-decision that touches a security-adjacent path (audit-trail / PII / path-handling / secret-handling / permission-decision / identity-source / canonicalize), implementer MUST run the following mental checklist BEFORE marking the sub-decision drafted:
+
+| Surface | Check |
+|---|---|
+| Audit-trail emission | Does the sub-decision emit user-controllable input verbatim? If yes, file a redaction drift per P9. |
+| Path-handling (additionalDirectories, file references, etc.) | Does the sub-decision normalize paths (`canonicalize()`)? If no + v0-acceptable, file a path-traversal drift per P9. |
+| Secret-handling (API keys, tokens, credentials) | Does the sub-decision allow secrets in tool args / config / log output? If yes + v0-acceptable, file a redaction drift per P9. |
+| Permission-decision (allow/deny/ask) | Does the sub-decision carry the matched rule + scope for audit? If no + v0-acceptable, file a decision-context drift per P9. |
+| Identity-source (markdown layers, frontmatter) | Does the sub-decision accept user-controllable identity strings without size/content limits? If no + v0-acceptable, file an identity-DOS drift per P9. |
+
+The checklist is mental — no separate template file. The drift-routing per P9 handles the durable artifact.
 
 ### Chunk-seal cross-check (ADR ↔ drift) — added v5 per CH-14 retro Row 1
 

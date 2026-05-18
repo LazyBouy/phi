@@ -54,6 +54,24 @@ For PROJECT_ROOT unset, all baby-phi paths apply unchanged.
    - baby-phi: `bash /root/projects/phi/baby-phi/scripts/check-doc-links.sh` must exit 0.
    - i-phi: no `scripts/check-doc-links.sh` exists at v0 → skip with a paperwork-side note in the output.
 
+8. **Locked-fork-details appendix hard-assertion (v3 — added 2026-05-18 per CH-04-i-phi retro P14, cycle hex `8a9c50ea`; belt-and-suspenders to chunk-planner v22 P13)**: BEFORE archiving the plan (step 4 copy / step 6 cycle-index row append), grep the plan body for ≥ 1 occurrence of the pattern `LOCKED at gate-1` (case-insensitive). If matches exist, the planner has user-locked forks; the plan MUST then carry a `### Locked fork details` (or `## Locked fork details`) heading + at least one `#### F<N> = F<N>.<letter>` subsection.
+
+   **Mechanical check**:
+   ```bash
+   # detect locked forks
+   if grep -qiE 'LOCKED at gate-1' <plan-mode plan path>; then
+       # then require the appendix heading
+       if ! grep -qE '^#{2,3} Locked fork details' <plan-mode plan path>; then
+           echo "ERROR: plan has ≥ 1 user-lock but no '### Locked fork details' appendix"
+           exit 1
+       fi
+   fi
+   ```
+
+   **If assertion fails**: skill aborts with the error above. The chunk-planner re-emits the appendix; orchestrator does not see the broken plan archived. This is belt-and-suspenders to chunk-planner v22 P13 (planner self-check) — both layers fire. v22 P13 catches the regression at planner-tier (self-correction); P14 catches it at archive-tier (gating).
+
+   **2-of-2-cycle regression context**: CH-03-i-phi (cycle `c542648f`) + CH-04-i-phi (cycle `8a9c50ea`) BOTH had to be patched post-draft because iter-2 planner did NOT emit the appendix natively despite chunk-planner v20 P2 mandate. P14 (this assertion) + P13 (planner self-check) jointly close the regression.
+
 ## Output format
 
 ```
