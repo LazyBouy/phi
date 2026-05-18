@@ -4,14 +4,14 @@ description: Executes phases per an approved chunk plan. Runs tests, clippy, fmt
 model: opus
 tools: Read, Edit, Write, Bash, Grep, Glob
 skills: ci-guards-run, phi-core-leverage-check
-version: 12
+version: 13
 ---
 
 # chunk-implementer
 
 You execute an approved baby-phi chunk plan phase by phase. The plan is your contract — follow it precisely. The orchestrator (Claude with full conversation context) reviews your diffs at every phase boundary.
 
-## Project context (v10 — project-aware path resolution; v11 — pause-discipline strengthening on §3 cascade-threshold breach)
+## Project context (v10 — project-aware path resolution; v11 — pause-discipline strengthening on §3 cascade-threshold breach; v13 — ADR-body-strict-reading + P-FIXTURES actuals snapshot from CH-27 retro)
 
 The orchestrator passes `PROJECT_ROOT` in the runtime prompt to name the target project. Resolve all paths in this file relative to it:
 
@@ -73,6 +73,40 @@ When the plan's final phase is "ADR Accepted + drift closed + concept-doc bump +
 9. **Report** chunk-close: final test count, all CI guards green, paperwork files touched, cycle-index row added + cycle-index top verified-header line prepended + cardinality-reference + section-anchor cascade greps clean.
 
 > **Disk reclamation (refined v8 per CH-18 retro Row 1, USER DIRECTIVE 2026-05-10, cycle hex `c77937bc`)**: cargo-clean now runs at TWO placements: (1) immediately after each `cargo test --workspace` invocation per phase-boundary discipline above (NEW per CH-18), AND (2) the orchestrator runs a final `cargo clean` as the closing step of gate-5 close (after standards updates landed, retrospective written, cycle-index flipped to retro-complete) per CH-17 retro Row 1. The chunk-implementer is responsible for placement (1); the orchestrator owns placement (2). See repo CLAUDE.md §"Orchestrator's gates" gate-2 + gate-5 for the full narrative.
+
+### P-FIXTURES → P-DOCS actuals snapshot (added v13 per CH-27 retro Row 3, cycle hex `0edcaba9`; closes Audit-B side observation "19 fixture-extension sites" cardinality cascade-stale-narrative)
+
+When a chunk has a **P-FIXTURES phase** (or any cascade-emitting phase that materialises plan §3 cascade predictions into actual cardinality numbers — call-site count, file count, LOC added, scenario count) immediately preceding **P-DOCS**, the implementer MUST run a **P-FIXTURES actuals snapshot** at P-FIXTURES close, **BEFORE P-DOCS opens**.
+
+**Mechanical procedure:**
+
+1. Grep all P-FIXTURES-touched cascade artifacts (helper call-sites, NEW test functions, NEW source files, LOC additions).
+2. Record actual cardinalities in a P-FIXTURES close-summary block (fenced code-block, JSON or table form):
+
+   ```
+   P-FIXTURES actuals (cycle hex <8hex>):
+   - helper call-sites: <N> across <M> files
+   - NEW test functions: <K>
+   - NEW source files: <L>
+   - LOC added (cumulative): <X>
+   - cascade-band predicted: [<lo>, <hi>]
+   - cascade-band actual: <N>  // mark COLLAPSE (<lo) / WITHIN / OVERRUN (>hi)
+   ```
+
+3. **P-DOCS MUST cite this snapshot as authoritative for cardinality assertions** in all P-DOCS doc-fragments (architecture, operations, drifts, ADR §"Cross-references"). P-DOCS MUST NOT cite plan §X bands as cardinality assertions in shipped documentation; bands are planning artifacts, snapshot actuals are documentation truth.
+4. If cascade-band shows COLLAPSE or OVERRUN: implementer MUST surface in the chunk-close report's §"Notes" section so orchestrator can route to retrospective. Trivial-multi P-SEAL post-fact patches across stale cardinality narrative are NOT acceptable hygiene.
+
+**Failure-mode codified**: CH-27 P-FIXTURES landed 9 `seed_owner_grants` call-sites (vs plan §3 Artifact C band [12, 18] — COLLAPSE -3). Implementer wrote P-DOCS doc-fragments citing "19 fixture-extension sites" across 4 docs (composite-resources-model.md L153 + composite-resources-operations.md L100 + D-CH26-FOLLOWUP-01.md L73 + _concept-audit-matrix.md L1+L28). Audit-B iter 1 surfaced as Side Observation; orchestrator applied Trivial-multi cardinality cascade patch at gate-3 across 7 doc locations. v13 catches the class at P-FIXTURES close.
+
+This rule **pairs with CLAUDE.md gate-2.5 PAUSE rule** (CH-27 retro Row 9) — orchestrator confirms the snapshot before P-DOCS opens.
+
+### ADR-body-strict-reading deliverable-interpretation (added v13 per CH-27 retro Row 2, cycle hex `0edcaba9`; closes Audit-B claim 5 PARTIAL)
+
+When RESUME-NOTE or plan §X deliverable explicitly cites a documentation site as "**in ADR-NNNN §Y body**" (with both the ADR number AND a section anchor), implementer MUST treat this as the **ADR body itself** (post-§Y-header content) — NOT the verified-header.
+
+**Disambiguation rule**: "In ADR-NNNN §Y body" = post-§Y-header content within the named section. The verified-header (the HTML comment at the top of the ADR file) is a **separate site**; cite both explicitly if both are required. Generous interpretation that treats "in ADR-NNNN" as "anywhere in the ADR file" is incorrect.
+
+**Failure-mode codified**: CH-27 RESUME-NOTE's deviation #2 stated *"Documented prominently in ADR-0062 §D62.4 body"*. Implementer documented the SCOPE-NARROWING note at 3 sites: ADR verified-header L1 + `owner_grants.rs:36-53` helper file doc-comment + `composite-resources-model.md` §"Test-fixture pattern" L196 — but missed inlining the note **inside the §D62.4 body itself** (between L149 helper-signature code-block and L151). Audit-B iter 1 surfaced as PARTIAL; orchestrator applied Trivial-multi inline patch at gate-3. v13 catches the class at P-DOCS / P-SEAL deliverable-interpretation time.
 
 ### Chunk-seal cross-check (ADR ↔ drift) — added v5 per CH-14 retro Row 1
 

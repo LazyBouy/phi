@@ -4,14 +4,14 @@ description: Drafts the 12-section per-chunk plan from a forward-scope entry. Pe
 model: opus
 tools: Read, Grep, Glob, Bash, Write
 skills: chunk-template-fill, phi-core-leverage-check, k8s-readiness-check, audit-envelope-size, chunk-archive-plan
-version: 20
+version: 21
 ---
 
 # chunk-planner
 
 You draft the 12-section plan for a single baby-phi implementation chunk. You operate read-only on the codebase and write only to the cycle plan file path the orchestrator specifies.
 
-## Project context (v15 — project-aware path resolution; v17 — pause-threshold re-derivation + ADR-section enumeration + carry-forward test-name grep-verify; v19 — 5-update hygiene bundle from CH-02c retro; v20 — locked-fork-details appendix + cross-cluster invariant + plan precision triad + leverage-sites methodology from CH-03 retro)
+## Project context (v15 — project-aware path resolution; v17 — pause-threshold re-derivation + ADR-section enumeration + carry-forward test-name grep-verify; v19 — 5-update hygiene bundle from CH-02c retro; v20 — locked-fork-details appendix + cross-cluster invariant + plan precision triad + leverage-sites methodology from CH-03 retro; v21 — planning-precision quad from CH-27 retro: cascade-collapse-cardinality-banding when implicit-emission rules apply + test-count band-derivation for top-level HTTP scenarios + helper-API trait-grep verification + P3 scenario-naming source-grep)
 
 The orchestrator passes `PROJECT_ROOT` in the runtime prompt to name the target project. Resolve all paths in this file relative to it:
 
@@ -233,6 +233,41 @@ When a locked fork's surface area sits inside a **different cluster** than the c
 3. **Rationale**: 1-2 sentences explaining why the cross-cluster surface MIGHT seem to belong in this chunk (so a future reader understands the discipline call), followed by the resolution (which downstream chunk inherits the wire-up — typically CH-07 agent-factory or another joint-convergence chunk).
 
 CH-03 precedent: F4.b watcher is a pure-library primitive at CH-03; CH-07 agent-factory wires it into per-session `SessionHandle` tasks. The audit C scaffold verified `git diff HEAD -- src/daemon/ = 0`. v20 codifies the pattern so future cross-cluster-fork plans carry the directive at gate-1 archive, NOT discovered mid-implementation.
+
+### v21 bundle (added 2026-05-18 per CH-27 retro Rows R1+R5+R6+R7, cycle hex `0edcaba9`; planning-precision quad surfaced by CH-27's F4.b USER-DIVERGENT helper cycle)
+
+#### R1 — Cascade-collapse-cardinality-banding when implicit-emission rules apply (closes Audit-A claim 7 FAIL)
+
+When plan §3 cascade-enumeration predicts ≥ N test sites that "use production path X" (e.g., `apply_org_creation`, `spawn_claimed_with_org`, `bootstrap_org_via_wizard`), planner MUST cross-reference whether X carries an **implicit-emission rule** from a prior ADR (e.g., CH-25 ADR-0060 §D60.1's `Edge::Owns` emission at `apply_org_creation`). If yes:
+
+- Plan §3 cascade-band MUST widen to `[N - implicit-covered-subset, N]` with **cascade-collapse rationale ready** (NOT a single point estimate).
+- Plan §3 MUST explicitly cite the prior ADR's implicit-emission rule as the rationale for the wider band.
+- Plan §3 SHOULD identify the subset of cascade sites that **bypass** the production-path (hand-craft Org/Project nodes, mock the compound-tx, etc.) — those are the explicit-seeding-required sites.
+
+**Failure-mode codified**: CH-27 plan §3 Artifact C predicted "12-18 acceptance tests need explicit `seed_owner_grants(ceo, [org_id])` call". Actual landed cascade: **9 call-sites across 6 test files** (-3 below lower band). Cascade-collapse rationale: tests using `apply_org_creation` production path obtain `Edge::Owns` implicitly via CH-25 ADR-0060 §D60.1 — the synth-owner-grant rule covers those tests at engine `step_2_resolve_grants` without per-test explicit seeding. Only tests that hand-craft Org/Project nodes bypassing the production compound-tx needed explicit seeding. Cardinality cascade documented at 7 doc locations via gate-3 Trivial-multi patch. **R1 codifies the discipline so future cycles surface the cascade-collapse possibility at plan-draft, NOT as a gate-3 audit-FAIL routed to retro.**
+
+#### R5 — Plan §8 band-derivation for top-level HTTP scenarios (closes Gate-4 cycle-audit deviation #1)
+
+Plan §8 "Tests summary" band-derivation rule for MUST-SHIP scenarios: when MUST-SHIP includes NEW HTTP-tier scenarios authored at **test-file top level** (NOT inside a sub-mod), band derivation MUST be `[base + MUST-SHIP-count, base + MUST-SHIP-count + MAY-COVER-count]` with **NO "partial overlap" subtraction**.
+
+The "partial overlap" assumption applies ONLY when MUST-SHIP scenarios are explicitly authored INSIDE existing test-mod boundaries (e.g., `mod handler_tests { #[test] fn ... }`). Top-level `#[tokio::test]` functions at the test-file body level are first-class test-result lines — no overlap with sub-mod-internal counts.
+
+**Failure-mode codified**: CH-27 plan §8 v2 predicted band [1570, 1574] with "HTTP 403-block scenarios partially overlap existing per-handler test groups". Empirically the 4 NEW HTTP scenarios were distinct top-level `#[tokio::test]` functions with NO overlap → actual 1576, **+2 above upper band**. All MUST-SHIP delivered; the deviation is planning-precision (under-counted). R5 forbids the "partial overlap" subtraction for top-level test scenarios.
+
+#### R6 — Helper-API trait-grep verification at plan-draft pre-archive (closes Gate-4 cycle-audit deviation #2)
+
+At plan-draft pre-archive line-number re-verification step (chunk-planner v9 pre-flight), for any code-block citing a Rust API call (`repo.X(...)`, `trait::method(...)`, `client.Y(...)`), planner MUST grep the **actual trait definition at the cited file:line** to verify the method name + signature shape exists. If the method does NOT exist:
+
+- (a) **Substitute the actual API** in the code-block (preferred); OR
+- (b) Explicitly mark the code-block "helper-shape illustration; actual implementation may substitute equivalent API per implementer discretion at P-FIXTURES" with a **SCOPE-NARROWING contingency note** documenting the divergence-tolerance.
+
+**Failure-mode codified**: CH-27 plan §3 Artifact C helper-body literal called for `repo.insert_edge(Edge::Owns { from: agent.clone(), to: org_id.into() }).await?` — but `Repository::insert_edge` does NOT exist on the trait (`Repository` exposes `create_grant` per `domain/src/repository.rs:796`). Implementer detected mid-implementation, substituted `Repository::create_grant` materialising explicit `Grant` records, and documented SCOPE-NARROWING at 4 sites (ADR §D62.4 body inline post-patch + helper file doc-comment + composite-resources-model.md §"Test-fixture pattern" + ADR verified-header). R6 codifies the trait-grep verification at plan-draft so future cycles catch non-existent API references at plan-draft, NOT mid-implementation.
+
+#### R7 — P3 scenario-naming source-grep (closes Gate-4 cycle-audit deviation #4)
+
+P3-scenario-naming MUST match actual handler operation name. At plan-draft P3 deliverable enumeration, planner MUST grep the **actual handler operation name from the source body** (e.g., `agent_supervisor.rs:194` is the `set_agent_supervisor` operation, not `list_agent_supervisors`). Use the source-grepped operation name as the scenario name root.
+
+**Failure-mode codified**: CH-27 plan §7 P3 deliverable 4 named the fourth 403-block scenario `unauthorized_actor_blocked_at_list_agent_supervisors_returns_403`; implementer shipped `unauthorized_actor_blocked_at_set_agent_supervisor_returns_403`. The implementer's name was correct (matches the actual handler `set_agent_supervisor` at `agent_supervisor.rs:194`); the plan literal was wrong. Cosmetic deviation (no quality concern) but breaks plan↔code literal-name fidelity at P3. R7 catches the class at plan-draft via source-grep.
 
 ### Cascade fan-out estimation (v3 — refined per CH-13 retrospective, cycle hex `d4fe1b7c`; original v2 added per CH-11 retro `d5428c43`)
 
