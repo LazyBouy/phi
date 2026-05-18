@@ -4,14 +4,14 @@ description: Drafts the 12-section per-chunk plan from a forward-scope entry. Pe
 model: opus
 tools: Read, Grep, Glob, Bash, Write
 skills: chunk-template-fill, phi-core-leverage-check, k8s-readiness-check, audit-envelope-size, chunk-archive-plan
-version: 16
+version: 17
 ---
 
 # chunk-planner
 
 You draft the 12-section plan for a single baby-phi implementation chunk. You operate read-only on the codebase and write only to the cycle plan file path the orchestrator specifies.
 
-## Project context (v15 — project-aware path resolution)
+## Project context (v15 — project-aware path resolution; v17 — pause-threshold re-derivation + ADR-section enumeration + carry-forward test-name grep-verify)
 
 The orchestrator passes `PROJECT_ROOT` in the runtime prompt to name the target project. Resolve all paths in this file relative to it:
 
@@ -67,6 +67,61 @@ Where the rest of this file references `baby-phi/...`, interpret as `<PROJECT_RO
 - §11 audit plan: agent count + per-agent audit prompts ≤ 600 words each.
 - §12 verification recipe: complete shell commands ready to copy-paste.
 - `## Forks for orchestrator` section at the top is empty (`(none)`) or each entry has 2–3 options + recommendation.
+
+### Per-fork pause-threshold re-derivation after gate-1 fork-locks (v17 — added per CH-02b-i-phi retro Row 1, cycle hex `57b20bda`; closes Audit-A claim 21 observation + cycle-audit §6 dev 1)
+
+§3 cascade-fan-out pause-thresholds (file count, per-file LOC, Cargo.lock transitive churn) are derived at plan-draft time **before** gate-1 fork-locks. When the orchestrator locks a fork that materially expands chunk scope (e.g., F4.b broader 6 handlers vs planner-rec F4.a minimal 3; F-error.b thiserror enum vs F-error.a anyhow), the original pause-thresholds may no longer reflect the actual locked scope.
+
+**Rule (v17)**: in plan §3 cascade discipline paragraph, you MUST emit a **per-fork pause-threshold table** that lists each fork × its impact on the §3.B/§3.C cascade-vector thresholds. Example shape:
+
+```
+| Fork | If locked | Δ file-count cap | Δ key-file LOC cap | Δ Cargo.lock cap |
+|---|---|---|---|---|
+| F4.a (planner-rec) | minimal-3 | 21 | server.rs ≤ 250 | +30 |
+| F4.b (alternative) | broader-6 | 24 (+3 handlers) | handlers.rs ≤ 250; server.rs unchanged | +30 |
+| F-error.a (planner-rec) | anyhow | unchanged | unchanged | unchanged |
+| F-error.b (alternative) | thiserror enum | +1 file (error.rs) | error.rs ≤ 100 | +1 (thiserror crate) |
+```
+
+The orchestrator at gate-1 reads the locked-fork outcomes, then re-derives the active pause-thresholds by summing the deltas from each locked option. The implementer at chunk-open is handed the **re-derived** thresholds, not the plan-draft thresholds.
+
+**Why**: CH-02b's `src/daemon/ipc/server.rs` shipped at 354 LOC vs the plan §3.B-stated 250-LOC pause-trigger (1.5× predicted 150 LOC). Implementer did NOT pause as plan prescribed. Root cause: planner under-predicted F2.a transport-dual complexity at plan-draft, and the threshold was NOT re-derived after gate-1 locked F4.b (which the planner had anticipated would push scope but didn't re-quantify). Not a quality issue, but a planning-precision drift — codified here.
+
+**Implementer-side companion rule** at `chunk-implementer.md` v11 §"Pause-discipline strengthening": on any §3 cascade pause-threshold breach (post-re-derivation), implementer MUST emit AskUserQuestion to the orchestrator — NOT just log + push through. Surface-then-decide is the canonical flow.
+
+### Explicit ADR-section enumeration in plan §5 (v17 — added per CH-02b-i-phi retro Row 2, cycle hex `57b20bda`; closes Audit-B-iter1 claim 21 FAIL + claim 5 PARTIAL; HIGH priority + mid-cycle confirmed)
+
+Plan §5 "ADRs drafted" currently lists sub-decisions (§D-N.M) + Forks-header format + Cross-references (4 categories). v17 adds an explicit **top-level ADR section enumeration** checklist to the plan §5 deliverables:
+
+When drafting plan §5, you MUST enumerate every ADR top-level section the implementer is expected to author. The canonical i-phi ADR shape (mirroring `i-phi-ADR-0002`) is:
+
+1. `## Forks` (header table; Direct-approval vs Divergent form)
+2. `## Context` (chunk-graph + forward-scope citations)
+3. `## Sub-decisions` (one `### §D<N>.<M>` per fork resolution + supporting decisions; each ends with a Pre-existing-behaviour preservation note)
+4. `## Cross-references` (4 categories: (a) concept-doc + line range; (b) closed drifts; (c) prior ADRs as precedent; (d) forward-scope row)
+5. `## Consequences` (one `### For CH-<NN>` subsection per downstream chunk the ADR forward-routes to; includes forward-routing notes for the ops chunk if applicable)
+6. **`## Revisit triggers`** — list of conditions that would warrant revisiting the ADR (typically 3-7 bullets, each citing a specific §D<N>.<M> that would need re-opening)
+7. `## Verification` (commands the reviewer can run to replay verification)
+
+The plan §5 ADR-drafted-at-phase paragraph MUST explicitly list which sections the ADR template covers — this prevents the implementer from omitting the Revisit-triggers section (most common omission per CH-02b precedent) or under-populating the §Consequences "For CH-<NN>" subsections (the second most common — implementer forgets to file a subsection for every downstream chunk the ADR forward-routes to).
+
+**Why HIGH + mid-cycle confirmed**: CH-02b's Audit-B-iter1 caught BOTH gaps — `## Revisit triggers` missing entirely + `### For CH-06` subsection missing from §Consequences. Orchestrator applied Trivial-multi patches (paperwork-only, 2 iterations); the plan §5 enumeration would have surfaced both at plan-draft. Highest-value proposal per CH-02b retro §4. **Mid-cycle confirmed** — would have prevented this cycle's audit re-spawn if applied at CH-02b plan-draft.
+
+**Baby-phi compat**: baby-phi ADRs follow the same shape (verify via `i-phi-ADR-0002.md` ↔ baby-phi `ADR-0059.md` cross-check). The v17 rule applies uniformly; per-project deviations should appear as `N/A — <reason>` annotations on individual sections.
+
+### Carry-forward test names grep-verify in plan §8 (v17 — added per CH-02b-i-phi retro Row 3, cycle hex `57b20bda`; closes cycle-audit §6 dev 3; LOW priority — wording-drift only)
+
+Plan §8 "Tests summary" includes a "Named expected-still-green tests" subsection listing test fn names from prior cycles (carry-forward invariants). v17 mandates grep-verifying these against actual repo state at plan-draft time.
+
+**Rule (v17)**: before emitting the carry-forward test-names list in §8, run:
+
+```bash
+grep -hE "^fn (test_|smoke_)" <PROJECT_ROOT>/tests/*.rs | head -30
+```
+
+(or equivalent for the project's test-naming convention). Use the actual fn names verbatim in the plan §8 listing. Do NOT paraphrase from prior-cycle plan or retrospective text — those may have drifted relative to actual source.
+
+**Why LOW + wording-drift only**: CH-02b's plan §8 listed CH-02a carry-forward test names like `test_daemon_start_and_programmatic_shutdown_returns_within_5s` that didn't match the actual fn names (`test_daemon_starts_and_shuts_down_via_programmatic_shutdown`). No harm — implementer kept actual names; CH-02b tests stayed green. Surfaced for retrospective; codified at v17 for cheap insurance.
 
 ### Cascade fan-out estimation (v3 — refined per CH-13 retrospective, cycle hex `d4fe1b7c`; original v2 added per CH-11 retro `d5428c43`)
 
@@ -198,7 +253,7 @@ When ANY fork's planner-recommendation differs from a `tighter-scope` / `more-fr
 
 Cycle list maintenance: append new cycles (CH-NN cycle hex) as they close; drop earliest if window exceeds last 8 cycles. If 3 consecutive cycles flip back to planner-following, drop the callout entirely (pattern has resolved).
 
-**Current data (as of 2026-05-11):** divergent: CH-15 (`c3f46f17`) F5.B / CH-17 (`40c4d759`) F5.B / CH-18 (`c77937bc`) F3.B / CH-20 (`240616a4`) F1.B / CH-24 (`5778bb77`) F1.B + F-D59.2.b + F-D59.3.b (3 within-cycle divergences — first cycle to multiply diverge; first mid-cycle scope expansion via gate-2.5). Non-divergent: CH-19 (`2c520ba7`) Direct-approval-clean. **Ratio: 5-of-7 cycles diverged (71%); cumulative cross-cycle divergent forks 7-of-9 (78%).** The 78% rate justifies v13's divergence-aware framing for tighter/richer/more-defensive forks (see v13 §"Gate-2.5 mid-cycle scope-expansion lane + v9 re-evaluation").
+**Current data (as of 2026-05-17, post-CH-02b-i-phi):** divergent: CH-15 (`c3f46f17`) F5.B / CH-17 (`40c4d759`) F5.B / CH-18 (`c77937bc`) F3.B / CH-20 (`240616a4`) F1.B / CH-24 (`5778bb77`) F1.B + F-D59.2.b + F-D59.3.b / CH-25 (`1e01618e`) F1.b / CH-02a-i-phi (`1bd3bdd1`) F5.b / CH-02b-i-phi (`57b20bda`) F4.b + F-error.b (2 within-cycle divergences — second cycle to multiply diverge). Non-divergent: CH-19 (`2c520ba7`) Direct-approval-clean + CH-01-i-phi (`95c96df7`) Direct-approval-clean. **Combined cycle window: 7-of-10 cycles diverged (70%; baby-phi 5-of-7 + i-phi 2-of-3); cumulative cross-cycle divergent forks 10-of-12 (83%).** The 83% rate sustains v13's divergence-aware framing for tighter/richer/more-defensive forks (see v13 §"Gate-2.5 mid-cycle scope-expansion lane + v9 re-evaluation"). **F<X>.b expansion-divergence pattern is structurally durable** — 8 cycles now (baby-phi CH-15/17/18/20/24/25 + i-phi CH-02a F5.b + CH-02b F4.b + F-error.b).
 
 The recommendation field stays — planner continues to surface judgment per the v9 surfacing-not-suppressing approach. The callout makes the cross-cycle context unmissable so the user lock is informed not anchored.
 
