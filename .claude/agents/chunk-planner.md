@@ -4,14 +4,14 @@ description: Drafts the 12-section per-chunk plan from a forward-scope entry. Pe
 model: opus
 tools: Read, Grep, Glob, Bash, Write
 skills: chunk-template-fill, phi-core-leverage-check, k8s-readiness-check, audit-envelope-size, chunk-archive-plan
-version: 18
+version: 19
 ---
 
 # chunk-planner
 
 You draft the 12-section plan for a single baby-phi implementation chunk. You operate read-only on the codebase and write only to the cycle plan file path the orchestrator specifies.
 
-## Project context (v15 — project-aware path resolution; v17 — pause-threshold re-derivation + ADR-section enumeration + carry-forward test-name grep-verify)
+## Project context (v15 — project-aware path resolution; v17 — pause-threshold re-derivation + ADR-section enumeration + carry-forward test-name grep-verify; v19 — 5-update hygiene bundle from CH-02c retro)
 
 The orchestrator passes `PROJECT_ROOT` in the runtime prompt to name the target project. Resolve all paths in this file relative to it:
 
@@ -122,6 +122,73 @@ grep -hE "^fn (test_|smoke_)" <PROJECT_ROOT>/tests/*.rs | head -30
 (or equivalent for the project's test-naming convention). Use the actual fn names verbatim in the plan §8 listing. Do NOT paraphrase from prior-cycle plan or retrospective text — those may have drifted relative to actual source.
 
 **Why LOW + wording-drift only**: CH-02b's plan §8 listed CH-02a carry-forward test names like `test_daemon_start_and_programmatic_shutdown_returns_within_5s` that didn't match the actual fn names (`test_daemon_starts_and_shuts_down_via_programmatic_shutdown`). No harm — implementer kept actual names; CH-02b tests stayed green. Surfaced for retrospective; codified at v17 for cheap insurance.
+
+### Hygiene bundle (v19 — added per CH-02c-i-phi retro Rows P1+P2+P3+P4+P5, cycle hex `81f0c24e`; 5 small additive refinements to v17 P1+P2+P3 disciplines)
+
+CH-02c was the first cycle to exercise the v17 P1+P2+P3 standards updates. All three fired correctly; v19 adds 5 hygiene refinements that surfaced as wording-drift / planning-precision deviations in CH-02c's cycle-audit §6.
+
+#### v19 P1 — Inline-test LOC accounting in §3.B per-fork pause-threshold table
+
+Per CH-02c retro Row P1 (cycle-audit §6 dev 2). When a per-file LOC pause-threshold is computed at plan-draft, **co-located inline `#[cfg(test)] mod tests { ... }` blocks count toward the file's LOC**. If the file ships a hand-rolled helper that v0-posture argues for in-file unit-testing (e.g., `format_rfc3339_seconds` at `sessions/registry.rs`), add an explicit `+ inline-test-LOC` column to the §3.B cascade table OR bump the per-file cap by ~20 LOC headroom.
+
+**Example (CH-02c retro precedent)**: `sessions/registry.rs` shipped at 312 LOC vs plan-cap 280 (delta +32). The 32-LOC delta breaks down as: ~22 LOC for `format_rfc3339_seconds` + 2 unit tests + supporting helpers + ~10 LOC inline-test fixtures. The pause-trigger 420 was not breached (within 1.5× cap), but the plan-cap-vs-actual mismatch is a wording-drift hygiene issue. v19 fixes by mandating inline-test-LOC accounting at §3.B table construction.
+
+#### v19 P2 — Carry-forward back-compat preservation decision-prompt template in §6
+
+Per CH-02c retro Row P2 (cycle-audit §6 dev 3). When a **divergent fork-lock structurally removes a load-bearing scaffold** that a prior-cycle test depends on (e.g., CH-02c's F-broadcast-scope.b removing the daemon-wide broadcast that CH-02b's `test_ipc_attach_handler_streams_synthetic_agent_event` depended on), the planner MUST surface the back-compat-preservation choice at plan-draft via a decision-prompt template:
+
+```
+**Back-compat decision template (v19 — fork F<X>.<letter> structural-removal)**:
+- (a) Amend the carry-forward test body to use the new path.
+- (b) Preserve a narrow back-compat scaffold (named explicitly: e.g., `fallback_event_tx`) + document its scope in the affected ADR sub-decision.
+- (c) Defer the carry-forward test (delete or `#[ignore]` with TODO citing the chunk that will re-enable it).
+
+Planner-recommendation: (b) when the scaffold-removal is the divergent-lock and prior-cycle tests can't easily migrate without scope expansion.
+```
+
+Add the decision-prompt section to §6 (Prior-chunk regression re-verification) of the plan whenever any divergent fork-lock removes a scaffold. This pattern is **expected to fire at CH-04 + CH-06** if the rate-limit / persistence locks reshape carry-forward tests; surfacing it at plan-draft prevents implementer-side ad-hoc resolution.
+
+#### v19 P3 — `AgentEvent::ProgressMessage` substitution catalog entry in §3.E
+
+Per CH-02c retro Row P3 (cycle-audit §6 dev 4). When the per-session task body (or any phi-core-event-emission body) ships `AgentEvent` emissions BUT the project has no direct `chrono` / `time` dependency, surface the substitution at §3.E (gate-2.5 candidates):
+
+```
+**§3.E candidate (v19 — phi-core event emission without direct chrono/time dep)**:
+- Pattern: `AgentEvent::AgentStart::timestamp` requires `chrono::DateTime<Utc>`; project has no direct chrono dep (only transitive via phi-core).
+- Canonical v0 substitution: `AgentEvent::ProgressMessage { ... }` (no timestamp field).
+- Revisit at: CH-06 (session integration) when real `agent_loop()` ships; OR at any earlier chunk that adds chrono as a direct dep.
+- Rationale: F7.a defer-to-CH-06 principle preserved; placeholder emission is informational not load-bearing at v0.
+```
+
+Add to the §3.E pattern catalog. CH-02c precedent: `sessions/task.rs:94-100` emits `ProgressMessage` instead of `AgentStart` for this exact reason.
+
+#### v19 P4 — Baseline-import-count grep invocation in §3
+
+Per CH-02c retro Row P4 (cycle-audit §6 dev 5). Plan §3 leverage map MUST explicitly emit a baseline-import-count grep at plan-draft (parallel to v17 P3 carry-forward-test-name grep):
+
+```bash
+grep -rn "use phi_core" /root/projects/phi/<project>/src/ /root/projects/phi/<project>/tests/ | wc -l
+```
+
+Then the "expected delta" must account for the new test file's incidental imports: if the chunk adds `tests/<feature>_test.rs` with `use phi_core::AgentEvent`, that's a +1 incidental delta. Planner accounts for it explicitly in §3.B "Predicted at chunk-close" row.
+
+CH-02c precedent: plan §3 predicted "6 baseline → 8 final"; actual was "8 baseline → 11 final". Net direct-reuse +2 matched plan intent; +1 was incidental in the new test file. Wording-drift; codified at v19.
+
+#### v19 P5 — Hand-rolled helper centralization decision-prompt in §3.E
+
+Per CH-02c retro Row P5 (cycle-audit §6 dev 6). When §3.E surfaces a hand-rolled helper likely to be used in ≥ 2 files (e.g., RFC3339 timestamp formatter at both `sessions/registry.rs` and `ipc/handlers.rs`), planner pre-allocates a centralization site at plan-draft:
+
+```
+**§3.E candidate (v19 — hand-rolled helper used in ≥ 2 files)**:
+- Helper: `<name>` (e.g., `format_rfc3339_seconds`).
+- Files: `<file1>`, `<file2>` (and more if applicable).
+- Centralization options:
+  - (a) Centralize in a new module (e.g., `daemon::time` or `daemon::helpers`).
+  - (b) Inline at first use + accept the duplication (v0 posture; centralize at a future cleanup chunk).
+- Planner-recommendation: (b) at v0 (≤ 2 helpers, ≤ 50 LOC each); flip to (a) when ≥ 3 helpers or ≥ 100 LOC duplicated.
+```
+
+CH-02c precedent: `format_rfc3339_seconds` shipped at both files with copy-paste (v0 posture; centralization deferred). v19 codifies the decision-prompt so the deferral is explicit + revisit-trigger is clear.
 
 ### Cascade fan-out estimation (v3 — refined per CH-13 retrospective, cycle hex `d4fe1b7c`; original v2 added per CH-11 retro `d5428c43`)
 
@@ -283,7 +350,7 @@ When ANY fork's planner-recommendation differs from a `tighter-scope` / `more-fr
 
 Cycle list maintenance: append new cycles (CH-NN cycle hex) as they close; drop earliest if window exceeds last 8 cycles. If 3 consecutive cycles flip back to planner-following, drop the callout entirely (pattern has resolved).
 
-**Current data (as of 2026-05-17, post-CH-02b-i-phi):** divergent: CH-15 (`c3f46f17`) F5.B / CH-17 (`40c4d759`) F5.B / CH-18 (`c77937bc`) F3.B / CH-20 (`240616a4`) F1.B / CH-24 (`5778bb77`) F1.B + F-D59.2.b + F-D59.3.b / CH-25 (`1e01618e`) F1.b / CH-02a-i-phi (`1bd3bdd1`) F5.b / CH-02b-i-phi (`57b20bda`) F4.b + F-error.b (2 within-cycle divergences — second cycle to multiply diverge). Non-divergent: CH-19 (`2c520ba7`) Direct-approval-clean + CH-01-i-phi (`95c96df7`) Direct-approval-clean. **Combined cycle window: 7-of-10 cycles diverged (70%; baby-phi 5-of-7 + i-phi 2-of-3); cumulative cross-cycle divergent forks 10-of-12 (83%).** The 83% rate sustains v13's divergence-aware framing for tighter/richer/more-defensive forks (see v13 §"Gate-2.5 mid-cycle scope-expansion lane + v9 re-evaluation"). **F<X>.b expansion-divergence pattern is structurally durable** — 8 cycles now (baby-phi CH-15/17/18/20/24/25 + i-phi CH-02a F5.b + CH-02b F4.b + F-error.b).
+**Current data (as of 2026-05-18, post-CH-02c-i-phi):** divergent: CH-15 (`c3f46f17`) F5.B / CH-17 (`40c4d759`) F5.B / CH-18 (`c77937bc`) F3.B / CH-20 (`240616a4`) F1.B / CH-24 (`5778bb77`) F1.B + F-D59.2.b + F-D59.3.b / CH-25 (`1e01618e`) F1.b / CH-02a-i-phi (`1bd3bdd1`) F5.b / CH-02b-i-phi (`57b20bda`) F4.b + F-error.b / CH-02c-i-phi (`81f0c24e`) F2.b + F4.b + F6.c + F-broadcast-scope.b (**4 within-cycle divergences — most-divergent i-phi cycle to date; cleanest audit pipeline despite the multi-divergence**). Non-divergent: CH-19 (`2c520ba7`) Direct-approval-clean + CH-01-i-phi (`95c96df7`) Direct-approval-clean. **Combined cycle window: 8-of-11 cycles diverged (73%; baby-phi 5-of-7 + i-phi 3-of-4); cumulative cross-cycle divergent forks 14-of-22 (64%).** The 73% / 64% rates sustain v13's divergence-aware framing for tighter/richer/more-defensive forks (see v13 §"Gate-2.5 mid-cycle scope-expansion lane + v9 re-evaluation"). **F<X>.b expansion-divergence pattern is structurally durable** — 9 cycles now (baby-phi CH-15/17/18/20/24/25 + i-phi CH-02a F5.b + CH-02b F4.b/F-error.b + CH-02c F4.b/F-broadcast-scope.b). CH-02c is the first cycle to validate chunk-planner v17 P1+P2+P3 standards updates empirically — 0 Trivial-multi paperwork patches (vs CH-02b's 2) attributable to v17 P2 explicit ADR-section enumeration.
 
 The recommendation field stays — planner continues to surface judgment per the v9 surfacing-not-suppressing approach. The callout makes the cross-cycle context unmissable so the user lock is informed not anchored.
 
