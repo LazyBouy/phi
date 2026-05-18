@@ -102,6 +102,13 @@ Until those updates ship, running `/chunk-initiate project=i-phi` requires passi
 
 ### Phase 1.5 — Approval gate (skip if `resume_from_phase != plan`)
 
+**Gate-1 fork-lock decision flow (added 2026-05-18 per CH-03-i-phi retro P1, cycle hex `c542648f`)**: when fork-locks at gate-1 introduce divergences from planner-rec that **materially expand scope** (defined as **≥ +5 deliverables** beyond iter-1 plan's count OR an **audit-envelope tier bump** Medium→Large / Large→XL), the orchestrator MUST surface a re-spawn decision to the user via AskUserQuestion **before** advancing to plan approval. Default presentation:
+
+- **Re-spawn planner with locked forks for revised plan (Recommended)** — produces an iter-2 plan that absorbs the divergent locks; per-fork pause-thresholds re-derived; new sub-decisions surfaced if any.
+- **Force-proceed with original plan + deviations** (escape hatch) — implementer prompt carries the divergent locks; cycle-audit §6 logs the gate-1 deviation. CH-02c (cycle `81f0c24e`) precedent for force-proceed; CH-03 (`c542648f`) precedent for re-spawn — re-spawn produced 0 audit re-spawns + 0 Trivial-multi patches vs CH-02c's 4 deviations surfaced at gate-2.
+
+The re-spawn workflow is **the default** when the threshold fires; force-proceed remains available as an explicit user opt-in. Below-threshold divergence (e.g., 1 fork divergent with no scope expansion, like CH-02b F4.b RwLock) proceeds with the original plan + deviation note (no re-spawn prompt needed).
+
 1. If `approval=yes`: produce the inline plan summary (template below in "Approval gate UX") and call AskUserQuestion with options:
    - **Approve** → proceed to Phase 2.
    - **Request changes** → accept user free-text feedback; re-spawn planner with feedback in context; repeat the gate.
@@ -187,6 +194,15 @@ This is the orchestrator's gate-4. **Sub-agent auditors cannot run the MUST-RUN 
 
 ### Phase 6 — Retrospective (skip if `skip_retrospective = yes`)
 
+**Phase 5 → Phase 6 transition gate (added 2026-05-18 per CH-03-i-phi retro P8 + user feedback memory `feedback_pause_before_retrospector.md`, cycle hex `c542648f`)**: BEFORE spawning the chunk-retrospector, orchestrator MUST present a Phase 5 → Phase 6 transition summary via AskUserQuestion. The summary covers: cycle hex + slug, audit verdict (PASS/FAIL counts + iteration accounting), gate-4 MUST-RUN outcomes, disk reclaimed at gate-5, paperwork ledger status, anything notable for the retrospector to weigh. User options:
+
+- **Proceed with retrospector dispatch (Recommended)** → spawn retrospector per the steps below.
+- **Skip retrospective (`skip_retrospective=yes` equivalent)** → Phase 6 bypassed; cycle-index Status flips to `audited-pending-retro` instead of `retro-complete`. Choose this when the cycle was trivial + retro proposals would be light.
+- **Provide context for retrospector first** → user supplies free-text guidance (e.g., axes to weigh, cross-cycle patterns to consider); orchestrator includes in the retrospector prompt.
+- **Pause longer / abort here** → stop at Phase 5; cycle paperwork stays complete; retrospective unwritten; Status stays `in-flight`.
+
+This pause is **mandatory** — equivalent to the Phase 1.5 plan-approval gate. Treats the retrospector as the last expensive sub-agent spawn in the cycle (produces standards-update proposals the user reviews one-by-one) and gives the user a checkpoint before paying for it.
+
 1. Spawn `chunk-retrospector` agent. Prompt MUST include:
    - The cycle hex.
    - Paths to `plan.md`, every `audit-<letter>-iter<N>.md`, `cycle-audit.md`.
@@ -213,6 +229,25 @@ Print a final report containing:
 
 Then update the cycle-index row's `Status`:
 - `retro-complete` if Phase 6 ran.
+- `audited-pending-retro` if `skip_retrospective = yes` was chosen at the Phase 5 → Phase 6 transition gate or via initial input.
+
+### Phase 8 — Temp-folder cleanup (added 2026-05-18 per CH-03-i-phi retro P5c, cycle hex `c542648f`)
+
+Between cycles `/tmp` accumulates planner outputs, audit outputs, scratch files (e.g., `/tmp/ch03-planner-output.md`, `/tmp/ch03-planner-output-iter2.md`, `/tmp/claude-0/.../tasks/<id>.output`). Without cleanup the folder grows unboundedly. Phase 8 sweeps cycle-related temp files with a **backup-only-if-deemed-necessary** clause.
+
+1. **Identify cycle-related temp files**: scan `/tmp/` for files matching cycle-related patterns:
+   - `/tmp/<chunk-slug>-*` (e.g., `/tmp/ch03-planner-output*`).
+   - `/tmp/<cycle-hex>-*` (e.g., `/tmp/c542648f-*`).
+   - `/tmp/claude-*/...../tasks/<id>.output` files (sub-agent transcripts from this session).
+   - Any other files modified in `/tmp` during the cycle window (orchestrator session start → Phase 7 close).
+2. **Triage for backup**: for each identified file, decide whether content is **deemed necessary** to preserve for future cycles or post-mortem:
+   - **YES (backup needed)**: file carries unique signal NOT already captured in `<cycle folder>/{plan.md, audit-*.md, cycle-audit.md, retrospective.md}`. Examples: intermediate planner-iteration drafts that informed a re-spawn but didn't land in the archive; long sub-agent transcripts with diagnostic detail the audit log condensed.
+   - **NO (no backup)**: file content is already mirrored in cycle-folder artifacts (default — most cases). Examples: `/tmp/ch03-planner-output-iter2.md` is already at `<cycle folder>/plan.md` (iter-2 archive); raw `cargo test` output is already summarized in `cycle-audit.md` §3.
+3. **Backup mechanism** (only if step 2 returns YES): copy file to `<cycle folder>/scratch/<filename>` (create scratch/ subdir if absent); add a one-line note in `cycle-audit.md` §6 deviations explaining what was preserved + why.
+4. **Delete identified temp files**: `rm /tmp/<matched-files>`. Be careful with the patterns; never `rm -rf /tmp/*` blanket-style. Use explicit per-file `rm` calls or narrow globs (`rm /tmp/<chunk-slug>-*.md`).
+5. **Skip in `dry_run = yes` mode**: leave temp files in place.
+
+The default expectation is **NO backup needed** for most files — cycle artifacts (`plan.md` / `audit-*.md` / `cycle-audit.md` / `retrospective.md`) capture all load-bearing signal. The backup-only-if-deemed-necessary clause exists for the rare case where a temp file carries unique diagnostic value (e.g., a planner re-spawn iteration that didn't land verbatim in the archive). This phase runs AFTER Phase 7 final summary printed + cycle-index Status flipped — temp files needed for any prior phase (e.g., retrospector reading planner-iter-1 from `/tmp`) are still in place when those phases ran.
 - `audited-pending-retro` if `skip_retrospective = yes`.
 
 ---

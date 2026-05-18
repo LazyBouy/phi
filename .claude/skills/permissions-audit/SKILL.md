@@ -4,6 +4,8 @@ description: Read .claude/tool-use.log + settings.json, classify findings (hot a
 ---
 
 <!--
+v4.1 — added `window_mode = narrow | wide` parameter at CH-03-i-phi (cycle hex `c542648f`) per CH-03 retro P6 2026-05-18. Resolves window-truncation artifact when planner re-spawn workflow fires.
+
 v4 — fixed at CH-25 (cycle hex `1e01618e`) per CH-24 retro R5 carry-forward
 (now widened at P-R5-INVESTIGATE per user-lock 2026-05-15).
 
@@ -36,12 +38,15 @@ Reference: design specifies in plan archive `baby-phi/docs/specs/permissions/too
 ## Inputs (caller provides)
 
 1. **Cycle hex** — for the report header.
-2. **Cycle window** — `start_ts` (ISO 8601), `end_ts` (ISO 8601). If absent, default to:
-   - `start_ts = $(date -u -d "@$(stat -c %Y <cycle folder>/plan.md)" +%Y-%m-%dT%H:%M:%SZ)`
-   - `end_ts = $(date -u -d "@$(stat -c %Y <cycle folder>/cycle-audit.md)" +%Y-%m-%dT%H:%M:%SZ)` (or `now` if cycle-audit not yet written).
-   - Final fallback: last 7 days.
-3. **Settings path** — default `$CLAUDE_PROJECT_DIR/.claude/settings.json`.
-4. **Prior retros** — list of paths to prior `retrospective.md` files for §G cross-cycle trends. Default: empty (skip §G with "n/a").
+2. **Cycle window** — `start_ts` (ISO 8601), `end_ts` (ISO 8601). If absent, default to the **narrow** window (see `window_mode` below).
+3. **`window_mode`** (v4.1 — added 2026-05-18 per CH-03-i-phi retro P6, cycle hex `c542648f`): `narrow` (default, back-compat) | `wide`.
+   - **narrow** (default): `start_ts = $(date -u -d "@$(stat -c %Y <cycle folder>/plan.md)" +%Y-%m-%dT%H:%M:%SZ)` → `end_ts = $(date -u -d "@$(stat -c %Y <cycle folder>/cycle-audit.md)" +%Y-%m-%dT%H:%M:%SZ)`. Captures the post-archive cycle (planner archive → cycle-audit close).
+   - **wide**: `start_ts = $(date -u -d "@$(stat -c %Y <implementer-dispatch-marker>)" +%Y-%m-%dT%H:%M:%SZ)` → `end_ts = $(date -u -d "@$(stat -c %Y <cycle folder>/cycle-audit.md)" +%Y-%m-%dT%H:%M:%SZ)` — captures the **full audit-cycle including pre-archival work** (forward-scope drafts, gate-1 fork-locks, planner re-spawn iterations, mid-gate-1.5 plan edits). Use when the planner re-spawn workflow fires (per chunk-initiate skill Phase 1.5 gate-1 fork-lock decision flow) — narrow window mode truncates the iter-1 → iter-2 transition.
+   - Final fallback (both modes): last 7 days.
+4. **Settings path** — default `$CLAUDE_PROJECT_DIR/.claude/settings.json`.
+5. **Prior retros** — list of paths to prior `retrospective.md` files for §G cross-cycle trends. Default: empty (skip §G with "n/a").
+
+**Per-minute rate cells in §G MUST annotate which `window_mode` produced them** — narrow + wide modes produce different total-tool-call counts for the same cycle, so rate computations differ. Cite the mode in §G's rate column header (e.g., "Tool-call rate (narrow window)" vs "Tool-call rate (wide window)").
 
 ## Procedure
 

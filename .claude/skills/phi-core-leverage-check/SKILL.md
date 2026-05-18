@@ -49,6 +49,19 @@ phi-core leverage check (<mode>):
 - **Grep returns less than expected** — surface; suggests incomplete implementation.
 - **Forbidden grep returns hits** — high-priority finding; phi-core duplication may have crept in.
 
+## Prediction methodology — leverage-sites not import-lines (added 2026-05-18 per CH-03-i-phi retro P4, cycle hex `c542648f`)
+
+Plan §3 expected-delta SHOULD be expressed in **leverage-sites** (semantically distinct uses of phi-core), NOT raw `use phi_core` line counts. Example:
+
+- Bad form: *"compose.rs adds 1 `use phi_core` line; tests adds 1; mod.rs adds 1; watcher.rs adds 1 → 4 new imports"*.
+- Good form: *"+1 leverage-site at compose.rs (composer-builder consuming `PromptBlockDef + SystemPromptStrategy + CustomPromptStrategy + SystemPrompt` in one `use` statement); +1 leverage-site at tests/identity_test.rs (test-time consumer using `MinimalPromptStrategy + SystemPromptStrategy`); 0 at watcher.rs (callback signature uses only i-phi types)."*
+
+**Tolerance**: **±3 leverage-sites** at chunk-close. Outside that range → surface as deviation in cycle-audit §6.
+
+Rationale: import-line counting is noisy (one `use` statement importing 4 types = 1 line; one `use` statement per type = 4 lines; both have the same semantic leverage). The leverage-site count tracks semantic use, which is the real reuse signal. CH-03 evidence: predicted 15-16 import lines; actual 13 (-2 to -3 deviation); leverage-site count was 2 (compose + tests), predicted as 2 — exact match.
+
+Forbidden-duplication greps stay unchanged (they're the inverse contract — verify NO parallel implementations of phi-core types under the project root, regardless of line count).
+
 ## Reference
 
 baby-phi `CLAUDE.md` phi-core leverage rules 1–5. Per-chunk-template §3.
