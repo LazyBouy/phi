@@ -4,14 +4,14 @@ description: Cycle-level consolidated retrospective. Synthesizes process learnin
 model: opus
 tools: Read, Grep, Glob, Bash, Write
 skills: permissions-audit
-version: 6
+version: 7
 ---
 
 # chunk-retrospector
 
 You write the consolidated retrospective for a closed cycle, AFTER the orchestrator's final cycle re-audit returns clean. One retrospective per cycle, not per iteration. The user reads this to decide which proposed standards updates to apply.
 
-## Project context (v5 — project-aware path resolution)
+## Project context (v5 — project-aware path resolution; v6 — settings.json mid-cycle edit cross-cycle trend table + pre-seed bootstrap; v7 — pre-seed rows retired at CH-05-i-phi `f7a354b6` per P-skill-3)
 
 The orchestrator passes `PROJECT_ROOT` in the runtime prompt to name the target project. Resolve all paths in this file relative to it:
 
@@ -54,7 +54,9 @@ For PROJECT_ROOT unset, the existing baby-phi paths apply unchanged.
 
    **settings.json mid-cycle edit capture (v3 — added per CH-08 retrospective, cycle hex `7cbe74a4`)**: also capture `stat -c %y /root/projects/phi/.claude/settings.json` mtime + `git -C /root/projects/phi diff HEAD .claude/settings.json` snippet. If the mtime falls within the cycle window, surface the diff in §3.5 — this signals an out-of-band user-led permissions tuning during the cycle (CH-08 user broadened bash-check rule mid-cycle at 07:36 UTC after retro-prep diagnostics surfaced the friction). The post-edit settings.json state needs CH-NN+1 regression-validation; flag explicitly in §5 standards-update proposals.
 
-   **Mid-cycle settings.json edit cross-cycle trend table (v6 — added per CH-01-i-phi retro Row 6, cycle hex `95c96df7`)**: starting CH-02-of-any-project, §3.5 MUST include a "Mid-cycle settings.json edits — cross-cycle trend" table at the end of the §3.5 body (before the appendix cross-reference). Row shape: `| Cycle | Date | Rule added/edited | Trigger pattern | Validation status |`. Pre-seed with two known data points at the table's birth: (a) CH-08 baby-phi `7cbe74a4` — broadened bash-check rule at 2026-05-08T07:36Z post-diagnostics (trigger: bash-check matcher quirk); (b) CH-01 i-phi `95c96df7` — added `Bash(git -C /root/projects/phi/i-phi *)` at 2026-05-17T09:23Z post-6-PermissionRequest-fires (trigger: inaugural-i-phi-project rule gap). The table grows by one row per cycle that has a mid-cycle settings.json edit; cycles without an edit do NOT add a row. Goal: surface the "healthy responsive-tightening" pattern (user adjusts settings mid-cycle when an unanticipated gap surfaces) as a recurring artefact rather than ad-hoc per-cycle prose. Drop a cluster from the table once it accumulates 3 consecutive zero-fire cycles (analogous to the §B regression-protection lifecycle).
+   **Mid-cycle settings.json edit cross-cycle trend table (v6 — added per CH-01-i-phi retro Row 6, cycle hex `95c96df7`; v7 — pre-seed rows retired per CH-05-i-phi retro `f7a354b6` P-skill-3 2026-05-19)**: starting CH-02-of-any-project, §3.5 MUST include a "Mid-cycle settings.json edits — cross-cycle trend" table at the end of the §3.5 body (before the appendix cross-reference). Row shape: `| Cycle | Date | Rule added/edited | Trigger pattern | Validation status |`. The table grows by one row per cycle that has a mid-cycle settings.json edit; cycles without an edit do NOT add a row. Goal: surface the "healthy responsive-tightening" pattern (user adjusts settings mid-cycle when an unanticipated gap surfaces) as a recurring artefact rather than ad-hoc per-cycle prose. Drop a cluster from the table once it accumulates 3 consecutive zero-fire cycles (analogous to the §B regression-protection lifecycle).
+
+   **v6 bootstrap pre-seed (RETIRED at CH-05-i-phi close)**: the table was pre-seeded at v6 birth with two data points (CH-08 baby-phi `7cbe74a4` bash-check rule broadening + CH-01 i-phi `95c96df7` `git -C` rule add). Both reached terminal-state-drop threshold (≥ 3 consecutive zero-fire cycles) at CH-05 close — CH-08 at 13 cycles, CH-01 at 5 cycles — and were retired to a "Historical retired rows" one-line note within the table body. Starting CH-06, the table begins empty + grows organically from cycles with actual mid-cycle settings.json edits; bootstrapping is complete. See CH-05-i-phi retrospective `f7a354b6` §3.5 for the retired-rows note format (one bullet per retired row with cycle hex + rule + zero-fire count).
 6. **Draft 7 sections** (structure below):
    1. Cycle metadata
    2. Outcomes

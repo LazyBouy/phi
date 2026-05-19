@@ -102,12 +102,25 @@ Until those updates ship, running `/chunk-initiate project=i-phi` requires passi
 
 ### Phase 1.5 — Approval gate (skip if `resume_from_phase != plan`)
 
-**Gate-1 fork-lock decision flow (added 2026-05-18 per CH-03-i-phi retro P1, cycle hex `c542648f`)**: when fork-locks at gate-1 introduce divergences from planner-rec that **materially expand scope** (defined as **≥ +5 deliverables** beyond iter-1 plan's count OR an **audit-envelope tier bump** Medium→Large / Large→XL), the orchestrator MUST surface a re-spawn decision to the user via AskUserQuestion **before** advancing to plan approval. Default presentation:
+**Gate-1 fork-lock decision flow (added 2026-05-18 per CH-03-i-phi retro P1, cycle hex `c542648f`; STRENGTHENED 2026-05-19 per CH-05-i-phi retro P-skill-1, cycle hex `f7a354b6` — mandatory iter-2 re-spawn after fork-locks regardless of divergence)**:
 
-- **Re-spawn planner with locked forks for revised plan (Recommended)** — produces an iter-2 plan that absorbs the divergent locks; per-fork pause-thresholds re-derived; new sub-decisions surfaced if any.
+**Step A (always-fire) — Mandatory iter-2 planner re-spawn after fork-locks**: when **ANY** locks land at gate-1.5 (divergent OR planner-rec; any lock count ≥ 1), the orchestrator re-spawns the planner for iter-2 to absorb the `### Locked fork details` appendix into the canonical archive. The re-spawn is the DEFAULT path, not conditional on divergence. Closes the 3-cycle pattern (CH-03 + CH-04 + CH-05) where the appendix did NOT auto-fire at iter-1 archive under chunk-planner v22's optional-self-check. **CH-05 evidence**: all 7 forks were planner-rec (zero divergence) but the appendix was still missing at iter-1; orchestrator surfaced + user codified the always-fire rule as standing memory `feedback_locked_fork_details_appendix.md`. Companion rule at chunk-planner v23 P13 ALWAYS-FIRE.
+
+**Step B (conditional on divergence) — Material-scope-expansion gate**: if the locks introduce divergences from planner-rec that **materially expand scope** (defined as **≥ +5 deliverables** beyond iter-1 plan's count OR an **audit-envelope tier bump** Medium→Large / Large→XL), the iter-2 re-spawn ALSO re-derives per-fork pause-thresholds + surfaces any new sub-decisions. Surface the re-spawn decision to the user via AskUserQuestion with these options:
+
+- **Re-spawn planner with locked forks for revised plan (Recommended)** — produces an iter-2 plan that absorbs the divergent locks + per-fork pause-thresholds re-derived + new sub-decisions surfaced if any + the mandatory locked-fork-details appendix.
 - **Force-proceed with original plan + deviations** (escape hatch) — implementer prompt carries the divergent locks; cycle-audit §6 logs the gate-1 deviation. CH-02c (cycle `81f0c24e`) precedent for force-proceed; CH-03 (`c542648f`) precedent for re-spawn — re-spawn produced 0 audit re-spawns + 0 Trivial-multi patches vs CH-02c's 4 deviations surfaced at gate-2.
 
-The re-spawn workflow is **the default** when the threshold fires; force-proceed remains available as an explicit user opt-in. Below-threshold divergence (e.g., 1 fork divergent with no scope expansion, like CH-02b F4.b RwLock) proceeds with the original plan + deviation note (no re-spawn prompt needed).
+Below-threshold divergence (e.g., 1 fork divergent with no scope expansion, like CH-02b F4.b RwLock) still re-spawns the planner under Step A for the appendix; the prompt simply omits the "re-derive thresholds" line.
+
+**Step C (architectural-refinement-at-approval-gate, added 2026-05-19 per CH-05-i-phi retro P-orch-4)**: when the user surfaces an architectural insight at gate-1.5 final-approval read that **materially refines a LOCKED variant body** (NOT a fork re-vote — the user accepts the locked option but refines what the option means), route via a SECOND planner re-spawn (iter-3) with the refinement scoped to the affected fork bodies only. Other locks keep their iter-2 status. CH-05 iter-2 → iter-3 (asymmetric tier layout: `F-storage-layout` + `F-retrieval` + `F-write-atomicity` bodies refined while `F-tier-types` + `F-rotation` + `F-incognito` + `F-record-id` kept iter-2 status) is the canonical precedent.
+
+**AskUserQuestion fork-template requirement (added 2026-05-19 per CH-05-i-phi retro P-skill-2)**: every fork option presented at gate-1 (or gate-1.5 sub-fork) via AskUserQuestion MUST include in the option's `description` field:
+
+- **(a) High-level user-impact summary** — one sentence describing how the choice affects the user-facing behaviour or product surface (not the implementation detail). Example: *"User sees a strict error when no identity layers found at any of the 3 scopes."* (Better than *"strict EmptyScope error per F-empty-dir-fallback.b lock"*.)
+- **(b) Pros / cons** — 2-3 bullet pros + 1-2 bullet cons for the option, in a 1-sentence-each form. Pros first.
+
+Codifies the user's standing rule (saved as `feedback_locked_fork_details_appendix.md`): *"When the fork options are presented, there must be at least these two things (in a brief summary of course): how the fork affects the high level requirement from the user standpoint, and what are the pros and cons for the fork. That enables the user (who is not deeply involved in the technical nitty gritty details) to decide the correct fork feature for the chunk effectively."*
 
 1. If `approval=yes`: produce the inline plan summary (template below in "Approval gate UX") and call AskUserQuestion with options:
    - **Approve** → proceed to Phase 2.
