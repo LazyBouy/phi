@@ -4,6 +4,8 @@ description: Read .claude/tool-use.log + settings.json, classify findings (hot a
 ---
 
 <!--
+v4.3 — added window-mode guidance at CH-08-i-phi (cycle hex `2a786a5b`) per CH-08-i-phi retro proposal #8 2026-05-20. Guidance: all-planner-rec single-iter-archive cycles can stay narrow-mode (default; default `window_mode`); cycles with planner re-spawn OR ≥ 1 gate-1 fork-divergence SHOULD use wide-mode for completeness (capture pre-archival work). CH-08 narrow-mode-OK precedent (3rd consecutive unanimous-planner-rec on i-phi); CH-05 + CH-06 wide-mode precedent for planner-re-spawn cycles. Window-mode chosen at retrospector dispatch time (per chunk-retrospector v7+ Procedure step 5b).
+
 v4.2 — added cross-cycle-bleed attribution methodology at CH-27 baby-phi (cycle hex `0edcaba9`) per CH-27 retro Row 8 standalone 2026-05-18. §B + §G must classify each ≥3-prompt cluster as "CH-NN-direct" or "cross-cycle-bleed (cite parallel cycle hex via sample-input-anchor)" — closes the 51-of-98 (52%) parallel-cycle-bleed-inflation gap surfaced in CH-27 telemetry.
 
 v4.1 — added `window_mode = narrow | wide` parameter at CH-03-i-phi (cycle hex `c542648f`) per CH-03 retro P6 2026-05-18. Resolves window-truncation artifact when planner re-spawn workflow fires.

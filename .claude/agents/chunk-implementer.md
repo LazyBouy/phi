@@ -4,7 +4,7 @@ description: Executes phases per an approved chunk plan. Runs tests, clippy, fmt
 model: opus
 tools: Read, Edit, Write, Bash, Grep, Glob
 skills: ci-guards-run, phi-core-leverage-check
-version: 17
+version: 18
 ---
 
 # chunk-implementer
@@ -194,6 +194,22 @@ When the chunk ships a **wire-row intermediate struct** at the SurrealDB write b
 **Failure-mode codified**: CH-28 ADR-0063 §D63.14 named 3 method bodies (`create_agent_profile` + `upsert_agent_profile` + `get_agent_profile_for_agent`) for the AgentProfileWireRow write-strip. The P1.5 implementer discovered 4 ADDITIONAL compound-tx sites (`apply_org_creation` system-agent profile rows × 2 + `apply_agent_creation` optional payload profile × 2) needing wire-strip propagation to satisfy the load-bearing workspace-RED → GREEN flip. The discovery was fortunate, not enforced. Audit C iter-1 noted the defensive extension; P-impl-2 codifies it as enforced for future §D63.14-class cycles.
 
 **Both rules pair with**: orchestrator-side gate-4 SCHEMAFULL semantic spot-check (CLAUDE.md P-orch-1 added per CH-28 retro `0412eb06`). Implementer-side P-FIXTURES + P-SEAL paperwork is the first-line check; orchestrator-side gate-4 is the defensive layer.
+
+### v18 — Single-update from CH-08-i-phi retro `2a786a5b` (R-P-SEAL drift-filing discipline)
+
+#### R-P-SEAL — Pre-cite drift IDs at file-time (closes CH-08 §3 rows 1+2; 10 placeholder lines patched across 2 sweeps)
+
+At the moment of authoring any cross-reference to a drift in any deliverable (ADR / phi-core-usage / user-guide / plan-archive / cycle-index summary), use the FINAL drift filename (`D-CH<NN>-FOLLOWUP-01-...`, `-05-...`, `-PHICORE-01-...`), NEVER the `-NN-` placeholder.
+
+The `-NN-` placeholder is a planner-archival staging artefact ONLY. Implementer-tier deliverables MUST resolve placeholders to actual IDs at filing-time. Eliminates the placeholder class entirely from implementer-tier deliverables; closes the cross-cutting documentary cleanup work the orchestrator absorbed at gate-2 widened sweep + gate-3 post-audit Trivial-1L on CH-08.
+
+**Mechanical check at P-SEAL** (defensive belt-and-suspenders to outer CLAUDE.md gate-2 widened sweep regex generalization `\bFOLLOWUP(-[A-Z]+)?-NN\b`):
+
+```bash
+grep -rnE '\bFOLLOWUP(-[A-Z]+)?-NN\b' <PROJECT_ROOT>/docs/ <new-drift-files> <new-ADR-files>
+```
+
+If any hits, patch to actual IDs before reporting chunk-seal complete. Pairs with outer CLAUDE.md gate-2 sweep + chunk-planner v27 P-plan-3 CONDITIONAL drift discipline (which legitimately uses `-NN-` placeholders pre-activation).
 
 ## Quality bar (must-pass)
 

@@ -4,7 +4,7 @@ description: Drafts the 12-section per-chunk plan from a forward-scope entry. Pe
 model: opus
 tools: Read, Grep, Glob, Bash, Write
 skills: chunk-template-fill, phi-core-leverage-check, k8s-readiness-check, audit-envelope-size, chunk-archive-plan
-version: 26
+version: 27
 ---
 
 # chunk-planner
@@ -878,6 +878,43 @@ When the chunk plan ships a `## Forks for orchestrator` section (planner-authore
 **Pair with chunk-initiate skill update**: the orchestrator's gate-1 AskUserQuestion `description` field MUST also follow the 4-line template (User-visible / Product trajectory / Cycle scope / Defers-if-chosen) per chunk-initiate SKILL.md Phase 1.5 update at the same plan archive. Both layers fire.
 
 **Project-agnostic note**: rule TEXT is project-agnostic (no baby-phi paths or i-phi paths in rule directives). CH-28 cited in rationale paragraphs only as example-evidence.
+
+## v27 additions (CH-08-i-phi retro `2a786a5b`, 2026-05-20)
+
+Three updates from the CH-08 hooks-framework retro. Full canonical wording in `_changelog.md` 2026-05-20 entry; concise rule text inline below.
+
+### P-plan-1-v27 — enum-multiplicity multiplier in functional-scope-derivation (MEDIUM; closes CH-08 §3 row 3+4)
+
+Refines v23 P-plan-1 + v24 P-plan-1 per-axis weights for files containing ≥ 9-variant enums:
+
+- **Enum-multiplicity multiplier**: when a file's functional axes include a ≥ 9-variant enum WITH `parse + as_str + is_*` derived-method coverage, LOC cap baseline gains **+30 LOC variance allowance**.
+- **Inline-test tolerance derivation rule**: ≤ 3 inline ONLY when total enum-variants-in-file ≤ 6; **≥ 9-variant enums warrant 5-8 inline tolerance** (1 classification + 1 roundtrip + (variants/3) edge cases). Per-file inline tolerance MUST be cited in plan §3.C alongside §3.B LOC cap derivation.
+
+Closes CH-08 types.rs Band 2 +16.7% deviation + inline-test count breach (+5 over ceiling). Project-agnostic.
+
+### P-plan-2-v27 — cross-cluster-struct field cascade pre-flight (HIGH; closes CH-08 §3 row 5)
+
+When a fork-lock body cites a cross-cluster-struct field (e.g., `HookSpec.timeoutMs`, `MergedPermissions.X`, `Session.Y`), planner MUST grep the actual struct at the cross-cluster file BEFORE locking:
+
+```bash
+grep -A 20 'pub struct <StructName>' <cross-cluster-file>
+```
+
+Verify the field exists at fork-lock-draft time. Mismatch surfaces as planner-time gap; routes via:
+- (a) Widen the fork-lock body to acknowledge the SCOPE-NARROWING + file an IMPL-DISCOVERED-style drift in plan §4; OR
+- (b) Re-scope the cross-cluster touch to include the schema-add (route through cross-cluster-invariant exception via AskUserQuestion).
+
+Closes CH-08 F-hook-timeout.a + HookSpec.timeoutMs SCOPE-NARROWING that surfaced at P2 implementer-discovery rather than planner-time. Project-agnostic.
+
+### P-plan-3-v27 — CONDITIONAL drift activation discipline (LOW; codifies CH-08 D-CH08-FOLLOWUP-05 working pattern)
+
+When pre-flight surfaces uncertainty about a phi-core or other risk-acknowledged branch that risk-acknowledged force-proceed accepts at split-decision, codify the CONDITIONAL-drift template:
+
+- (a) Plan §3.E "Anticipated gate-2.5 candidates" row carries the CONDITIONAL drift placeholder.
+- (b) §10 close criteria notes "CONDITIONAL drift filed iff P0 source-walk shows X".
+- (c) P-SEAL workflow files OR skips the drift per the verified branch.
+
+CH-08's D-CH08-FOLLOWUP-05 (R8 event-emission: does the agent loop auto-emit InputRejected on Before*Fn → false?) is the canonical first activation; P0 source-walk confirmed loop does NOT auto-emit → drift ACTIVATED at P-SEAL.
 
 ## Constraints
 

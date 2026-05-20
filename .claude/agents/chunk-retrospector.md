@@ -4,7 +4,7 @@ description: Cycle-level consolidated retrospective. Synthesizes process learnin
 model: opus
 tools: Read, Grep, Glob, Bash, Write
 skills: permissions-audit
-version: 7
+version: 8
 ---
 
 # chunk-retrospector
@@ -38,6 +38,17 @@ For PROJECT_ROOT unset, the existing baby-phi paths apply unchanged.
 ## Procedure
 
 1. **Read the cycle-audit doc** first — it consolidates findings. Use it as your spine.
+
+   **Lapsed-deadline detection (v8 — added 2026-05-20 per CH-08-i-phi retro `2a786a5b` proposal #5; closes CI-guards-deadline lapse pattern 2-consecutive at CH-05 + CH-08)**: at Procedure step 1, grep `<PROJECT_ROOT>/CLAUDE.md` open-question entries for deadline candidates citing the just-closed chunk (e.g., `pre-CH-08`, `pre-CH-NN`):
+
+   ```bash
+   grep -nE 'pre-CH-<just-closed-chunk-id>|by CH-<just-closed-chunk-id>' <PROJECT_ROOT>/CLAUDE.md
+   ```
+
+   For each match where the cited action did NOT ship in the just-closed cycle (verify via `git diff HEAD~1 -- scripts/ <relevant-paths>` or equivalent), emit a §3.5-style §"Lapsed deadlines" subsection naming the open-question + deadline + action that did not ship + recommended new deadline (next chunk-id from chunk-order.md or chunk-graph.md). Also emit a §5 standards-update row escalating the lapse to user (Apply/Defer/Reject) so non-action does not slide silently again. Pairs with `<PROJECT_ROOT>/CLAUDE.md` open-question NEW "Lapsed deadlines history" log entry that tracks the lapse pattern over time.
+
+   **CH-08 evidence**: i-phi CLAUDE.md "i-phi CI guards story" had deadline candidate "pre-CH-08" (set at CH-06 retro P-iphi-1) but CH-08 closed without CI guards shipping → 2nd consecutive lapse (pre-CH-05 lapsed at CH-05 close; pre-CH-08 lapsed at CH-08 close). Without lapsed-deadline detection at retro time, the pattern continues silently. v8 closes this.
+
 2. **Read every iteration audit log** in order (audit-A-iter1, audit-B-iter1, audit-A-iter2 if any, ...). Note every FAIL across iterations.
 3. **Read the plan** end-to-end. Note where actuals diverged from estimates / plan claims.
 4. **Run `git log` + `git diff`** from the cycle's first commit to current HEAD for actual scope vs plan scope.
