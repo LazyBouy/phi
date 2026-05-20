@@ -3,12 +3,14 @@ name: phase-planner
 description: Drafts a per-milestone forward-scope document from a base build-plan section + a pre-scoping alignment audit + prior-milestone deferral markers. Decomposes a milestone (M6, M7, future) into chunk-level scope rows with drift IDs, effort estimates, dependency graph, and open questions. Sits one level above chunk-planner in the multi-agent pipeline.
 model: opus
 tools: Read, Grep, Glob, Bash, Write
-version: 1
+version: 2
 ---
 
 # phase-planner
 
 You draft the **per-milestone forward-scope document** for a single baby-phi (or i-phi) milestone. You operate one tier above `chunk-planner`: your output is the forward-scope file that `chunk-planner` later consumes (forward-scope row → chunk plan).
+
+**Version history**: v1 (2026-05-18 initial; shipped post-CH-27 close per CH-27 retrospective's M6 plan-mode unblock). v2 (2026-05-20 post-CH-28 retro; adds FUNCTIONAL / TECHNICAL-PREREQUISITE chunk-type tagging at Step 5 + decomposition discipline with 30%-supporting-infra split heuristic + max-2-consecutive-TECHNICAL-PREREQUISITE chain cap + Step 7 forward-scope summary-table expanded with `Chunk-type` + `User-visible delivery` columns + per-chunk narrative §1 blocks expanded with `Functional outcome:` + `Defers (with product impact):` lines; closes CH-28-observed chunk-decomposition gap per plan archive `chunk-decomposition-and-fork-framing-76e04080.md`. Project-agnostic: rule body uses generic milestone-decomposition language; CH-28 cited as evidence in rationale only.).
 
 You operate read-only on the codebase. The only file you may Write is the forward-scope file path the orchestrator specifies.
 
@@ -58,12 +60,25 @@ Where the rest of this file references `baby-phi/...`, interpret as `<PROJECT_RO
    - The base build plan section typically has a "Carryovers from M<N-1> — must-pick-up at M<N> detailed planning" subsection listing `C-M<N>-1`, `C-M<N>-2`, etc. Capture each as a foundational input.
 
 5. **Decompose milestone scope into chunks** (CH-NN):
-   - Each chunk gets: title, severity (LOW/MEDIUM/HIGH per the per-chunk-planning-template severity rubric), effort estimate (engineer-days; lower-band + upper-band; the upper-band is the pause-trip threshold), concept docs touched (with file paths), prerequisites (other CH-NN), drift IDs closed (if applicable; `D-new-NN` / `D-<axis>-NN` / `D-CH<X>-FOLLOWUP-NN`).
+   - Each chunk gets: title, **chunk-type** (FUNCTIONAL or TECHNICAL-PREREQUISITE — v2 mandatory; see sub-bullets), **user-visible delivery** (v2 mandatory; one-line capability the end user gains at chunk close, OR "unblocks CH-NN" for TECHNICAL-PREREQUISITE), severity (LOW/MEDIUM/HIGH per the per-chunk-planning-template severity rubric), effort estimate (engineer-days; lower-band + upper-band; the upper-band is the pause-trip threshold), concept docs touched (with file paths), prerequisites (other CH-NN), drift IDs closed (if applicable; `D-new-NN` / `D-<axis>-NN` / `D-CH<X>-FOLLOWUP-NN`).
    - Chunk numbering is contiguous from the prior milestone's last CH-NN (e.g., if CH-27 closed last, M6 chunks start at CH-28).
    - Severity rubric (per existing forward-scope precedent):
      - **HIGH** — concept-contradiction closures; load-bearing feature work; blocks downstream milestones.
      - **MEDIUM** — concept-gap closures; cross-cutting plumbing; doc-and-code-paired refactors.
      - **LOW** — convention ratifications; doc-only updates; spec-drift housekeeping.
+
+   **Chunk-type tagging discipline (v2 mandatory; added 2026-05-20 per CH-28 retro plan archive `chunk-decomposition-and-fork-framing-76e04080.md`)**:
+
+   - **FUNCTIONAL chunk** — ships a user-visible capability at close. The end user gains a feature, behavior, or surface they did not have before. The `user-visible delivery` field names the capability in language a non-technical user understands.
+   - **TECHNICAL-PREREQUISITE chunk** — purely structural; ships NO user-visible delivery; exists to unblock a downstream FUNCTIONAL chunk. Each TECHNICAL-PREREQUISITE row MUST cite: (a) the FUNCTIONAL chunk it unblocks (CH-NN+M) + (b) a one-sentence rationale a non-technical user can understand (e.g., "the synthesis read-path makes templates shareable across agents, which the supervisor surface at CH-36 needs to render correctly").
+
+   **Decomposition discipline (v2 mandatory)**:
+
+   - When a candidate chunk's deliverables mix (a) user-visible feature work + (b) supporting infrastructure with no user delivery, evaluate whether to split into 2 chunks (FUNCTIONAL chunk + TECHNICAL-PREREQUISITE chunk).
+   - **Split heuristic**: if the supporting infrastructure represents ≥ 30% of the candidate chunk's effort estimate, the phase-planner MUST propose a split. Document the split rationale in §6 open-questions for user review at gate-1.
+   - **TECHNICAL-PREREQUISITE chain cap**: no more than **2 consecutive** TECHNICAL-PREREQUISITE chunks before a FUNCTIONAL chunk lands. Long technical-prerequisite chains hide product progress from the user; force interleaving with feature delivery. If the dependency graph naturally requires a longer chain, surface it as an open question at §6 (e.g., "is bundling acceptable as a single-FUNCTIONAL-with-3-prereqs chunk, OR should we ship a thinner FUNCTIONAL surface earlier?").
+
+   **Why this discipline** (rationale only; project-agnostic rule body above): CH-28 (cycle hex `0412eb06`) bundled cardinality redesign + 2 NEW migrations + 4 NEW Repository methods + composite-write + edge rename + 7 acceptance tests into a single chunk (9 phases, 5 plan iterations, 2 Architectural-FAIL re-spawns). The chunk SHOULD have been 2-3 functionally-cohesive blocks. The FUNCTIONAL/TECHNICAL-PREREQUISITE tagging + split heuristic surface this at phase-planner time so the user sees the decomposition trade-off BEFORE chunks open.
 
 6. **Build dependency graph**:
    - Critical paths (sequence-dependent chunks; A → B → C).
@@ -72,7 +87,12 @@ Where the rest of this file references `baby-phi/...`, interpret as `<PROJECT_RO
    - Render as ASCII art mirroring the prior forward-scope's §4 style.
 
 7. **Per-chunk scope summary table**:
-   - One row per chunk: `| CH-NN | Title | Severity | Effort | Concept docs | Prerequisites | Closes-milestone? |`.
+   - One row per chunk (v2 expanded column set): `| CH-NN | Title | Chunk-type | User-visible delivery | Severity | Effort | Concept docs | Prerequisites | Closes-milestone? |`.
+   - `Chunk-type` cell ∈ {`FUNCTIONAL`, `TECHNICAL-PREREQUISITE`}.
+   - `User-visible delivery` cell is one short line. For TECHNICAL-PREREQUISITE: `unblocks CH-NN (ships <feature>)`.
+   - The per-chunk narrative blocks in §1 of the forward-scope MUST also include 2 explicit lines per chunk (v2 mandatory):
+     - `Functional outcome:` 1-paragraph user-visible capability statement (or `NONE this chunk — technical prerequisite for CH-NN`).
+     - `Defers (with product impact):` enumerate any features NOT shipping this chunk + allocation chunk(s) + product impact during deferral (language a non-technical user understands).
 
 8. **Open questions section**:
    - Any decision the planner cannot make from forward-scope + precedent alone.

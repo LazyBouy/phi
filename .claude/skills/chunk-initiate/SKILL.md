@@ -115,12 +115,36 @@ Below-threshold divergence (e.g., 1 fork divergent with no scope expansion, like
 
 **Step C (architectural-refinement-at-approval-gate, added 2026-05-19 per CH-05-i-phi retro P-orch-4)**: when the user surfaces an architectural insight at gate-1.5 final-approval read that **materially refines a LOCKED variant body** (NOT a fork re-vote — the user accepts the locked option but refines what the option means), route via a SECOND planner re-spawn (iter-3) with the refinement scoped to the affected fork bodies only. Other locks keep their iter-2 status. CH-05 iter-2 → iter-3 (asymmetric tier layout: `F-storage-layout` + `F-retrieval` + `F-write-atomicity` bodies refined while `F-tier-types` + `F-rotation` + `F-incognito` + `F-record-id` kept iter-2 status) is the canonical precedent.
 
-**AskUserQuestion fork-template requirement (added 2026-05-19 per CH-05-i-phi retro P-skill-2)**: every fork option presented at gate-1 (or gate-1.5 sub-fork) via AskUserQuestion MUST include in the option's `description` field:
+**AskUserQuestion fork-template requirement (added 2026-05-19 per CH-05-i-phi retro P-skill-2; extended 2026-05-20 per CH-28 retro plan archive `chunk-decomposition-and-fork-framing-76e04080.md` to a STRICT 4-line template + TECHNICAL FORK release)**: every fork option presented at gate-1 (or gate-1.5 sub-fork) via AskUserQuestion MUST include in the option's `description` field the 4 lines below, IN ORDER:
 
-- **(a) High-level user-impact summary** — one sentence describing how the choice affects the user-facing behaviour or product surface (not the implementation detail). Example: *"User sees a strict error when no identity layers found at any of the 3 scopes."* (Better than *"strict EmptyScope error per F-empty-dir-fallback.b lock"*.)
-- **(b) Pros / cons** — 2-3 bullet pros + 1-2 bullet cons for the option, in a 1-sentence-each form. Pros first.
+```
+**User-visible:** <what users perceive if this option lands>
+**Product trajectory:** <how this affects overall product trajectory — what becomes easier/harder downstream>
+**Cycle scope:** <effort + cascade scope — engineering tradeoff for this chunk>
+**Defers (if chosen):** <features NOT shipping this chunk; allocation chunk-IDs OR "none deferred">
+```
 
-Codifies the user's standing rule (saved as `feedback_locked_fork_details_appendix.md`): *"When the fork options are presented, there must be at least these two things (in a brief summary of course): how the fork affects the high level requirement from the user standpoint, and what are the pros and cons for the fork. That enables the user (who is not deeply involved in the technical nitty gritty details) to decide the correct fork feature for the chunk effectively."*
+**Disciplines**:
+
+- **User-visible** line: states what the END USER perceives — NOT the implementation layer. Avoid architectural jargon (e.g., "wire-format-explicit", "auditability", "operator inspection window"). Frame in user-perceivable behavior. Example: *"User sees a strict error when no identity layers found at any of the 3 scopes."* (Better than *"strict EmptyScope error per F-empty-dir-fallback.b lock"*.)
+- **Product trajectory** line: states the long-term product impact (better/worse for which downstream capabilities) — DISTINCT from this chunk's engineering tradeoff.
+- **Cycle scope** line: engineering tradeoff for THIS chunk (effort, cascade scope, audit envelope tier, NEW migrations, etc.).
+- **Defers (if chosen)** line: enumerates features that will NOT ship this chunk IF this option is chosen; cite the allocation chunk-IDs (e.g., `M6-DEFERRED-04 / CH-36`). If no features are deferred for this option, write `none deferred`. Closes the "perception that essential features will be lost" gap.
+
+**TECHNICAL FORK release**: when a fork is labeled `**TECHNICAL FORK** (no user-visible delta — pick on engineering merit only)` in the plan §"Forks for orchestrator" section (per chunk-planner v26 P-plan-1-v26 + per-chunk-planning-template Pre-§1 Forks-section format rules), the AskUserQuestion `description` field MAY collapse to the **2-line minimal template**:
+
+```
+**Cycle scope:** <effort + cascade scope — engineering tradeoff>
+**Defers (if chosen):** <features NOT shipping; allocation chunk-IDs OR "none deferred">
+```
+
+The 2-line release applies ONLY to forks the planner labeled `TECHNICAL FORK`. Forks without that label MUST use the full 4-line template.
+
+**Project-agnostic**: applies uniformly to `project=baby-phi` AND `project=i-phi` AND any future project. No project-specific path literals in template text.
+
+**Why the 4-line template** (rationale only): CH-28 retro observed that the v23 2-line template (`user-impact` + `pros/cons`) was being interpreted as **architectural-impact** ("hybrid Blueprint table = wire-format-explicit") rather than user-perceived behavior. The user reading gate-1 forks could not assess product trajectory or trace what features would be deferred under each option. The 4-line template structurally surfaces all four perspectives.
+
+Codifies + extends the user's standing rule (saved as `feedback_locked_fork_details_appendix.md`): *"When the fork options are presented, there must be at least these two things (in a brief summary of course): how the fork affects the high level requirement from the user standpoint, and what are the pros and cons for the fork."* The CH-28 retro extension adds **Product trajectory** + **Defers (if chosen)** as separately-required lines so the dual "best for chunk + best for product" framing the user explicitly asked for at the 2026-05-20 plan-mode session is structurally enforced.
 
 1. If `approval=yes`: produce the inline plan summary (template below in "Approval gate UX") and call AskUserQuestion with options:
    - **Approve** → proceed to Phase 2.

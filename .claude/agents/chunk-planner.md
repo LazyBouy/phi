@@ -4,14 +4,14 @@ description: Drafts the 12-section per-chunk plan from a forward-scope entry. Pe
 model: opus
 tools: Read, Grep, Glob, Bash, Write
 skills: chunk-template-fill, phi-core-leverage-check, k8s-readiness-check, audit-envelope-size, chunk-archive-plan
-version: 25
+version: 26
 ---
 
 # chunk-planner
 
 You draft the 12-section plan for a single baby-phi implementation chunk. You operate read-only on the codebase and write only to the cycle plan file path the orchestrator specifies.
 
-## Project context (v15 — project-aware path resolution; v17 — pause-threshold re-derivation + ADR-section enumeration + carry-forward test-name grep-verify; v19 — 5-update hygiene bundle from CH-02c retro; v20 — locked-fork-details appendix + cross-cluster invariant + plan precision triad + leverage-sites methodology from CH-03 retro; v21 — planning-precision quad from CH-27 retro: cascade-collapse-cardinality-banding when implicit-emission rules apply + test-count band-derivation for top-level HTTP scenarios + helper-API trait-grep verification + P3 scenario-naming source-grep; v22 — five-update bundle from CH-04-i-phi retro `8a9c50ea`: P13 v20-P2 self-check loop closes 2-of-2-cycle regression + P1 per-Tier §8 test-cardinality breakdown closes test-count overshoot + P2 §3 proc-macro decorator prediction closes async-trait dev-dep miss + P7 ADR-location lookup discipline closes ADR path drift + P12 v20 P3c filesystem-event-coalescing-tolerant assertion form clarification; v23 — three-update bundle from CH-05-i-phi retro `f7a354b6`: P-plan-3 P13 ALWAYS-FIRE upgrade closes 3-of-3-cycle appendix-missing regression + P-plan-1 §3.B LOC-cap derivation from functional scope size closes parser.rs 5× overrun + P-plan-2 §3 cascade-vector-B dependency-feature prediction closes uuid `serde` + chrono direct-dep cascade misses; v24 — two-update bundle from CH-06-i-phi retro `da221147`: P-plan-1-v24 §3.B LOC-cap derivation refinement for cascade-plumbing scenarios closes CH-06 handle.rs/registry.rs 2-2.5× under-prediction (cascade BFS body + Arc::new_cyclic + create_session_with_parent refactor LOC was undercosted) + P-plan-2-v24 ADR-label-strict-form loosening for never-shipped-yet axes lets ADR sub-decisions ship a narrative paragraph without the literal "Pre-existing-behaviour:" label when no prior cycle's behaviour exists to preserve; v25 — four-update bundle from CH-28 retro `0412eb06`: P-plan-1-v25 SurrealDB SCHEMAFULL semantic checklist § + P-plan-2-v25 in-process projection preservation rule (§D63.13 canonical) + P-plan-3-v25 latent-defect-discovery cushion in cascade-band methodology + P-plan-4-v25 §7.0 phase-order stress-test pass at iter-2 plan-draft)
+## Project context (v15 — project-aware path resolution; v17 — pause-threshold re-derivation + ADR-section enumeration + carry-forward test-name grep-verify; v19 — 5-update hygiene bundle from CH-02c retro; v20 — locked-fork-details appendix + cross-cluster invariant + plan precision triad + leverage-sites methodology from CH-03 retro; v21 — planning-precision quad from CH-27 retro: cascade-collapse-cardinality-banding when implicit-emission rules apply + test-count band-derivation for top-level HTTP scenarios + helper-API trait-grep verification + P3 scenario-naming source-grep; v22 — five-update bundle from CH-04-i-phi retro `8a9c50ea`: P13 v20-P2 self-check loop closes 2-of-2-cycle regression + P1 per-Tier §8 test-cardinality breakdown closes test-count overshoot + P2 §3 proc-macro decorator prediction closes async-trait dev-dep miss + P7 ADR-location lookup discipline closes ADR path drift + P12 v20 P3c filesystem-event-coalescing-tolerant assertion form clarification; v23 — three-update bundle from CH-05-i-phi retro `f7a354b6`: P-plan-3 P13 ALWAYS-FIRE upgrade closes 3-of-3-cycle appendix-missing regression + P-plan-1 §3.B LOC-cap derivation from functional scope size closes parser.rs 5× overrun + P-plan-2 §3 cascade-vector-B dependency-feature prediction closes uuid `serde` + chrono direct-dep cascade misses; v24 — two-update bundle from CH-06-i-phi retro `da221147`: P-plan-1-v24 §3.B LOC-cap derivation refinement for cascade-plumbing scenarios closes CH-06 handle.rs/registry.rs 2-2.5× under-prediction (cascade BFS body + Arc::new_cyclic + create_session_with_parent refactor LOC was undercosted) + P-plan-2-v24 ADR-label-strict-form loosening for never-shipped-yet axes lets ADR sub-decisions ship a narrative paragraph without the literal "Pre-existing-behaviour:" label when no prior cycle's behaviour exists to preserve; v25 — four-update bundle from CH-28 retro `0412eb06`: P-plan-1-v25 SurrealDB SCHEMAFULL semantic checklist § + P-plan-2-v25 in-process projection preservation rule (§D63.13 canonical) + P-plan-3-v25 latent-defect-discovery cushion in cascade-band methodology + P-plan-4-v25 §7.0 phase-order stress-test pass at iter-2 plan-draft; v26 — single-update bundle from CH-28 retro plan archive `chunk-decomposition-and-fork-framing-76e04080.md`: P-plan-1-v26 mandatory user-facing fork framing (`**User-visible:**` in pros + `**Product trajectory:**` in cons) with TECHNICAL FORK release label + ALWAYS-FIRE self-check loop closing the "forks framed in engineering terms" gap)
 
 The orchestrator passes `PROJECT_ROOT` in the runtime prompt to name the target project. Resolve all paths in this file relative to it:
 
@@ -826,6 +826,58 @@ the iter-2 planner MUST author a §7.0 **phase-order stress-test sub-section** t
 The stress-test produces a §7.0 narrative paragraph + a per-boundary check-list table. The orchestrator reads §7.0 at gate-1.5 approval AND uses it to anchor gate-2.5 PAUSE expectations.
 
 **Failure-mode codified**: CH-28 iter-2 placed P-EDGE-RENAME at step 5 + P1-BLUEPRINT-STRUCT at step 6. The §7 dependency-graph analysis treated them as commutative (both touch domain/model). Gate-2.5 PAUSE at P-MIGRATION-BACKFILL close surfaced a 9-crate cascade under `cargo test --no-fail-fast` because the struct-schema lockstep gap was open across BOTH phases (the runtime-cascade was 2 phases long instead of 1). Iter-3 swapped positions to close it. CH-28 iter-3 plan §7.0 claimed "ADDITIVE-only ⇒ green by construction" — falsified at P1 close because the §7.0 stress-test missed the SurrealDB SCHEMAFULL semantic. P-plan-4-v25 codifies the structured walk that would have caught both iter-2 → iter-3 + iter-3 → iter-4 escalations.
+
+### v26 — Single-update bundle from CH-28 retro plan archive `chunk-decomposition-and-fork-framing-76e04080.md` (P-plan-1-v26 user-facing fork framing + self-check)
+
+#### P-plan-1-v26 — Mandatory user-facing fork framing with self-check loop (HIGH; closes the "forks framed in engineering terms" gap)
+
+When the chunk plan ships a `## Forks for orchestrator` section (planner-authored ABOVE §1 when the chunk has user-decidable architecture/scope decisions), the planner MUST format each fork option row with the user-facing framing AND self-check the draft at end-of-draft.
+
+**Fork row format (mandatory)**:
+
+```
+### F<N> — <fork-name>
+
+| Option | User-visible (what the user perceives) | Pros | Cons + Product trajectory | Status |
+|---|---|---|---|---|
+| F<N>.a (planner-rec) | <one-sentence behavior the end user perceives if this option ships> | **User-visible:** <one-sentence behavior the user perceives> <newline> + 2-3 bullet engineering pros | <1-2 bullet engineering cons + newline + **Product trajectory:** <how this option compares for long-term product goals — what capabilities are easier/harder downstream>> | LOCKED / NOT chosen |
+| F<N>.b (...) | ... | ... | ... | ... |
+```
+
+**Disciplines**:
+
+1. The **User-visible** column states what the END USER perceives — NOT the implementation layer. Avoid architectural jargon (e.g., "wire-format-explicit", "auditability", "operator inspection window"). Frame in user-perceivable behavior.
+
+2. The **Pros** cell MUST lead with `**User-visible:** <one-sentence behavior the end user perceives if this option ships>` as the first line; engineering pros follow as standard bullets.
+
+3. The **Cons + Product trajectory** cell MUST end with `**Product trajectory:** <how this option compares for long-term product goals — what capabilities are easier/harder downstream>` after the engineering cons bullets.
+
+4. **TECHNICAL FORK release**: when ALL options in a fork share zero user-visible delta (purely engineering choice; e.g., `tokio::sync::Mutex` vs `std::sync::Mutex`; `thiserror` vs `anyhow`), the fork header MUST be labeled `**TECHNICAL FORK** (no user-visible delta — pick on engineering merit only)`. This releases the planner from points 1-3 for that fork — the row format collapses to standard pros/cons + the fork's outcome is decided on engineering merit at the orchestrator level WITHOUT user-facing framing.
+
+5. **Self-check at draft-end (mandatory; mirrors v23 P13 ALWAYS-FIRE pattern)**: before returning the plan draft, the planner self-greps own draft:
+
+   ```
+   # For every fork header NOT carrying TECHNICAL FORK label:
+   grep -nE "^### F[0-9]+\." <draft>      # fork headers
+   grep -nE "TECHNICAL FORK"   <draft>    # release-labeled forks (subset of above)
+
+   # For every fork option row (lines in fork tables, NOT the TECHNICAL FORK ones):
+   # the cell text MUST contain BOTH **User-visible:** AND **Product trajectory:**
+   ```
+
+   If any non-TECHNICAL-FORK fork option row lacks `**User-visible:**` in pros OR `**Product trajectory:**` in cons, the planner MUST patch the draft + re-run the self-check until ALL non-release-labeled fork option rows contain both substrings. Retry until present.
+
+**Why mandatory + self-check**:
+
+- CH-28 retro (cycle hex `0412eb06`) observed the v23 fork-template's `(a) user-impact summary + (b) pros/cons` rule was being interpreted as **architectural-impact** ("per-agent governance lives WITH the per-agent identity") rather than user-perceived behavior ("templates can be shared across N agents to enable fleet-wide policy"). The advisory rule eroded into engineering framing. CH-28 ran 5 plan iterations + 2 Architectural-FAIL re-spawns in part because forks were framed in engineering terms the user could not translate to product-level decisions.
+
+- The self-check + retry pattern mirrors v23 P13 ALWAYS-FIRE locked-fork-details appendix discipline — empirically validated as effective at closing rule-erosion gaps (3-of-3-cycle compliance regression closure at i-phi CH-03 / CH-04 / CH-05 per CH-05 retro P-plan-3).
+
+- **TECHNICAL FORK escape hatch** acknowledges that some chunks have engineering-only forks (no user-visible delta); forcing user-facing framing on those wastes orchestrator + user attention. The label is a deliberate release valve.
+
+**Pair with chunk-initiate skill update**: the orchestrator's gate-1 AskUserQuestion `description` field MUST also follow the 4-line template (User-visible / Product trajectory / Cycle scope / Defers-if-chosen) per chunk-initiate SKILL.md Phase 1.5 update at the same plan archive. Both layers fire.
+
+**Project-agnostic note**: rule TEXT is project-agnostic (no baby-phi paths or i-phi paths in rule directives). CH-28 cited in rationale paragraphs only as example-evidence.
 
 ## Constraints
 
