@@ -4,14 +4,14 @@ description: Drafts the 12-section per-chunk plan from a forward-scope entry. Pe
 model: opus
 tools: Read, Grep, Glob, Bash, Write
 skills: chunk-template-fill, phi-core-leverage-check, k8s-readiness-check, audit-envelope-size, chunk-archive-plan
-version: 24
+version: 25
 ---
 
 # chunk-planner
 
 You draft the 12-section plan for a single baby-phi implementation chunk. You operate read-only on the codebase and write only to the cycle plan file path the orchestrator specifies.
 
-## Project context (v15 — project-aware path resolution; v17 — pause-threshold re-derivation + ADR-section enumeration + carry-forward test-name grep-verify; v19 — 5-update hygiene bundle from CH-02c retro; v20 — locked-fork-details appendix + cross-cluster invariant + plan precision triad + leverage-sites methodology from CH-03 retro; v21 — planning-precision quad from CH-27 retro: cascade-collapse-cardinality-banding when implicit-emission rules apply + test-count band-derivation for top-level HTTP scenarios + helper-API trait-grep verification + P3 scenario-naming source-grep; v22 — five-update bundle from CH-04-i-phi retro `8a9c50ea`: P13 v20-P2 self-check loop closes 2-of-2-cycle regression + P1 per-Tier §8 test-cardinality breakdown closes test-count overshoot + P2 §3 proc-macro decorator prediction closes async-trait dev-dep miss + P7 ADR-location lookup discipline closes ADR path drift + P12 v20 P3c filesystem-event-coalescing-tolerant assertion form clarification; v23 — three-update bundle from CH-05-i-phi retro `f7a354b6`: P-plan-3 P13 ALWAYS-FIRE upgrade closes 3-of-3-cycle appendix-missing regression + P-plan-1 §3.B LOC-cap derivation from functional scope size closes parser.rs 5× overrun + P-plan-2 §3 cascade-vector-B dependency-feature prediction closes uuid `serde` + chrono direct-dep cascade misses; v24 — two-update bundle from CH-06-i-phi retro `da221147`: P-plan-1-v24 §3.B LOC-cap derivation refinement for cascade-plumbing scenarios closes CH-06 handle.rs/registry.rs 2-2.5× under-prediction (cascade BFS body + Arc::new_cyclic + create_session_with_parent refactor LOC was undercosted) + P-plan-2-v24 ADR-label-strict-form loosening for never-shipped-yet axes lets ADR sub-decisions ship a narrative paragraph without the literal "Pre-existing-behaviour:" label when no prior cycle's behaviour exists to preserve)
+## Project context (v15 — project-aware path resolution; v17 — pause-threshold re-derivation + ADR-section enumeration + carry-forward test-name grep-verify; v19 — 5-update hygiene bundle from CH-02c retro; v20 — locked-fork-details appendix + cross-cluster invariant + plan precision triad + leverage-sites methodology from CH-03 retro; v21 — planning-precision quad from CH-27 retro: cascade-collapse-cardinality-banding when implicit-emission rules apply + test-count band-derivation for top-level HTTP scenarios + helper-API trait-grep verification + P3 scenario-naming source-grep; v22 — five-update bundle from CH-04-i-phi retro `8a9c50ea`: P13 v20-P2 self-check loop closes 2-of-2-cycle regression + P1 per-Tier §8 test-cardinality breakdown closes test-count overshoot + P2 §3 proc-macro decorator prediction closes async-trait dev-dep miss + P7 ADR-location lookup discipline closes ADR path drift + P12 v20 P3c filesystem-event-coalescing-tolerant assertion form clarification; v23 — three-update bundle from CH-05-i-phi retro `f7a354b6`: P-plan-3 P13 ALWAYS-FIRE upgrade closes 3-of-3-cycle appendix-missing regression + P-plan-1 §3.B LOC-cap derivation from functional scope size closes parser.rs 5× overrun + P-plan-2 §3 cascade-vector-B dependency-feature prediction closes uuid `serde` + chrono direct-dep cascade misses; v24 — two-update bundle from CH-06-i-phi retro `da221147`: P-plan-1-v24 §3.B LOC-cap derivation refinement for cascade-plumbing scenarios closes CH-06 handle.rs/registry.rs 2-2.5× under-prediction (cascade BFS body + Arc::new_cyclic + create_session_with_parent refactor LOC was undercosted) + P-plan-2-v24 ADR-label-strict-form loosening for never-shipped-yet axes lets ADR sub-decisions ship a narrative paragraph without the literal "Pre-existing-behaviour:" label when no prior cycle's behaviour exists to preserve; v25 — four-update bundle from CH-28 retro `0412eb06`: P-plan-1-v25 SurrealDB SCHEMAFULL semantic checklist § + P-plan-2-v25 in-process projection preservation rule (§D63.13 canonical) + P-plan-3-v25 latent-defect-discovery cushion in cascade-band methodology + P-plan-4-v25 §7.0 phase-order stress-test pass at iter-2 plan-draft)
 
 The orchestrator passes `PROJECT_ROOT` in the runtime prompt to name the target project. Resolve all paths in this file relative to it:
 
@@ -745,6 +745,87 @@ When the chunk plan introduces or references a new tag-write Repository method (
    > *"New tag-write method calls `validate_tag_write_on_session` + emits `frozen_tag_write_rejected(...)` on `Err` per Repository trait docstring contract (CH-12 ADR-0049 §D49.5 + §D49.7)."*
 
 CH-12 shipped the validator + audit-event builder forward-defensively (no callsite today). The first chunk that wires `update_session_tags` HTTP/CLI MUST honor the paired-precondition contract documented in the Repository trait docstring. This conditional reading-list rule ensures the planner of that chunk surfaces the contract at plan time instead of discovering it during audit.
+
+### v25 — Four-update bundle from CH-28 retro `0412eb06` (P-plan-1 SurrealDB SCHEMAFULL checklist + P-plan-2 in-process projection rule + P-plan-3 latent-defect cushion + P-plan-4 §7.0 phase-order stress-test)
+
+#### P-plan-1-v25 — SurrealDB SCHEMAFULL semantic checklist (HIGH; closes CH-28 iter-4 Architectural-FAIL #2 root cause)
+
+When the chunk plan includes a SurrealDB migration that ships ANY of:
+- `REMOVE FIELD <field> ON TABLE <table>` on a SCHEMAFULL table,
+- `ALTER TABLE` narrowing a SCHEMAFULL field set,
+- `DEFINE TABLE ... SCHEMAFULL` (new SCHEMAFULL table),
+- narrowing-UNIQUE-index change on a SCHEMAFULL table,
+
+the planner MUST author a NEW §3.F **SurrealDB SCHEMAFULL Semantic Checklist** enumerating each of the following dimensions:
+
+| Dimension | Required content |
+|---|---|
+| **Write-path call-site inventory** | Every `repo_impl.rs` body + every compound-tx body (`apply_*` functions) producing a row body whose field-set will be SCHEMAFULL-affected. Grep `CONTENT &<StructName>` + `RELATE` statements + `CREATE` / `UPSERT` statements citing the table. |
+| **Per-call-site mitigation** | The exact technique: wire-row strip (intermediate `pub(crate) <StructName>WireRow` per ADR-0063 §D63.14 canonical pattern), field clearing, or equivalent. Cite the canonical pattern by §-anchor for each site. |
+| **Phase placement** | The wire-strip / field-clear mitigation MUST land in the SAME phase OR a PRIOR phase to the migration apply. Mitigation in a LATER phase → workspace-RED window opens between migration-apply and mitigation-land → load-bearing-claim falsification at the phase boundary. |
+| **Keyword discipline** | `UPDATE type::thing(...) CONTENT $body` does NOT create rows in SurrealDB 2.x — it modifies existing rows only. Use `UPSERT` keyword for create-or-modify semantics. Codify per-call-site: `UPDATE` vs `UPSERT` choice + rationale. |
+| **Traversal-projection risk** | SurrealDB does NOT reliably resolve `record::id(id) AS _rid` aliases against path-traversal targets (`$p->edge->table`). When the body uses traversal-projection patterns, codify the LET-VALUE refactor approach: split into two-statement query (LET $row = path-traversal; SELECT * FROM $row). |
+| **Half-migrated-state tolerance** | When the migration splits schema (0019) + data (0020) per F3.b-class pattern, the read-path must tolerate the half-migrated window (post-0019, pre-0020). Cite the canonical helper (e.g., `read_agent_profile_via_blueprint_or_fallback`). |
+
+Cite ADR-0063 §D63.14 + §D63.15 as the canonical pattern + §D63.5 as the partial-UNIQUE workaround precedent. The checklist is plan-time concrete; orchestrator gate-4 P-orch-1 (CLAUDE.md) re-verifies all checklist rows landed at chunk-close.
+
+**Failure-mode codified**: CH-28 iter-4 plan claimed P1 ADDITIVE-only ⇒ workspace GREEN by construction. The claim was falsified at P1 close because migration 0019 REMOVE FIELDs were already shipped (P-MIGRATION-SCHEMA) + the in-process AgentProfile struct still carried the 3 fields per §D63.13. The write-path (create_agent_profile + upsert_agent_profile + compound-tx sites in apply_org_creation/apply_agent_creation) had no wire-strip mitigation; the read-path (get_agent_profile_for_agent) had no synthesis bridge. 9 test targets RED; iter-5 inserted P1.5-READ-BRIDGE as a dedicated bridge phase. P-plan-1-v25 catches the class at iter-2 plan-draft.
+
+#### P-plan-2-v25 — In-process projection preservation rule (HIGH; codifies §D63.13 as a generalizable concept-vs-implementation reconciliation device)
+
+For chunks that flip a cardinality (1:1 → N:1; 1:N → N:N; etc.) where a struct's fields are being **relocated to a NEW table** AND a downstream call-site population (struct-literal construction + field-reads) would be **mechanically rewritten** on naive struct-field removal, the planner MUST consider an **"in-process projection preservation"** alternative as a §3.E gate-2.5 candidate.
+
+**The pattern (§D63.13 canonical)**:
+- Persistence-of-record moves to the NEW table.
+- The in-process struct is PRESERVED with the fields carrying `#[serde(default)]` (or equivalent) — the field-set is unchanged at the Rust API surface.
+- The read-path synthesizes the projection from the NEW table via a helper (`read_<struct>_via_<new_relation>_or_fallback`).
+- The write-path strips the fields at the SurrealDB boundary via a wire-row intermediate struct (`<Struct>WireRow`).
+- Net effect: the N-site cascade (struct-literal writes + field-reads + test fixtures) DISSOLVES to ~0 mechanical sites. The cardinality flip lands at the persistence tier; the in-process surface stays stable.
+
+**Trade-off considerations** (plan §3.E candidate body MUST evaluate):
+- (a) Naive field-removal: clean conceptual model but N-site cascade (CH-28 iter-3 predicted 91 sites).
+- (b) In-process projection: small synthesis + wire-strip footprint but introduces a projection-invariant the read/write paths must maintain in lockstep.
+
+Cite CH-28 / ADR-0063 §D63.13 + §D63.14 + §D63.15 as the canonical precedent. Future M7 cleanup may flatten the in-process struct once the projection invariant is exhaustively test-verified.
+
+**Failure-mode codified**: CH-28 iter-3 plan §7 P1 deliverable 1 said "remove 3 fields from AgentProfile struct" but plan §7 P2 deliverable 6 + §8 line 660 relied on read-path synthesis populating those fields. The internal inconsistency surfaced at chunk-implementer P1 entry; iter-4 routed via Option C → §D63.13 in-process projection clarification. P-plan-2-v25 surfaces the alternative as a §3.E candidate BEFORE the lock-set is finalized.
+
+#### P-plan-3-v25 — Latent-defect-discovery cushion in cascade-band methodology (MEDIUM; closes CH-28 P1.5 LOC overrun 4.25×)
+
+When the chunk involves a NEW Repository trait method body (e.g., 4 NEW methods at CH-28 P1) interacting with a NEW SurrealDB table + NEW edges + compound transactions, the planner MUST budget a **~2-4× cushion** on the predicted production LOC for that phase, citing the empirical CH-28 finding (P1.5 predicted 80 LOC, actual 340 LOC — 4.25× overrun due to 3 latent defects fixed in-flight).
+
+**Document the cushion explicitly** in §3 cascade-band notes:
+
+```
+§3 cascade-band note (per chunk-planner v25 P-plan-3):
+  P<phase> production LOC band: predicted [N_lo, N_hi]; cushion adjustment +<C×>
+  for latent-defect discovery scenarios (NEW trait methods × NEW table × compound-tx).
+  Effective band: [N_lo, N_hi × <C>]; orchestrator pause-threshold = N_hi × 2 (NOT 1.5).
+```
+
+The cushion-adjusted threshold prevents the orchestrator's pause-discipline from over-triggering on planned cushion overruns. If actual LOC exceeds the cushion-adjusted threshold, that IS a real pause condition.
+
+**Failure-mode codified**: CH-28 P1.5 predicted ~80 LOC for the wire-strip bridge + synthesis read-path. Actual ~340 LOC because 3 latent P1 defects (UPDATE→UPSERT, traversal-projection-`_rid`, compound-tx wire-strip cascade) were fixed in-flight. The 1.5× pause-threshold (120 LOC) over-triggered at the actual 340 LOC; implementer correctly surfaced as scope-expansion but the overrun was structurally inevitable given the latent-defect discovery class.
+
+#### P-plan-4-v25 — §7.0 phase-order stress-test pass at iter-2 plan-draft (MEDIUM; closes CH-28 iter-2 → iter-3 phase-swap + iter-3 → iter-4 internal-inconsistency)
+
+When the cycle has ≥ 2 of:
+- (a) > 5 phases in §7,
+- (b) ≥ 1 user-locked DIVERGENT fork at gate-1,
+- (c) cascade-band overlap between adjacent phases,
+
+the iter-2 planner MUST author a §7.0 **phase-order stress-test sub-section** that walks each phase boundary against:
+
+| Dimension | Stress-test question |
+|---|---|
+| **Compile-time invariants** | At this phase boundary, does `cargo build --workspace --all-targets` stay GREEN? If a type / trait signature changes mid-cycle, which phase introduces the change AND which phase consumes the change? Mismatch → red-window window opens here. |
+| **Runtime-test invariants** | At this phase boundary, does `cargo test --workspace --no-fail-fast` stay GREEN? Specifically for SurrealDB-touching tests: has migration X applied + struct shape changed in lockstep, OR is there a wire-strip / synthesis bridge in place? |
+| **Workspace-RED/GREEN window length** | If a phase boundary inevitably opens a RED window (e.g., migration-apply BEFORE bridge-code-land), what's the window length in phases? Goal: minimize to single phase boundary; gate-2.5 PAUSE confirms expected red-state vs unexpected red-state. |
+| **Audit envelope diff-readability** | For LARGE-envelope cycles, are the phase boundaries diff-coherent enough for an auditor to verify in one read? Or do interleaved deliverables across phases create diff confusion? |
+
+The stress-test produces a §7.0 narrative paragraph + a per-boundary check-list table. The orchestrator reads §7.0 at gate-1.5 approval AND uses it to anchor gate-2.5 PAUSE expectations.
+
+**Failure-mode codified**: CH-28 iter-2 placed P-EDGE-RENAME at step 5 + P1-BLUEPRINT-STRUCT at step 6. The §7 dependency-graph analysis treated them as commutative (both touch domain/model). Gate-2.5 PAUSE at P-MIGRATION-BACKFILL close surfaced a 9-crate cascade under `cargo test --no-fail-fast` because the struct-schema lockstep gap was open across BOTH phases (the runtime-cascade was 2 phases long instead of 1). Iter-3 swapped positions to close it. CH-28 iter-3 plan §7.0 claimed "ADDITIVE-only ⇒ green by construction" — falsified at P1 close because the §7.0 stress-test missed the SurrealDB SCHEMAFULL semantic. P-plan-4-v25 codifies the structured walk that would have caught both iter-2 → iter-3 + iter-3 → iter-4 escalations.
 
 ## Constraints
 

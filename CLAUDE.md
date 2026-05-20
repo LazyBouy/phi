@@ -112,7 +112,7 @@ Pre-existing chunks (CH-09, CH-10, CH-23) keep their flat-file legacy layout; th
 
 **Why TWO placements (not just one)**: CH-17 retro Row 1's gate-5-close-only placement was insufficient because target/ can balloon DURING gate-4 if multiple test invocations run concurrently or sequentially without cleanup. CH-18 evidence proved per-invocation cleanup is necessary; gate-5 final close is still mandatory as a final pre-commit cleanup. Both placements together prevent within-cycle disk-pressure incidents AND ensure clean state at chunk release.
 
-**Empirical durability (added 2026-05-18 per CH-27 retro Row 11, cycle hex `0edcaba9`)**: Validated across **7+ consecutive cycles** (CH-18 codified → CH-27 7th-cycle re-validation; ~600+ GiB cumulative reclaimed across all cycles; **0 mid-cycle disk-pressure incidents** post-codification). CH-27 placement-1 alone reclaimed 92.1 GiB at gate-4 close.
+**Empirical durability (added 2026-05-18 per CH-27 retro Row 11; bumped 2026-05-20 per CH-28 retro P-doc-1, cycle hex `0412eb06`)**: Validated across **8+ consecutive cycles** (CH-18 codified → CH-28 8th-cycle re-validation; ~990+ GiB cumulative reclaimed across all cycles; **0 mid-cycle disk-pressure incidents** post-codification). CH-28 placement-1 reclaimed ~390 GiB across 6 invocations in the cycle (5 plan iterations + 8 substantive phases + 3 parallel audits — significant due to iteration-heavy cycle scope).
 
 **Gate-2.5 PAUSE between P-FIXTURES + P-DOCS (added 2026-05-18 per CH-27 retro Row 9, cycle hex `0edcaba9`)**: when a chunk has a P-FIXTURES (or any cascade-emitting phase that materialises plan §3 cascade predictions into actual cardinality numbers) immediately preceding P-DOCS, the orchestrator inserts a **gate-2.5 PAUSE** between them. The implementer reports a **P-FIXTURES actuals snapshot** (call-site count, file count, LOC added, cascade-band predicted-vs-actual marker COLLAPSE / WITHIN / OVERRUN); orchestrator confirms before P-DOCS opens. **P-DOCS MUST cite the snapshot as authoritative for cardinality assertions, NOT plan §X bands.** Closes the cascade-cardinality-stale-narrative documentation gap surfaced at CH-27 Audit-B side observation (19 fixture-extension sites documented across 4 docs while P-FIXTURES landed 9; orchestrator applied Trivial-multi cardinality cascade patch at gate-3 across 7 doc locations). Paired with chunk-implementer v13 R3.
 
@@ -141,6 +141,38 @@ Pre-existing chunks (CH-09, CH-10, CH-23) keep their flat-file legacy layout; th
 
 **CH-06 evidence**: plan §3.B-A cites ADR-0008 §D8.14 + cycle-audit §6 + chunk-implementer P-SEAL deviation log. ADR-0008 §D8.14 reciprocally cites the §3.B-A amendment. Gate-3 verification passed (auditor B claim 7 included the cross-check; both audit logs PASS).
 
+**SurrealDB SCHEMAFULL semantic spot-check at gate-4 (added 2026-05-20 per CH-28 retro P-orch-1, cycle hex `0412eb06` — HIGH; closes iter-4 Architectural-FAIL #2 origin)**: when the cycle's plan references a migration shipping `REMOVE FIELD` / `ALTER TABLE` narrowing / new SCHEMAFULL table / narrowing-UNIQUE-index change, the orchestrator MUST at gate-4 final cycle re-audit verify:
+
+1. The §3.F **SurrealDB SCHEMAFULL Semantic Checklist** (per chunk-planner v25 P-plan-1) was authored at iter-2 plan-draft.
+2. Every checklist row's mitigation landed in the diff (`grep -rn '<StructName>WireRow' modules/crates/store/src/repo_impl.rs` for wire-strip mitigation; `grep -rn 'read_<struct>_via_<new_relation>_or_fallback' modules/crates/store/src/repo_impl.rs` for synthesis read-path).
+3. Spot-check ≥ 1 compound-tx site (e.g., `apply_org_creation`, `apply_agent_creation`) for wire-row substitution propagation per chunk-implementer v17 P-impl-2.
+4. `UPDATE` vs `UPSERT` keyword discipline — `grep -nE 'UPDATE type::thing\(.*\) CONTENT' modules/crates/store/src/repo_impl.rs` returns ZERO matches for any blueprint-class create-or-modify path (SurrealDB 2.x `UPDATE` does NOT create rows; must use `UPSERT`).
+
+Cite ADR-0063 §D63.14 + §D63.15 as the canonical pattern + §D63.5 as the partial-UNIQUE workaround precedent. **CH-28 origin**: iter-4 ADDITIVE-only ⇒ workspace-GREEN claim falsified at P1 close because the implementer-side P-FIXTURES snapshot didn't cover SchemaFULL × in-process-struct mismatch; the read-path + write-path bridges were scoped to a later phase. Gate-4 SCHEMAFULL spot-check would have surfaced the mismatch earlier; codified now.
+
+**ADR-inline-amendment verified-header cross-check at gate-3 (added 2026-05-20 per CH-28 retro P-orch-2, cycle hex `0412eb06` — MEDIUM; closes CH-28 ADR-0057 verified-header miss / Audit-B Claim 9 PASS-with-caveat)**: BEFORE dispatching auditors at gate-3, the orchestrator greps every ADR file that received an inline amendment block in the cycle:
+
+```
+git -C /root/projects/phi/<project> diff HEAD -- docs/specs/v0/implementation/m*/decisions/*.md | \
+  grep -B 1 "Amended at CH-${CYCLE_CHUNK}"
+```
+
+For every ADR file in the matched list, verify its line-1 verified-header carries a `CH-NN` prepend matching this cycle. If absent, apply a Trivial-1L verified-header prepend BEFORE auditor dispatch (defensive layer paired with chunk-implementer v17 P-impl-1's chunk-close-time check).
+
+**CH-28 evidence**: ADR-0057 received §D57.7 inline body amendment at P-DOCS (line 150 — cardinality 72→74 cite) but P-SEAL deliverable 8 missed the top-of-file verified-header prepend. Audit-B Claim 9 + Claim 12 surfaced as PASS-with-caveat; orchestrator-applied Trivial-1L at gate-3 close. P-orch-2 catches the class BEFORE auditor dispatch.
+
+**NEW gate-1.7 cross-lock interaction stress-test (added 2026-05-20 per CH-28 retro P-orch-3, cycle hex `0412eb06` — MEDIUM; proactive mitigation for high-iteration-count 3-of-3 DIVERGENT cycles)**: when ≥ 3 fork-locks are user-DIVERGENT at gate-1, the orchestrator's gate-1.5 plan absorption MUST include a NEW gate-1.7 stress-test pass evaluating each pair-wise lock interaction against:
+
+| Pair-wise interaction | Stress-test question |
+|---|---|
+| **(F<X>.* × F<Y>.*) compile-time invariants** | Do the two locked variants compile cleanly together at every phase boundary? Or does one lock's struct/trait change conflict with the other's call-site expectation? |
+| **(F<X>.* × F<Y>.*) runtime-test invariants** | Do the two locks have a shared dependency that runs RED through a phase ordering choice? (e.g., F1.c new struct + F3.b new migrations: between migration-apply and struct-refactor-land the workspace is RED) |
+| **(F<X>.* × F<Y>.*) phase-ordering constraints** | Does landing both locks in the same phase work, or must they split across phases? If they split, what's the dependency-graph topology? |
+
+Hypothesis (CH-28 evidence): combined locks have **multiplicative replanning surface**. Explicit pair-wise stress-testing at gate-1.7 surfaces interactions BEFORE iter-2 plan-archive; would catch iter-3 → iter-4 + iter-4 → iter-5 class of Architectural-FAILs earlier. **Defensive only — does NOT block plan-archive**; surfaces interaction concerns to the user via AskUserQuestion if ≥ 1 RED window is anticipated. Paired with chunk-planner v25 P-plan-4 §7.0 phase-order stress-test (implementer-side equivalent).
+
+**CH-28 evidence**: gate-1 locked F1.c hybrid blueprint + F2.b USES_PROFILE rename + F3.b split migrations all DIVERGENT. Iter-2 plan placed P-EDGE-RENAME at step 5 + P1-BLUEPRINT-STRUCT at step 6 → iter-3 phase swap. Iter-3 ADDITIVE-only ⇒ green claim missed SCHEMAFULL × in-process struct mismatch → iter-4 narrowing → iter-5 P1.5-READ-BRIDGE insertion. Each iteration was downstream of the multiplicative lock interaction; gate-1.7 pair-wise stress-test would have surfaced the F1.c × F3.b × in-process-struct interaction at iter-2.
+
 **Audit-fix loop:**
 - **Tactical FAIL** — re-spawn Implementer with audit log path; re-spawn auditors (iter N+1).
 - **Architectural FAIL** — re-spawn Planner with audit log path; **always escalate to user**; re-spawn Implementer; re-spawn auditors.
@@ -155,6 +187,8 @@ Pre-existing chunks (CH-09, CH-10, CH-23) keep their flat-file legacy layout; th
 **Quality is non-negotiable.** The user's locked principle: *quality and thoroughness over cycle completion*. The final cycle re-audit cannot be skipped. Every audit FAIL flows into the retrospective's audit-cycle gaps section with a proposed gap-closing change.
 
 **Telemetry + permissions-audit (added 2026-05-03 per `permissions/tool-use-logging-and-permissions-audit-skill-18564835.md`).** Every tool call is logged to `.claude/tool-use.log` (gitignored, JSONL, 10MB rotation) by the `log-tool-use.sh` hook (PostToolUse + PostToolUseFailure + PermissionRequest). At retro time, the chunk-retrospector (v2) invokes the `permissions-audit` skill which reads the log, cross-references `settings.json` rules, and emits an §A–§H markdown report. Findings (hot allow-rule candidates, dead rules, hook false-positive flags, cross-cycle trends) land in §3.5 of the cycle retrospective with the full report appended. Standards updates from the audit flow through the same retro → user-review → standards-update pipeline as agent-prompt updates.
+
+**Cross-cycle fork-divergence observation (added 2026-05-20 per CH-28 retro P-meta-1, cycle hex `0412eb06`)**: cumulative cross-cycle divergent-fork count is now **14-of-19 (~74%)** across 10+ cycles of evidence (baby-phi CH-15/17/18/20/24/25/28 + i-phi CH-02a/02b/02c). The user systematically prefers tighter / more-fragmented / more-defensive / wire-format-explicit options at gate-1 fork-locks. **Treat fork-divergence as the modal outcome** in v9+ planner recommendation framing. **High-iteration-count correlation**: cycles with 3-of-3 DIVERGENT lock-sets correlate with elevated plan-iteration counts — CH-28 ran 5 plan iterations (highest to date) with 3-of-3 DIVERGENT + 2 Architectural-FAIL re-spawns; the F1.c + F2.b + F3.b combination's multiplicative replanning surface manifested as iter-3 phase-swap + iter-4 P1/P2 inconsistency + iter-5 ADDITIVE-green falsification. Future cycles with 3-of-3 DIVERGENT should anticipate iteration-count tail; gate-1.7 cross-lock interaction stress-test (P-orch-3 below) is the proactive mitigation.
 
 ## Granular Bash discipline
 

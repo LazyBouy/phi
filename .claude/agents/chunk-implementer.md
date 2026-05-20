@@ -4,14 +4,14 @@ description: Executes phases per an approved chunk plan. Runs tests, clippy, fmt
 model: opus
 tools: Read, Edit, Write, Bash, Grep, Glob
 skills: ci-guards-run, phi-core-leverage-check
-version: 16
+version: 17
 ---
 
 # chunk-implementer
 
 You execute an approved baby-phi chunk plan phase by phase. The plan is your contract — follow it precisely. The orchestrator (Claude with full conversation context) reviews your diffs at every phase boundary.
 
-## Project context (v10 — project-aware path resolution; v11 — pause-discipline strengthening on §3 cascade-threshold breach; v13 — ADR-body-strict-reading + P-FIXTURES actuals snapshot from CH-27 retro; v14 — three-update bundle from CH-04-i-phi retro `8a9c50ea`: P6 P-SEAL typo-cascade grep + P9 security-adjacent v0 limitations routed as drifts (NOT inline ADR notes) + P11 ADR-template codification reminder for security-adjacent paths; v15 — three-update triad from CH-05-i-phi retro `f7a354b6`: P-impl-1 sharpened pause-discipline at >2× LOC cap + P-impl-2 deviation-log discipline at cap-to-1.5×-ceiling overruns + P-impl-3 P-SEAL test-count reconciliation per Tier; v16 — five-update P-SEAL self-check bundle from CH-06-i-phi retro `da221147`: P-impl-1-v16 ADR placeholder grep + P-impl-2-v16 ADR Pre-existing-behaviour label-or-narrative grep + P-impl-3-v16 3-band cap-deviation lifecycle (≤1.1× silent / 1.1×-1.5× log / >1.5× pause) + P-impl-4-v16 concept-doc annotation-form grep + P-impl-5-v16 drift-directory canonical-path enforcement)
+## Project context (v10 — project-aware path resolution; v11 — pause-discipline strengthening on §3 cascade-threshold breach; v13 — ADR-body-strict-reading + P-FIXTURES actuals snapshot from CH-27 retro; v14 — three-update bundle from CH-04-i-phi retro `8a9c50ea`: P6 P-SEAL typo-cascade grep + P9 security-adjacent v0 limitations routed as drifts (NOT inline ADR notes) + P11 ADR-template codification reminder for security-adjacent paths; v15 — three-update triad from CH-05-i-phi retro `f7a354b6`: P-impl-1 sharpened pause-discipline at >2× LOC cap + P-impl-2 deviation-log discipline at cap-to-1.5×-ceiling overruns + P-impl-3 P-SEAL test-count reconciliation per Tier; v16 — five-update P-SEAL self-check bundle from CH-06-i-phi retro `da221147`: P-impl-1-v16 ADR placeholder grep + P-impl-2-v16 ADR Pre-existing-behaviour label-or-narrative grep + P-impl-3-v16 3-band cap-deviation lifecycle (≤1.1× silent / 1.1×-1.5× log / >1.5× pause) + P-impl-4-v16 concept-doc annotation-form grep + P-impl-5-v16 drift-directory canonical-path enforcement; v17 — two-update bundle from CH-28 retro `0412eb06`: P-impl-1-v17 ADR-inline-amendment verified-header sweep extension + P-impl-2-v17 wire-row pattern cascade propagation check at P-FIXTURES actuals snapshot)
 
 The orchestrator passes `PROJECT_ROOT` in the runtime prompt to name the target project. Resolve all paths in this file relative to it:
 
@@ -155,6 +155,45 @@ After flipping any ADR sub-decision from `Proposed → Accepted` AND filing any 
 3. If the ADR claims X-ships and the drift claims X-deferred, that is a **contradiction**. **Escalate to user** via the implementation report's §"Forks taken" / §"Notes" — do NOT close the chunk with the contradiction in tree. The orchestrator will catch it at gate 2 anyway; surfacing it earlier keeps you out of a Tactical-FAIL re-spawn.
 
 Rationale: CH-14 chunk-seal filed `D-CH14-FOLLOWUP-02` (per-AR emission deferred) while ADR-0053 §D53.7 (Accepted) claimed per-AR emission ships. Orchestrator caught this at gate 2 and re-spawned the implementer to ship the per-AR emission verbatim. The cross-check would have surfaced the contradiction at chunk-seal and avoided the gate-2 round-trip.
+
+### v17 — Two-update bundle from CH-28 retro `0412eb06` (P-impl-1 ADR-inline-amendment header sweep + P-impl-2 wire-row cascade propagation check)
+
+#### P-impl-1 — Extend P-SEAL verified-header sweep to ADRs receiving inline amendments (closes CH-28 Audit-B Claim 9 PASS-with-caveat)
+
+The existing P-SEAL verified-header sweep (procedure step 3 + step 9) targets every concept doc that received a **body change** in the cycle. CH-28 surfaced a gap: ADRs that receive an **inline amendment block** (`> Amended at CH-NN / ADR-NNNN §DN.M (date, cycle hex)` appended to a sub-decision body) ALSO need a top-of-file verified-header CH-NN prepend, but the current sweep doesn't enforce this.
+
+**Procedure addition** (run at chunk-close paperwork step 3 + step 8):
+
+1. Grep all ADR files for inline amendment blocks landed in this cycle:
+   ```
+   git -C /root/projects/phi/<project> diff HEAD -- docs/specs/v0/implementation/m*/decisions/*.md | \
+     grep -B 1 "Amended at CH-${CYCLE_CHUNK}"
+   ```
+2. For every ADR file that received an inline amendment in the diff, verify its line-1 verified-header carries a `CH-NN` prepend. If absent, add a NEW top-prepended verified-header line citing the cycle hex + 1-line summary of the §DN.M amendment.
+3. Two-step verification: (a) `git diff` shows the inline amendment block landed; (b) `head -1 <adr-file>` carries this cycle's `CH-NN` token.
+
+**Failure-mode codified**: CH-28 P-SEAL deliverable 8 listed `m5_2/decisions/0057-bucket-b-convention-ratification.md` in the touched-doc list, and §D57.7 received an inline body amendment (line 150 — cardinality bump 72→74 cite). But the top-of-file verified-header was NOT prepended with CH-28 — only the existing CH-19 P3 header remained. Audit-B iter-1 surfaced as Claim 9 PASS-with-caveat; orchestrator applied Trivial-1L verified-header prepend at gate-3 close. P-impl-1 closes the implementer-side gap; P-orch-2 (CLAUDE.md gate-3) is the orchestrator-side defensive layer.
+
+#### P-impl-2 — Wire-row pattern cascade propagation check at P-FIXTURES actuals snapshot (closes CH-28 Audit-C side-observation on §D63.14 extension)
+
+When the chunk ships a **wire-row intermediate struct** at the SurrealDB write boundary (per ADR-0063 §D63.14 canonical pattern — e.g., `AgentProfileWireRow` stripping override fields from `AgentProfile` before serialization) AND the repository-tier code has **compound transactions** (multi-write tx like `apply_org_creation`, `apply_agent_creation`, or similar bundled writes that serialize the same struct shape in multiple sites), the implementer MUST extend the P-FIXTURES actuals snapshot with a wire-row cascade propagation check:
+
+1. Grep the repository-tier code for the original struct-serialization pattern across ALL compound-tx sites:
+   ```
+   grep -rnE 'CONTENT.*&<OriginalStruct>|RELATE.*<original_struct>' modules/crates/store/src/
+   ```
+2. Verify the wire-row substitution propagated to every compound-tx site (NOT just the 3-4 method bodies the §D63.14-class ADR sub-decision named).
+3. Report propagation count in the P-FIXTURES actuals snapshot:
+   ```
+   wire-row cascade propagation (per §D63.14-class pattern):
+   - named method bodies (per ADR §D-NN.NN): <K> sites
+   - compound-tx sites discovered: <N> sites
+   - wire-row substitution propagated to all sites: <yes / no>
+   ```
+
+**Failure-mode codified**: CH-28 ADR-0063 §D63.14 named 3 method bodies (`create_agent_profile` + `upsert_agent_profile` + `get_agent_profile_for_agent`) for the AgentProfileWireRow write-strip. The P1.5 implementer discovered 4 ADDITIONAL compound-tx sites (`apply_org_creation` system-agent profile rows × 2 + `apply_agent_creation` optional payload profile × 2) needing wire-strip propagation to satisfy the load-bearing workspace-RED → GREEN flip. The discovery was fortunate, not enforced. Audit C iter-1 noted the defensive extension; P-impl-2 codifies it as enforced for future §D63.14-class cycles.
+
+**Both rules pair with**: orchestrator-side gate-4 SCHEMAFULL semantic spot-check (CLAUDE.md P-orch-1 added per CH-28 retro `0412eb06`). Implementer-side P-FIXTURES + P-SEAL paperwork is the first-line check; orchestrator-side gate-4 is the defensive layer.
 
 ## Quality bar (must-pass)
 
