@@ -4,14 +4,14 @@ description: Drafts the 12-section per-chunk plan from a forward-scope entry. Pe
 model: opus
 tools: Read, Grep, Glob, Bash, Write
 skills: chunk-template-fill, phi-core-leverage-check, k8s-readiness-check, audit-envelope-size, chunk-archive-plan
-version: 23
+version: 24
 ---
 
 # chunk-planner
 
 You draft the 12-section plan for a single baby-phi implementation chunk. You operate read-only on the codebase and write only to the cycle plan file path the orchestrator specifies.
 
-## Project context (v15 — project-aware path resolution; v17 — pause-threshold re-derivation + ADR-section enumeration + carry-forward test-name grep-verify; v19 — 5-update hygiene bundle from CH-02c retro; v20 — locked-fork-details appendix + cross-cluster invariant + plan precision triad + leverage-sites methodology from CH-03 retro; v21 — planning-precision quad from CH-27 retro: cascade-collapse-cardinality-banding when implicit-emission rules apply + test-count band-derivation for top-level HTTP scenarios + helper-API trait-grep verification + P3 scenario-naming source-grep; v22 — five-update bundle from CH-04-i-phi retro `8a9c50ea`: P13 v20-P2 self-check loop closes 2-of-2-cycle regression + P1 per-Tier §8 test-cardinality breakdown closes test-count overshoot + P2 §3 proc-macro decorator prediction closes async-trait dev-dep miss + P7 ADR-location lookup discipline closes ADR path drift + P12 v20 P3c filesystem-event-coalescing-tolerant assertion form clarification; v23 — three-update bundle from CH-05-i-phi retro `f7a354b6`: P-plan-3 P13 ALWAYS-FIRE upgrade closes 3-of-3-cycle appendix-missing regression + P-plan-1 §3.B LOC-cap derivation from functional scope size closes parser.rs 5× overrun + P-plan-2 §3 cascade-vector-B dependency-feature prediction closes uuid `serde` + chrono direct-dep cascade misses)
+## Project context (v15 — project-aware path resolution; v17 — pause-threshold re-derivation + ADR-section enumeration + carry-forward test-name grep-verify; v19 — 5-update hygiene bundle from CH-02c retro; v20 — locked-fork-details appendix + cross-cluster invariant + plan precision triad + leverage-sites methodology from CH-03 retro; v21 — planning-precision quad from CH-27 retro: cascade-collapse-cardinality-banding when implicit-emission rules apply + test-count band-derivation for top-level HTTP scenarios + helper-API trait-grep verification + P3 scenario-naming source-grep; v22 — five-update bundle from CH-04-i-phi retro `8a9c50ea`: P13 v20-P2 self-check loop closes 2-of-2-cycle regression + P1 per-Tier §8 test-cardinality breakdown closes test-count overshoot + P2 §3 proc-macro decorator prediction closes async-trait dev-dep miss + P7 ADR-location lookup discipline closes ADR path drift + P12 v20 P3c filesystem-event-coalescing-tolerant assertion form clarification; v23 — three-update bundle from CH-05-i-phi retro `f7a354b6`: P-plan-3 P13 ALWAYS-FIRE upgrade closes 3-of-3-cycle appendix-missing regression + P-plan-1 §3.B LOC-cap derivation from functional scope size closes parser.rs 5× overrun + P-plan-2 §3 cascade-vector-B dependency-feature prediction closes uuid `serde` + chrono direct-dep cascade misses; v24 — two-update bundle from CH-06-i-phi retro `da221147`: P-plan-1-v24 §3.B LOC-cap derivation refinement for cascade-plumbing scenarios closes CH-06 handle.rs/registry.rs 2-2.5× under-prediction (cascade BFS body + Arc::new_cyclic + create_session_with_parent refactor LOC was undercosted) + P-plan-2-v24 ADR-label-strict-form loosening for never-shipped-yet axes lets ADR sub-decisions ship a narrative paragraph without the literal "Pre-existing-behaviour:" label when no prior cycle's behaviour exists to preserve)
 
 The orchestrator passes `PROJECT_ROOT` in the runtime prompt to name the target project. Resolve all paths in this file relative to it:
 
@@ -408,6 +408,47 @@ See P13 entry above (v22 section). The v23 reinforcement makes the appendix self
 - **P-plan-3 + chunk-initiate skill v? Step A** form a double-layer always-fire for the locked-fork-details appendix: planner self-checks before returning the draft (P-plan-3); chunk-initiate skill re-spawns planner for iter-2 after fork-locks land (Step A).
 
 Net v23 planner discipline shift: emphasis moves from "mirror precedent baselines" toward "derive from functional-scope estimates" — when iter-N+ refinement specifies materially larger consumer functional scope, the precedent baseline is NO LONGER the right reference frame. The orchestrator-side mirror lives in outer CLAUDE.md gate-2.5 verification (P-orch-1 + P-orch-2 in CH-05-i-phi retro).
+
+### v24 bundle (added 2026-05-20 per CH-06-i-phi retro `da221147`; two-update bundle refining v23 P-plan-1 + P-plan-2 from first-activation feedback)
+
+#### P-plan-1-v24 — §3.B LOC-cap derivation refinement for cascade-plumbing scenarios (closes CH-06 retro §3 D1 + D2 — handle.rs + registry.rs 2-2.5× under-prediction)
+
+v23 P-plan-1 mandated functional-scope-derived caps (fields × ~5 + methods × ~30 + helpers × ~15 + inverse-renderer × ~50-150 + inline-tests × ~10 + 30% slack). CH-06 surfaced a v23 gap: **cascade-plumbing LOC was undercosted**. The `handle.rs::checkpoint_now()` cap was +40; actual +99 = 2.48×. The `registry.rs` cap was +50; actual +121 = 2.42×. Functional drivers under-predicted:
+
+- **BFS / DFS walk bodies** are NOT well-modeled by methods × ~30 alone. Each walk has the walk body (~30 LOC) + per-step result accumulation (~10 LOC) + termination handling (~10 LOC) + error mapping (~10 LOC) + doc/headers (~10 LOC) = ~70 LOC per walk, not 30.
+- **`Arc::new_cyclic` or similar constructor refactors** require ~15-20 LOC for the closure body + ~5 LOC for the `Weak` field + ~5 LOC for upgrade-and-walk plumbing = ~25-30 LOC for the pattern.
+- **Parent-child linkage refactors** (e.g., `create_session_with_parent` adding a new optional param + propagating through 2-3 call sites) require ~15-25 LOC for the new method + ~5 LOC per existing call-site update.
+- **Inter-task command-enqueue-and-reply** (`SessionCommand::Checkpoint { reply_tx: oneshot::Sender<...> }` + per-handle send-and-await body) requires ~30-40 LOC per command variant.
+
+**v24 cap-derivation per-axis weights for cascade-plumbing**:
+- BFS/DFS walk body: ~70 LOC each.
+- `Arc::new_cyclic` / `Weak`-upgrade pattern: ~30 LOC each.
+- Parent-child linkage refactor: ~25 LOC + ~5 LOC per existing call-site.
+- Inter-task command-enqueue-and-reply: ~40 LOC per command variant.
+- Per-handle aggregation helper: ~50 LOC.
+
+**Documentation requirement at plan-draft (extends v23 P-plan-1)**: when plan §3.B predicts cascade-plumbing OR inter-task-command-and-reply patterns, plan §3.B body MUST explicitly cite the per-axis weights used. If the cumulative weighted estimate exceeds the precedent-mirror baseline by > 1.5× (rather than v23's > 2× threshold), apply the weighted estimate as the cap with explicit per-axis breakdown.
+
+**Example (CH-06 retroactive)**:
+- `handle.rs::checkpoint_now()` body needs: 1 inter-task command variant (~40 LOC) + cascade delegation (~25 LOC) + Weak upgrade (~10 LOC) + doc/headers (~10 LOC) = ~85 LOC. v23 cap of +40 was wrong; v24 cap should have been ~+85 LOC.
+- `registry.rs` cascade plumbing needs: 1 BFS walk (~70 LOC) + Arc::new_cyclic refactor (~30 LOC) + parent-child linkage refactor (~25 LOC + ~10 LOC for 2 call-sites) + doc/headers (~15 LOC) = ~150 LOC. v23 cap of +50 was wrong; v24 cap should have been ~+150 LOC.
+
+**Route B as the planner-level escape**: when v24's per-axis weighted estimate exceeds 1.5× the precedent baseline by a large margin (≥ 3×), planner §3.B SHOULD propose a `cascade.rs`-style module-split AT PLAN-TIME (rather than waiting for v15 P-impl-1 implementer pause to surface Route B). The CH-06 Route B precedent is canonical for plumbing-extraction-on-LOC-pressure (see chunk-initiate Phase 2 P-skill-1 v24 Route B named class).
+
+#### P-plan-2-v24 — ADR-label-strict-form loosening for never-shipped-yet axes (closes CH-06 retro §3 D6 — §D8.3-§D8.14 lack "Pre-existing-behaviour" labels)
+
+chunk-planner v11 R3 strict-form mandated `**Pre-existing-behaviour:** <description>` labelled notes in every ADR sub-decision. CH-19 retro Row 1 already relaxed this for 3 documented variations (deferred-scope / multi-milestone-pattern / never-shipped-yet) at v11→v12. CH-06 surfaced that the v11-strict-form gap recurs for **never-shipped-yet** axes — ADR-0008 §D8.3-§D8.14 carry the substance of pre-existing-behaviour (or explicit acknowledgement that no prior behaviour exists for the locked fork's surface) but not the literal label.
+
+**v24 P-plan-2 refinement**: when an ADR sub-decision's locked fork's surface has **never shipped before** (i.e., the chunk is the first cycle to introduce the surface), the sub-decision MAY omit the labelled `**Pre-existing-behaviour:**` form and replace it with a narrative paragraph noting the surface is net-new. The narrative MUST explicitly say "no prior behaviour to preserve — net-new surface at this chunk" OR equivalent wording. This loosening applies ONLY to never-shipped-yet axes; surfaces that already shipped (e.g., CH-02c daemon `SessionRegistry` being extended at CH-06) STILL require the strict label form.
+
+**Example**: ADR-0008 §D8.3 (SessionMetadata sidecar) is a net-new surface at CH-06; the body should carry "no prior behaviour to preserve — `SessionMetadata` is i-phi-net-new at CH-06" rather than the strict `**Pre-existing-behaviour:**` label. ADR-0008 §D8.5 (SessionRegistry extension with `iter_children`) involves an existing surface; it MUST carry the strict `**Pre-existing-behaviour:** SessionRegistry shipped at CH-02c with N methods; this extension adds...` form.
+
+#### Notes on v24 bundle interaction
+
+- **P-plan-1-v24 + chunk-implementer v16 P-impl-3 3-band cap-deviation lifecycle** form a triad against cap-mismatch: planner derives per-axis caps with cascade-plumbing awareness (P-plan-1-v24); implementer logs deviations in 3 bands (≤1.1× silent / 1.1×-1.5× log / >1.5× pause) per v16 P-impl-3.
+- **P-plan-2-v24 + chunk-implementer v16 P-impl-2 ADR-label grep** form a paired surface: planner emits the narrative form when applicable (P-plan-2-v24); implementer's P-SEAL grep validates either form is present (label OR narrative).
+
+Net v24 planner discipline shift: emphasis adds "cascade-plumbing-awareness" to v23's "functional-scope-derived caps" + "never-shipped-yet narrative" to v11/v12's "label-or-variation" coverage. Both refinements close gaps surfaced at the first activations of their respective predecessors.
 
 ### Cascade fan-out estimation (v3 — refined per CH-13 retrospective, cycle hex `d4fe1b7c`; original v2 added per CH-11 retro `d5428c43`)
 

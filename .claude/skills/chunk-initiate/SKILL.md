@@ -151,6 +151,18 @@ Codifies the user's standing rule (saved as `feedback_locked_fork_details_append
    - For `project = baby-phi`: runs the 4 CI guards.
    - For `project = i-phi`: runs clippy + tests **iff** `Cargo.toml` exists; otherwise skip.
 3. **Doc-sync widened sweep** (per CH-15 retro): after any gate-2 inline correction OR drift closure with cross-cutting impact, grep the canonical stale-narrative phrase set across `<root>/docs/specs/v0/implementation/m*/architecture/*.md` + `…/operations/*.md` + `…/user-guide/*.md` (baby-phi paths; adapt to `<root>/docs/v0/**/*.md` for i-phi). The phrase set: `FOLLOWUP-NN`, `deferred per`, `is NOT emitted`, `not emitted at CH-NN`, `advisory at M5`, `Step 0 only blocking`, `M6+ tightens the gate`, `at M5/P4`, `not blocking at M5`. Patch any matches **before** dispatching auditors. Trivial-multi tier if > 1 line; Trivial-1L if ≤ 1 line.
+4. **Mid-implementation route-selection on v15 P-impl-1 LOC-cap pause (added 2026-05-20 per CH-06-i-phi retro `da221147` P-skill-1; codifies Route A / Route B / Route C named routing classes after first activation)**: when the implementer pauses at a >2× LOC cap breach per chunk-implementer v15 P-impl-1, the orchestrator surfaces THREE named routing classes via AskUserQuestion (the v23 fork-template applies: each option's `description` field includes user-impact + pros/cons). The 3 named classes:
+
+   - **Route A — Deviation-acceptance**: ship the overrunning file(s) at their actual LOC + log per v15 P-impl-2 cap-to-1.5×-ceiling deviation entry at P-SEAL. Use when functional scope is load-bearing for the locked fork semantic + further extraction would break cohesion + actual LOC stays within 1.5× ceiling. **CH-05 precedent (parser.rs 5× overrun)** — functional scope (9 frontmatter fields + render_memory_md inverse + 5 robustness tests) cannot be shrunk; deviation accepted.
+
+   - **Route B — Module-split (plumbing-extraction-on-LOC-pressure)**: extract the cascading/plumbing/wiring body to a NEW sibling module file (e.g., `cascade.rs`, `bridge.rs`, `wiring.rs`). The locked fork semantic ships unchanged; only the code organization changes. ADD 1 NEW file vs plan §3.B file-count cap = deviation logged + ratified in ADR. **CH-06 precedent (cascade.rs)** — extract BFS cascade walk + per-handle command-send-and-aggregate helper out of handle.rs + registry.rs into NEW `src/daemon/sessions/cascade.rs` (~138 LOC). Residual handle.rs + registry.rs LOC overruns fall within v15 P-impl-2 cap-to-1.5×-ceiling band; logged + ratified in plan §3.B-A user-directed amendment + ADR §D8.14. Suitable when extraction is functionally clean (helper boundary is natural) + extracted body is ≥ 50 LOC to justify a separate file.
+
+   - **Route C — Fork-relaxation / re-vote**: ship the locked fork at a relaxed semantic OR re-vote the fork via planner re-spawn iter-N+1. Use when the LOC overrun reveals the locked semantic was scoped too aggressively. Rare; always escalates to user re-vote AskUserQuestion. **NOT recommended** unless cap-derivation gap is so severe that the locked semantic cannot ship within ANY reasonable LOC envelope (e.g., > 5× cap with no extraction path).
+
+   The orchestrator selects + names the route in the AskUserQuestion prompt; the user picks. Selected route lands in:
+   - cycle-audit §6 deviations (as D-NN entry citing route class + functional driver).
+   - ADR §DN.M (ratifies the route + functional driver + cross-references).
+   - Plan §X.Y-A user-directed mid-cycle amendment (per outer CLAUDE.md P-orch-1 exception class) when Route B/C; Route A typically does NOT need plan amendment (deviation-log + ADR cite suffices unless user explicitly directs).
 
 ### Phase 3 — Audit (skip if `resume_from_phase = retro`)
 

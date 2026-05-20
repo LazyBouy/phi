@@ -124,6 +124,21 @@ Pre-existing chunks (CH-09, CH-10, CH-23) keep their flat-file legacy layout; th
 
 **(4) P-orch-4 — Architectural-refinement-at-approval-gate routing precedent (closes CH-05 retro §3 D7 — iter-2 → iter-3 asymmetric tier-layout precedent codification)**: when the user surfaces an architectural insight at gate-1.5 final-approval read that materially **refines a LOCKED variant body** (NOT a fork re-vote — the user accepts the locked option but refines what the option means at the implementation level), the orchestrator routes via a **second planner re-spawn** with the refinement scoped to the affected fork bodies only. Other locks keep their iter-2 status. The re-spawn produces an iter-3 plan that absorbs the refinement; auditors + implementer downstream see only iter-3. **CH-05 precedent**: user surfaced the Claude Code MEMORY.md pattern at gate-1.5 (after iter-2 locked-fork-appendix re-spawn under chunk-initiate Step A); planner re-spawned to iter-3 with asymmetric tier layout (short-term `.md`+detail-files, long-term JSONL, episodic JSONL stub). `F-storage-layout` + `F-retrieval` + `F-write-atomicity` bodies refined; `F-tier-types` + `F-rotation` + `F-incognito` + `F-record-id` kept iter-2 status. Result: zero downstream rework, single PASS-at-iter-1 audit cycle. Process worked — codify as the canonical routing. Companion rule at chunk-initiate v? Phase 1.5 Step C.
 
+**User-directed mid-cycle in-plan amendment exception class (P-orch-1, added 2026-05-20 per CH-06-i-phi retro `da221147` — first activation; codifies plan §3.B-A precedent)**: per-chunk plan archives are normally **immutable** post-archive (`chunk-archive-plan` skill closure). EXCEPTION: when the user explicitly directs a mid-cycle in-plan amendment at any phase boundary (gate-2 / gate-2.5 / gate-3 / gate-4) with a stated rationale (typically code-vs-documentation consistency after a Route B / fork-relaxation / scope-deviation route is selected), the orchestrator MAY append an `### §X.Y-A — Mid-cycle scope-deviation amendment (added YYYY-MM-DD post-archive)` block to the archived plan. The amendment block MUST:
+- Open with `> **EXCEPTION to plan-archive immutability — user-directed at YYYY-MM-DD for <stated reason>**` citation header.
+- Document what changed in tabular form (original §X.Y row | amended row | reason).
+- Cite the cross-references that ratify the amendment (ADR §DN.M + cycle-audit §Z + chunk-implementer P-SEAL deviation log entry).
+- Note the precedent class for future cycles citing this as "plumbing-extraction-on-LOC-pressure" or equivalent.
+
+**CH-06 precedent (canonical first activation)**: plan §3.B-A "Mid-cycle scope-deviation amendment" appended at 2026-05-20 to ratify Route B cascade.rs extraction + handle.rs/registry.rs residual LOC overruns. User-directed rationale: code-vs-documentation consistency so future readers see the deviation noted in-plan without cross-referencing ADR + cycle-audit + P-SEAL log separately. Companion precedent: spec-framework-87f86df8.md treated as living index under user direction (CH-01-i-phi).
+
+**Post-mid-cycle-deviation re-citation cross-check at gate-3 (P-orch-2, added 2026-05-20 per CH-06-i-phi retro)**: when a user-directed mid-cycle in-plan amendment lands per P-orch-1, the orchestrator MUST verify bidirectional citation freshness at gate-3 (audit dispatch). Specifically:
+- Grep the amendment block for its cited cross-references (ADR §DN.M + cycle-audit §Z + P-SEAL deviation log entry).
+- For each cross-reference, verify the cited artifact exists + carries a reciprocal citation back to the amendment.
+- If any cite is missing or stale, apply a Trivial-1L pre-audit patch to fix the cite-drift.
+
+**CH-06 evidence**: plan §3.B-A cites ADR-0008 §D8.14 + cycle-audit §6 + chunk-implementer P-SEAL deviation log. ADR-0008 §D8.14 reciprocally cites the §3.B-A amendment. Gate-3 verification passed (auditor B claim 7 included the cross-check; both audit logs PASS).
+
 **Audit-fix loop:**
 - **Tactical FAIL** — re-spawn Implementer with audit log path; re-spawn auditors (iter N+1).
 - **Architectural FAIL** — re-spawn Planner with audit log path; **always escalate to user**; re-spawn Implementer; re-spawn auditors.
