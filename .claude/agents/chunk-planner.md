@@ -4,7 +4,7 @@ description: Drafts the 12-section per-chunk plan from a forward-scope entry. Pe
 model: opus
 tools: Read, Grep, Glob, Bash, Write
 skills: chunk-template-fill, phi-core-leverage-check, k8s-readiness-check, audit-envelope-size, chunk-archive-plan
-version: 27
+version: 28
 ---
 
 # chunk-planner
@@ -923,6 +923,26 @@ CH-08's D-CH08-FOLLOWUP-05 (R8 event-emission: does the agent loop auto-emit Inp
 - **Cannot ExitPlanMode** — that's orchestrator-only.
 - **Don't predict — verify.** Every grep claim must come from a real grep run; every "exists" claim from a real Read. If you can't verify, say so explicitly in the plan rather than asserting.
 - **Re-spawn behavior** — if the orchestrator re-spawns you with an audit log path (architectural FAIL path), read the audit log + your prior plan, then patch the plan in-place via Write to the same plan path. Note the iteration in the plan's verified-header. The cycle hex stays the same.
+
+## v28 additions (CH-16a-i-phi retro `066799f3`, 2026-05-21)
+
+Four updates from the CH-16a retro. Canonical wording in `_changelog.md` 2026-05-21 entry.
+
+### P-plan-3-v28 — Locked-fork-details at §1 front-of-plan (HIGH; closes CH-16a iter-3 user-direction)
+
+UPDATES v23 P-plan-3 + ALWAYS-FIRE rule: the Locked-fork-details appendix MUST land at **§1 (front-of-plan)**, NOT §13 (end-of-plan/appendix). Section numbers §2-§13 carry the body (Context / Concept walk / Scope / Drifts / ADR / Carry-forward / Phase plan / Tests / Cargo / Close criteria / Audit envelope / Confidence). User-direction at CH-16a iter-3 2026-05-21 codified after orchestrator-applied iter-3 structural restructure: locked outcomes provide essential context for §2-§13 reading; placing at end-of-plan forces top-down re-read. Heading text: `## §1 — Locked fork details (per chunk-initiate Phase 1.5 Step A ALWAYS-FIRE + chunk-planner v23 P-plan-3 + v28 §1-position codification)`. All H4 fork-subsection structure (`#### F<N> = F<N>.<letter>` + 3-sentence Code-level binding / Rationale / Defers per option blocks) unchanged.
+
+### P-plan-4-v28 — Closure-side state-machine pattern guidance (MEDIUM)
+
+When a phi-core lifecycle `Fn` signature (e.g., `BeforeCompactionStartFn` + `AfterCompactionEndFn`) lacks the data closures need across invocations, propose `Arc<Mutex<<NewState>>>`-shared-state with caller-side population at the hooks-registration site. Add ~20-40% LOC budget to the closure file's §4.B cap. Cite ADR-0016 §D16.5 as the canonical precedent (CH-16a `EpisodeBuildState` 7-field struct shared between Before + After closures via `Arc::new(Mutex::new(...))`).
+
+### P-plan-5-v28 — Cross-cluster naming-conflict grep step (MEDIUM)
+
+Add cross-cluster naming-conflict grep step to §3 forbidden-duplication grep enumeration: before locking a NEW trait/struct/enum name, run `grep -rn 'pub (trait|struct|enum) <CandidateName>' /root/projects/phi/<project>/src/` and surface any name-clash for explicit disambiguation routing at plan-time. CH-16a precedent: `compaction::store::EpisodeStore` vs `sessions::resume::EpisodeStore` (different clusters; intentional coexistence ratified at ADR-0016 §D16.7). Disambiguation requires (a) mod-doc note in NEW cluster's `mod.rs`; (b) ADR sub-decision documenting intentional coexistence + bridging plan; (c) consumer-facing cross-reference.
+
+### P-plan-6-v28 — Inline-test allowance narrowing when MUST-SHIP narrows (LOW)
+
+When iter-N narrows MUST-SHIP test count by N tests (e.g., scope narrowing via Split-decision), narrow the inline-test allowance by ~0.25N (rule of thumb) to keep the test-count close-band realistic. CH-16a precedent: iter-2 narrowed MUST-SHIP 13→12 without narrowing inline allowance (3-5 → kept); chunk-seal landed at +2 over upper band (167 vs 165 at pause-trigger boundary).
 
 ## Output handoff format (return this verbatim)
 
