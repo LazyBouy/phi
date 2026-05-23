@@ -40,8 +40,8 @@ Resolve these values from `project`:
 | Cycle folder root | `<root>/docs/specs/plan/build/` | `<root>/docs/v0/proposal/plan/build/` |
 | Cycle-index path | `<cycle root>/_cycle-index.md` | `<root>/docs/v0/proposal/plan/_cycle-index.md` |
 | Forward-scope source | `<root>/docs/specs/plan/forward-scope/*.md` | TBD — i-phi will need a forward-scope file once CH-01 is on deck |
-| CI guards | `bash <root>/scripts/check-{doc-links,ops-doc-headers,phi-core-reuse,spec-drift}.sh` | none (no `scripts/` yet) |
-| MUST-RUN list | `RUSTFLAGS="-Dwarnings" cargo clippy -j 4 --workspace --all-targets` + the 4 CI guards | (post-CH-01) clippy only; pre-CH-01 chunks have no cargo at all |
+| CI guards | `bash <root>/scripts/check-{doc-links,ops-doc-headers,phi-core-reuse,spec-drift}.sh` | `bash <root>/scripts/check-{doc-links,verified-headers,phi-core-reuse,spec-drift}.sh` (shipped at CH-07a per F-iphi-ci-guards-deadline.b USER-DIVERGENT lock; ADR-0010a §D10.13) |
+| MUST-RUN list | `RUSTFLAGS="-Dwarnings" cargo clippy -j 4 --workspace --all-targets` + the 4 CI guards | clippy + the 4 CI guards (CH-07a onwards) |
 | Cargo-clean target | `<root>/target` | `<root>/target` |
 | Default branch | `dev` | `dev` |
 
@@ -448,7 +448,45 @@ On a successful run, the skill produces:
 - `/root/projects/phi/baby-phi/docs/specs/plan/build/ch-17-*/cycle-audit.md` — example cycle-audit shape.
 - `/root/projects/phi/i-phi/docs/v0/proposal/plan/_cycle-index.md` — i-phi cycle-index.
 
+## Three-update bundle from CH-07a-i-phi retro `5384684d` (2026-05-23)
+
+### Update #1 — Mandatory P-orch-3 numeric-citation cross-check at Phase 1.5 plan-archive
+
+Per CH-07a retro proposal #2: P-orch-3 (pre-archival numeric-citation cross-check, specified at outer CLAUDE.md 5 consecutive cycles ago) is now MANDATORY at chunk-initiate Phase 1.5 plan-archive (step 7 chunk-archive-plan invocation). The orchestrator MUST run:
+
+```bash
+bash /root/projects/phi/.claude/scripts/numeric-citation-check.sh <plan-path> <project-root>
+```
+
+The script (TBD-authored at follow-up commit; minimum-viable shape: greps canonical phrase set `\d+ (workspace tests|permissions tests|integration tests|baseline tests|carry-forward tests)`; runs `cargo test --no-run --manifest-path <root>/Cargo.toml -j 4`; prints mismatch matrix between plan §6 cited numbers and the snapshot). If mismatches surface, apply Trivial-1L plan-edit BEFORE archive. Closes the 5-cycle non-application gap (CH-05 + CH-06 + CH-08 + CH-16a + CH-16b + CH-07a all specified P-orch-3 but none applied; CH-07a evidence: plan §6 cited baseline 173 vs actual 176 — D-7 in cycle-audit §6).
+
+### Update #2 — Gate-3 audit-prompt-test-allocation cross-check for split-decision chunks
+
+Per CH-07a retro proposal #3: BEFORE dispatching auditors at gate-3, extend the audit-prompt-authoring cross-check to ALSO cross-reference each `test_<name>` token in the audit prompt against the cycle's plan §8 per-Tier MUST-SHIP test cardinality + the split-decision allocation (when the chunk is one half of a split). Scriptable as:
+
+```bash
+# Extract every test_<name> token from the audit prompt body
+grep -oE 'test_[a-z_0-9]+' <audit-prompt-text> | sort -u > /tmp/audit-prompt-tests.txt
+# Cross-reference against plan §8 test list
+grep -oE 'test_[a-z_0-9]+' <plan-path> | sort -u > /tmp/plan-tests.txt
+comm -23 /tmp/audit-prompt-tests.txt /tmp/plan-tests.txt  # tests in prompt but not in plan
+```
+
+Any test name in the prompt but NOT in plan §8 = Trivial-1L pre-dispatch fix (prompt-side typo / sibling-chunk-territory bleed). CH-07a evidence: orchestrator's Audit A prompt cited `test_factory_sub_agent_default_mode_incognito` + `test_factory_assembles_initial_context_per_compaction_md_section_4` as required-PASS — but both are CH-07b territory (sibling chunk post-split). Auditor handled gracefully but the orchestrator-side miss is the deviation class (D-8 in cycle-audit §6).
+
+### Update #3 — Gate-5 paperwork-sweep step for NEW recurring executables
+
+Per CH-07a retro proposal #10: at Phase 5 close (cargo-clean gate-5), the orchestrator's paperwork-sweep step gains a NEW question:
+
+> Did this cycle ship NEW recurring executables (scripts under `<root>/scripts/`, binaries under `<root>/src/bin/`, hook scripts under `<root>/hooks/`)? If yes, propose corresponding `.claude/settings.json` Bash allow-list rules as part of the standards updates surfaced at Phase 6.
+
+Worked example: CH-07a Tier P shipped 4 NEW `scripts/check-*.sh` that the orchestrator immediately invoked 35× in the same cycle, generating 35 PermissionRequest prompts. Had the gate-5 paperwork-sweep caught this, the corresponding 4 allow-list rules would have shipped in the same chunk-close commit (zero prompts on first re-use). The CH-07a retrospector picked this up at §3.5 hot-allow-rule candidate cluster #1; the gate-5 sweep would catch it earlier.
+
+The companion outer CLAUDE.md "Cargo-clean discipline" section is amended to add this paperwork sweep as a parallel concern (settings.json hygiene at chunk-close).
+
 ## Follow-up TODOs (deferred to next cycle)
 
-- Create the i-phi forward-scope file structure (currently TBD).
-- Decide on i-phi's CI guard set as the project matures past CH-01.
+- ~~Create the i-phi forward-scope file structure (currently TBD).~~ **Resolved**: CH-01 onward established the structure at `docs/v0/proposal/plan/forward-scope/` + per-chunk `_cycle-index.md` row + `build/<slug>-<8hex>/plan.md` archive convention.
+- ~~Decide on i-phi's CI guard set as the project matures past CH-01.~~ **Resolved at CH-07a (cycle `5384684d`)**: per F-iphi-ci-guards-deadline.b USER-DIVERGENT lock, 4 CI guards now ship at `i-phi/scripts/check-{doc-links,verified-headers,phi-core-reuse,spec-drift}.sh` + `tests/scripts_test.rs` bash harness + MUST-RUN list in `i-phi/CLAUDE.md`. See `chunk-auditor.md` v13 update (CH-07a retro proposal #9) — i-phi's CI guards execute in sub-agent audit sandbox post-CH-07a (no longer "skip for i-phi" permanently-skip override).
+- Author the minimum-viable `numeric-citation-check.sh` script body at `/root/projects/phi/.claude/scripts/numeric-citation-check.sh` per Update #1 above (mandatory-at-Phase-1.5 hook is now in place; only the script body is TBD).
+- Author the optional `audit-prompt-test-allocation-check.sh` script body per Update #2 (inline-grep procedure works today; script form is a convenience).

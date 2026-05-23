@@ -11,7 +11,7 @@ version: 18
 
 You execute an approved baby-phi chunk plan phase by phase. The plan is your contract — follow it precisely. The orchestrator (Claude with full conversation context) reviews your diffs at every phase boundary.
 
-## Project context (v10 — project-aware path resolution; v11 — pause-discipline strengthening on §3 cascade-threshold breach; v13 — ADR-body-strict-reading + P-FIXTURES actuals snapshot from CH-27 retro; v14 — three-update bundle from CH-04-i-phi retro `8a9c50ea`: P6 P-SEAL typo-cascade grep + P9 security-adjacent v0 limitations routed as drifts (NOT inline ADR notes) + P11 ADR-template codification reminder for security-adjacent paths; v15 — three-update triad from CH-05-i-phi retro `f7a354b6`: P-impl-1 sharpened pause-discipline at >2× LOC cap + P-impl-2 deviation-log discipline at cap-to-1.5×-ceiling overruns + P-impl-3 P-SEAL test-count reconciliation per Tier; v16 — five-update P-SEAL self-check bundle from CH-06-i-phi retro `da221147`: P-impl-1-v16 ADR placeholder grep + P-impl-2-v16 ADR Pre-existing-behaviour label-or-narrative grep + P-impl-3-v16 3-band cap-deviation lifecycle (≤1.1× silent / 1.1×-1.5× log / >1.5× pause) + P-impl-4-v16 concept-doc annotation-form grep + P-impl-5-v16 drift-directory canonical-path enforcement; v17 — two-update bundle from CH-28 retro `0412eb06`: P-impl-1-v17 ADR-inline-amendment verified-header sweep extension + P-impl-2-v17 wire-row pattern cascade propagation check at P-FIXTURES actuals snapshot; v18 — two-update bundle from CH-16b-i-phi retro `634ce263`: P-impl-1-v18 forward-scope drift-ID-substitution P-SEAL step + P-impl-2-v18 drift-bundling heuristic when ≥2 deferrals share a root close-criterion)
+## Project context (v10 — project-aware path resolution; v11 — pause-discipline strengthening on §3 cascade-threshold breach; v13 — ADR-body-strict-reading + P-FIXTURES actuals snapshot from CH-27 retro; v14 — three-update bundle from CH-04-i-phi retro `8a9c50ea`: P6 P-SEAL typo-cascade grep + P9 security-adjacent v0 limitations routed as drifts (NOT inline ADR notes) + P11 ADR-template codification reminder for security-adjacent paths; v15 — three-update triad from CH-05-i-phi retro `f7a354b6`: P-impl-1 sharpened pause-discipline at >2× LOC cap + P-impl-2 deviation-log discipline at cap-to-1.5×-ceiling overruns + P-impl-3 P-SEAL test-count reconciliation per Tier; v16 — five-update P-SEAL self-check bundle from CH-06-i-phi retro `da221147`: P-impl-1-v16 ADR placeholder grep + P-impl-2-v16 ADR Pre-existing-behaviour label-or-narrative grep + P-impl-3-v16 3-band cap-deviation lifecycle (≤1.1× silent / 1.1×-1.5× log / >1.5× pause) + P-impl-4-v16 concept-doc annotation-form grep + P-impl-5-v16 drift-directory canonical-path enforcement; v17 — two-update bundle from CH-28 retro `0412eb06`: P-impl-1-v17 ADR-inline-amendment verified-header sweep extension + P-impl-2-v17 wire-row pattern cascade propagation check at P-FIXTURES actuals snapshot; v18 — two-update bundle from CH-16b-i-phi retro `634ce263`: P-impl-1-v18 forward-scope drift-ID-substitution P-SEAL step + P-impl-2-v18 drift-bundling heuristic when ≥2 deferrals share a root close-criterion; v19 — two-update bundle from CH-07a-i-phi retro `5384684d`: P-impl-1-v19 lock-body wire-consumption self-check at P-SEAL + P-impl-2-v19 ADR sub-decision partial-application carve-out at P-DOCS)
 
 The orchestrator passes `PROJECT_ROOT` in the runtime prompt to name the target project. Resolve all paths in this file relative to it:
 
@@ -233,6 +233,56 @@ grep -rnE '\bFOLLOWUP(-[A-Z]+)?-NN\b' <PROJECT_ROOT>/docs/ <new-drift-files> <ne
 ```
 
 If any hits, patch to actual IDs before reporting chunk-seal complete. Pairs with outer CLAUDE.md gate-2 sweep + chunk-planner v27 P-plan-3 CONDITIONAL drift discipline (which legitimately uses `-NN-` placeholders pre-activation).
+
+### v19 — Two-update bundle from CH-07a-i-phi retro `5384684d` (P-impl-1-v19 lock-body wire-consumption self-check + P-impl-2-v19 ADR sub-decision partial-application carve-out)
+
+#### P-impl-1-v19 — Lock-body wire-consumption self-check at P-SEAL (closes CH-07a §3 D-5 + D-6 audit-discovered scope-narrowings that escaped implementer's 4-deviation P-SEAL list)
+
+Extend the P-SEAL self-surfacing checklist to explicitly enumerate ALL within-lock scope-narrowings, not just LOC overruns + behavioural deferrals. For EACH fork in plan §1 Locked-fork-details that has a "Code-level binding" sentence citing a struct field / helper fn / wire call-site, the implementer at P-SEAL MUST answer:
+
+1. **Did the wire body invoke the locked helper / method / struct at the cited call-site?** (Grep the call-site file:line for the cited symbol — e.g., `grep -nE 'canonicalize_for_check' <wire-file>` if the lock body cited a `canonicalize_for_check` helper.)
+2. **Did the build path actually instantiate the locked field?** (Grep the `build()` / `new()` constructor body for the field initialization — e.g., `grep -nE 'identity_watcher: (Some|install_)' <builder-file>` if the lock body cited an `identity_watcher` field.)
+3. **If either answer is "no"** (helper exists but no wire-time consumer; field declared but always-None at build-time): surface as an explicit P-SEAL **scope-narrowing** with cite to where the partial-application is documented in ADR §D<N>.<M>.
+
+**Failure-mode codified**: CH-07a evidence: 2 audit-discovered scope-narrowings escaped the implementer's 4-deviation P-SEAL list — D-5 (`AgentHandle.identity_watcher: None` at build despite F-watcher-scope.a lock body citing per-session instantiation) + D-6 (`canonicalize_for_check` helper shipped per F-additionalDirectories-canonicalize.a but NOT wire-consumed in `build_before_tool_execution_with_permissions`). Both are within-lock scope-narrowings consistent with the implementer's surfaced #4 hot-swap deferral (D-4), but they were surfaced at chunk-auditor v12 sub-claim granularity (audit-a-iter1) rather than at P-SEAL. v19 forces implementer-side surfacing.
+
+**Mechanical procedure at P-SEAL**:
+
+```bash
+# For each fork in plan §1, extract the cited helper/method/field name from the lock body
+# (e.g., from F-watcher-scope.a Code-level binding: 'AgentFactory::build instantiates a NEW IdentityWatcher per call')
+grep -nE 'IdentityWatcher::new|install_identity_watcher_callback' <PROJECT_ROOT>/src/agent_factory/builder.rs
+
+# For helper-fn locks, verify wire-time consumption
+grep -nE 'canonicalize_for_check' <PROJECT_ROOT>/src/agent_factory/permissions_wire.rs
+
+# For field locks, verify build-time instantiation (not always-None)
+grep -nE 'identity_watcher: (Some|install_|IdentityWatcher::new)' <PROJECT_ROOT>/src/agent_factory/builder.rs
+```
+
+Surface any "shipped-but-unused" or "declared-but-always-None" findings in the P-SEAL chunk-close report's `## Deviation log` section with the same row format as P-impl-2 LOC overruns: `<wire-or-field-name>: locked per F-<name>.<letter> but <not-wire-consumed / always-None-at-build>; functional driver: <one-sentence>; documented at ADR §D<N>.<M>`. Orchestrator gate-2.5 review confirms entries exist BEFORE P-DOCS opens.
+
+Pairs with chunk-auditor v12 sub-claim granularity (audit-side defensive layer for the class).
+
+#### P-impl-2-v19 — ADR sub-decision partial-application carve-out (closes CH-07a §3 D-6 + Audit A §3 recommended remediation)
+
+When a sub-decision's lock body says "implementation realises X" but the actual shipped behaviour partially-applies X (e.g., helper exposed but no wire-time consumer, OR field declared but always-None at build, OR method ships but Pre-existing-behaviour preserved instead of invoked), the sub-decision body MUST explicitly carve out the partial-application as a **Pre-existing-behaviour-preservation-note variant**.
+
+Example wording template:
+
+```
+### §D<N>.<M> — <decision title>
+
+<Standard body explaining the locked decision>
+
+**Pre-existing-behaviour preservation note (CH-07a scope-narrowing)**: <helper-or-method> is exposed for future consumer; v0 wire body <treats X as opaque / always-None at build / does NOT yet invoke <helper>>. Wire-time consumption ships when <CH-NN+/specific-condition>.
+```
+
+**Failure-mode codified**: CH-07a evidence: ADR-0010a §D10.4 documents `canonicalize_for_check` helper + rationale but does NOT explicitly carve out wire-non-consumption (D-6); a stricter reading would FAIL the sub-claim. Auditor A recommended exactly this remediation inline. v19 makes the carve-out a mandatory authoring discipline at P-DOCS time.
+
+**Mechanical procedure at P-DOCS**: when authoring ADR sub-decision bodies, grep the just-shipped code for the cited helper/method/field name; if grep returns 0 wire-consumption hits but the helper file exists, append the Pre-existing-behaviour preservation note above the §D<N>.<M> standard body close.
+
+Pairs with P-impl-1-v19 (which surfaces the scope-narrowing in deviation log) by ensuring the surfaced scope-narrowing also lands in the ADR body where future readers will discover it.
 
 ## Quality bar (must-pass)
 
