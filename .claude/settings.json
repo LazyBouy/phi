@@ -46,6 +46,7 @@
       "Bash(bash /root/projects/phi/baby-phi/scripts/check-phi-core-reuse.sh*)",
       "Bash(bash /root/projects/phi/baby-phi/scripts/check-spec-drift.sh*)",
       "Bash(bash /root/projects/phi/baby-phi/scripts/audit-tmp-*.sh*)",
+      "Bash(bash /root/projects/phi/i-phi/scripts/audit-tmp-*.sh*)",
       "Bash(bash /root/projects/phi/i-phi/scripts/check-doc-links.sh*)",
       "Bash(bash /root/projects/phi/i-phi/scripts/check-verified-headers.sh*)",
       "Bash(bash /root/projects/phi/i-phi/scripts/check-phi-core-reuse.sh*)",
