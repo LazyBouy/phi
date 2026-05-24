@@ -11,7 +11,7 @@ version: 18
 
 You execute an approved baby-phi chunk plan phase by phase. The plan is your contract — follow it precisely. The orchestrator (Claude with full conversation context) reviews your diffs at every phase boundary.
 
-## Project context (v10 — project-aware path resolution; v11 — pause-discipline strengthening on §3 cascade-threshold breach; v13 — ADR-body-strict-reading + P-FIXTURES actuals snapshot from CH-27 retro; v14 — three-update bundle from CH-04-i-phi retro `8a9c50ea`: P6 P-SEAL typo-cascade grep + P9 security-adjacent v0 limitations routed as drifts (NOT inline ADR notes) + P11 ADR-template codification reminder for security-adjacent paths; v15 — three-update triad from CH-05-i-phi retro `f7a354b6`: P-impl-1 sharpened pause-discipline at >2× LOC cap + P-impl-2 deviation-log discipline at cap-to-1.5×-ceiling overruns + P-impl-3 P-SEAL test-count reconciliation per Tier; v16 — five-update P-SEAL self-check bundle from CH-06-i-phi retro `da221147`: P-impl-1-v16 ADR placeholder grep + P-impl-2-v16 ADR Pre-existing-behaviour label-or-narrative grep + P-impl-3-v16 3-band cap-deviation lifecycle (≤1.1× silent / 1.1×-1.5× log / >1.5× pause) + P-impl-4-v16 concept-doc annotation-form grep + P-impl-5-v16 drift-directory canonical-path enforcement; v17 — two-update bundle from CH-28 retro `0412eb06`: P-impl-1-v17 ADR-inline-amendment verified-header sweep extension + P-impl-2-v17 wire-row pattern cascade propagation check at P-FIXTURES actuals snapshot; v18 — two-update bundle from CH-16b-i-phi retro `634ce263`: P-impl-1-v18 forward-scope drift-ID-substitution P-SEAL step + P-impl-2-v18 drift-bundling heuristic when ≥2 deferrals share a root close-criterion; v19 — two-update bundle from CH-07a-i-phi retro `5384684d`: P-impl-1-v19 lock-body wire-consumption self-check at P-SEAL + P-impl-2-v19 ADR sub-decision partial-application carve-out at P-DOCS)
+## Project context (v10 — project-aware path resolution; v11 — pause-discipline strengthening on §3 cascade-threshold breach; v13 — ADR-body-strict-reading + P-FIXTURES actuals snapshot from CH-27 retro; v14 — three-update bundle from CH-04-i-phi retro `8a9c50ea`: P6 P-SEAL typo-cascade grep + P9 security-adjacent v0 limitations routed as drifts (NOT inline ADR notes) + P11 ADR-template codification reminder for security-adjacent paths; v15 — three-update triad from CH-05-i-phi retro `f7a354b6`: P-impl-1 sharpened pause-discipline at >2× LOC cap + P-impl-2 deviation-log discipline at cap-to-1.5×-ceiling overruns + P-impl-3 P-SEAL test-count reconciliation per Tier; v16 — five-update P-SEAL self-check bundle from CH-06-i-phi retro `da221147`: P-impl-1-v16 ADR placeholder grep + P-impl-2-v16 ADR Pre-existing-behaviour label-or-narrative grep + P-impl-3-v16 3-band cap-deviation lifecycle (≤1.1× silent / 1.1×-1.5× log / >1.5× pause) + P-impl-4-v16 concept-doc annotation-form grep + P-impl-5-v16 drift-directory canonical-path enforcement; v17 — two-update bundle from CH-28 retro `0412eb06`: P-impl-1-v17 ADR-inline-amendment verified-header sweep extension + P-impl-2-v17 wire-row pattern cascade propagation check at P-FIXTURES actuals snapshot; v18 — two-update bundle from CH-16b-i-phi retro `634ce263`: P-impl-1-v18 forward-scope drift-ID-substitution P-SEAL step + P-impl-2-v18 drift-bundling heuristic when ≥2 deferrals share a root close-criterion; v19 — two-update bundle from CH-07a-i-phi retro `5384684d`: P-impl-1-v19 lock-body wire-consumption self-check at P-SEAL + P-impl-2-v19 ADR sub-decision partial-application carve-out at P-DOCS; v20 — single-update from CH-07b-i-phi retro `283d3949` proposal #3: P-impl-1-v20 method-form-deliverable self-check before phase commit)
 
 The orchestrator passes `PROJECT_ROOT` in the runtime prompt to name the target project. Resolve all paths in this file relative to it:
 
@@ -283,6 +283,31 @@ Example wording template:
 **Mechanical procedure at P-DOCS**: when authoring ADR sub-decision bodies, grep the just-shipped code for the cited helper/method/field name; if grep returns 0 wire-consumption hits but the helper file exists, append the Pre-existing-behaviour preservation note above the §D<N>.<M> standard body close.
 
 Pairs with P-impl-1-v19 (which surfaces the scope-narrowing in deviation log) by ensuring the surfaced scope-narrowing also lands in the ADR body where future readers will discover it.
+
+### v20 — Single-update from CH-07b-i-phi retro `283d3949` (P-impl-1-v20 method-form-deliverable self-check)
+
+#### P-impl-1-v20 — Method-form-deliverable self-check before phase commit (closes CH-07b Audit C iter-1 Claim 5 FAIL — `AgentHandle::harvest_from_subagent_session(...)` method missing)
+
+When a phase's plan §8 deliverable cites a method form of the shape `<TypeName>::<method_name>(...)` (e.g., `AgentHandle::harvest_from_subagent_session(...)`, `SessionHandle::checkpoint_now()`, `AgentFactory::build(...)`), the implementer at the phase boundary MUST verify BOTH:
+
+1. **Method definition exists**: `grep -n 'fn <method_name>' <PROJECT_ROOT>/src/` returns ≥ 1 hit.
+2. **Impl block exists for the type**: `grep -rn 'impl <TypeName>' <PROJECT_ROOT>/src/` returns ≥ 1 hit AND the function `fn <method_name>` lives INSIDE one of those impl blocks (i.e., the method is exposed on the type, not just shipped as a free function with a similar name).
+
+If either check fails (most commonly: free function ships at the same name but no `impl Type` block exposes it as a method), the implementer MUST surface as a phase-commit blocker — either (a) ship the impl-block method delegate before phase commit, OR (b) escalate to orchestrator with a "spec-vs-code drift" finding for in-flight resolution.
+
+**Mechanical procedure** at each phase boundary AFTER source files land but BEFORE commit:
+
+```bash
+# Extract method-form tokens from the plan §8 phase deliverable text (manual scan or script).
+# For each <TypeName>::<method_name> token:
+grep -n "fn <method_name>" <PROJECT_ROOT>/src/  # confirm method body exists
+grep -rn "impl <TypeName>" <PROJECT_ROOT>/src/  # confirm impl block exists
+# Then read each matching impl block and verify <method_name> is inside it.
+```
+
+**Failure-mode codified**: CH-07b evidence: plan §8 P-HARVEST deliverable 2 + forward-scope item 10 + ADR-0010a §"For CH-07b" all called for `AgentHandle::harvest_from_subagent_session(...)` method form. Implementer shipped the free function `harvest_from_subagent_session(...)` at `src/agent_factory/harvest.rs:77` correctly but did NOT add an `impl AgentHandle { pub async fn harvest_from_subagent_session(...) }` delegate. Surfaced at gate-3 Audit C iter-1 Claim 5 FAIL; orchestrator-applied Trivial-multi 37-LOC delegate patch (commit `56e53fa`). v20 catches the class at implementer-tier P-HARVEST commit (or whichever phase ships the method-form deliverable); pairs with chunk-auditor v13 interface-contract claim (audit-side defense at Audit A scaffold) + outer CLAUDE.md gate-3 method-signature paraphrase cross-check (orchestrator-side defense). **3-layer defense for the method-vs-free-function interface-drift class.**
+
+**Scope**: applies whenever plan §8 cites `<TypeName>::<method_name>(...)` literally — HIGH-value for surfaces with method-rich type contracts (`AgentHandle`, `SessionHandle`, `AgentFactory`, etc.).
 
 ## Quality bar (must-pass)
 

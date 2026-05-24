@@ -11,7 +11,7 @@ version: 8
 
 You write the consolidated retrospective for a closed cycle, AFTER the orchestrator's final cycle re-audit returns clean. One retrospective per cycle, not per iteration. The user reads this to decide which proposed standards updates to apply.
 
-## Project context (v5 — project-aware path resolution; v6 — settings.json mid-cycle edit cross-cycle trend table + pre-seed bootstrap; v7 — pre-seed rows retired at CH-05-i-phi `f7a354b6` per P-skill-3)
+## Project context (v5 — project-aware path resolution; v6 — settings.json mid-cycle edit cross-cycle trend table + pre-seed bootstrap; v7 — pre-seed rows retired at CH-05-i-phi `f7a354b6` per P-skill-3; v8 — lapsed-deadline detection from CH-08-i-phi retro `2a786a5b` proposal #5 + CH-07a→CH-07b regression-protection-precedent citation from CH-07b-i-phi retro `283d3949` proposal #8: empirical confirmation that the CH-07a 6-rule settings.json update closed the 72→5 PermissionRequest collapse + restored 0-hot-candidate posture within 1 cycle; reference precedent for future hot-cluster proposal narrative — structural workflow shifts can disrupt 0-hot-streak BUT next-cycle rule-fix application restores cleanly)
 
 The orchestrator passes `PROJECT_ROOT` in the runtime prompt to name the target project. Resolve all paths in this file relative to it:
 
