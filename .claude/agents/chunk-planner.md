@@ -996,6 +996,54 @@ When authoring per-file LOC caps for NEW source files in §3.B (especially libra
 
 **CH-10 evidence**: `editor.rs` cap 100 underestimated rustyline wrapper's full surface (5 functional axes); `steer.rs` cap 100 underestimated steering routing's 5 functional axes; `main.rs` cap 220 mathematically constrained CH-09 baseline 265 leaving negative room. 3 Band 3 LOC overruns this cycle is the highest single-cycle Band 3 count on i-phi to date. Applying the framing surfaces Band 3 deviations as design-time decisions instead of as implementation-time absorption. Pairs cleanly with v29 P-plan-7 doc-LOC framing for symmetry.
 
+## v31 additions (CH-11a-i-phi retro `86e2f4ae`, 2026-05-25)
+
+Two-update bundle absorbing CH-11a retro proposals #1 (HIGH; doc-LOC-prediction methodology) + #7 (MEDIUM; P-orch-3 struct-field-count snapshot extension).
+
+### P-plan-12-v31 — Per-doc-class precedent matrix replaces arbitrary doc-LOC predictions in §4.C (added 2026-05-25 per CH-11a-i-phi retro `86e2f4ae` proposal #1 HIGH)
+
+When authoring §4.C per-doc LOC-prediction in the plan, **DO NOT cite arbitrary thresholds** ("≥150 LOC", "~180 target"). Instead cite a **per-doc-class precedent baseline** drawn from a sibling doc of the same class shipped at a prior cycle. The precedent baseline is the canonical reference frame; the new doc's LOC budget is expressed relative to it.
+
+**Per-doc-class precedent matrix** (i-phi v0; refresh per cycle as new docs ship):
+
+| Doc class | Canonical precedent | LOC | Use case |
+|---|---|---|---|
+| `docs/v0/specs/<surface>.md` (formal API/spec contract) | `specs/interfaces.md` (CH-09 baseline + CH-11a extensions) | ~30 LOC dense | Wire-shape tables + auth requirements + error code reference; CH-11a `specs/api.md` shipped at 103 LOC (in-band per content-coverage axis) |
+| `docs/v0/design/<surface>.md` (design rationale) | `design/interfaces/cli.md` (CH-09 + CH-09 padding) | 202 LOC | Module structure rationale + USER-DIVERGENT lock-cite + cross-refs; CH-11a `design/api.md` shipped at 90 LOC (densest design doc to date — flag for next-cycle baseline refresh) |
+| `docs/v0/user-guide/<surface>.md` (end-user reference) | `user-guide/interfaces/cli.md` (CH-09) | ~75 LOC | Recipe-style; curl examples + flag reference + worked examples; CH-11a `user-guide/api.md` shipped at 201 LOC (over-shipped — additive content includes TLS cert recipes + cookie auth recipe + reverse-proxy deployment recipe) |
+| ADR | `docs/v0/design/decisions/0011-headless-cli-subcommand-surface-and-output-formats.md` (CH-09) | 7 sections + N sub-decisions | Status + Context + Decision + Consequences + Alternatives + References + Sub-decisions §DN.M |
+
+**Form**:
+
+```markdown
+| Doc | LOC budget | Precedent | Rationale |
+|---|---|---|---|
+| `docs/v0/specs/api.md` | precedent baseline-equivalent (CH-09 specs/interfaces.md ~30 LOC; expand if 10+ open questions need answering) | specs/interfaces.md (CH-09) | dense wire-shape tables; one row per route |
+| `docs/v0/design/api.md` | precedent baseline-equivalent (CH-09 design/cli.md 202 LOC; expand only for USER-DIVERGENT lock-rationale) | design/cli.md (CH-09 + CH-09 padding) | adds ApiServer-vs-IpcServer separation rationale + 2 USER-DIVERGENT locks rationale |
+| `docs/v0/user-guide/api.md` | precedent baseline-equivalent (CH-09 user-guide/cli.md ~75 LOC; expand for multi-recipe surface) | user-guide/cli.md (CH-09) | recipe-style; curl + cookie + TLS examples |
+```
+
+**CH-11a evidence**: plan §4.C cited specs/api.md ≥150 / ~160 target + design/api.md ≥180 / ~200 target without precedent cite. Audit B PARTIAL on both (103 + 90 vs targets) at 100% content fidelity. The target numbers were ungrounded — they assumed a "first-formal-API-contract" warranted "thick" docs, but the actual content fidelity was achievable in dense form using the precedent baseline. Per-doc-class precedent matrix grounds future predictions in cycle-validated baselines.
+
+**Companion at chunk-auditor v14**: doc-LOC threshold check is RELAXED to "≥ precedent-baseline LOC AND 100% content-coverage axis" instead of arbitrary absolute thresholds. The two layers (planner P-plan-12 + auditor v14 relaxation) close the doc-cardinality plan-narrative drift class proactively.
+
+### P-plan-13-v31 — P-orch-3 struct-field-count snapshot extension at iter-2 plan-archive (added 2026-05-25 per CH-11a-i-phi retro `86e2f4ae` proposal #7 MEDIUM)
+
+When plan §1 / §6 ADR sub-decision body cites "struct field-set extended from N to M" / "X grew from N to M fields", the planner at iter-2 plan-archive MUST grep + snapshot the actual current field-count at chunk-archive time (not at plan-iter-1 draft time).
+
+**Procedure**:
+
+1. Identify all "field-set extended from N to M" / "N → M fields" citations in plan §1 + §6.
+2. For each cited struct (e.g., `SessionHandle`), grep the current field-set at plan-archive time:
+   ```bash
+   grep -A 30 "^pub struct <StructName>\b" /root/projects/phi/<project>/src/<path>.rs | grep -E "^\s+pub " | wc -l
+   ```
+3. If actual N differs from cited N → Trivial-1L plan-edit BEFORE chunk-archive-plan invocation.
+
+**Companion to outer CLAUDE.md gate-1.5 P-orch-3 numeric-citation cross-check (test-count axis)**: this extension covers struct-field-count axis with the same orchestrator gate-1.5 pattern.
+
+**CH-11a evidence**: plan §6 §D13.10 cited "field-set extended from 7 to 9" for SessionHandle; actual baseline at chunk-archive time was 11 fields (post-CH-09 + post-CH-07a additions of `interrupt_tx` + `parent_session_id` + `registry` not reflected in plan §6 ADR draft); new total post-CH-11a was 13 fields. The +2 delta was correct; the 7→9 cite was stale by 4 fields. Surface-area scanned at iter-1 draft-time used a pre-CH-09 snapshot of SessionHandle. Applying P-plan-13-v31 at iter-2 archive surfaces the stale-citation class as Trivial-1L plan-edit.
+
 ## Output handoff format (return this verbatim)
 
 ```

@@ -406,6 +406,26 @@ Why: Claude Code's Bash matcher splits compound commands at shell operators (`&&
 
 **Edit-tool discipline (carried forward from v3, CH-13 retro Row 4):** when refreshing sequences of line-number citations across a single document, prefer surgical `Edit` calls with surrounding context over chained `replace_all` calls. Sequential `replace_all` line-shift edits double-shift when later patterns also appear in earlier-edited context. When sequences are unavoidable, run in DESCENDING-shift order (highest line number first).
 
+### v23 — Single-update from CH-11a-i-phi retro `86e2f4ae` proposal #2 (P-impl-1-v23 per-file-add LOC threshold check fires DURING consolidated-commit body-fill)
+
+#### P-impl-1-v23 — Mid-flight per-file-add LOC check supplements per-commit-end boundary (MEDIUM; closes CH-11a's 5-Band-3 retroactive-routing cascade)
+
+When the implementer consolidates ≥ 2 plan phases into a single logical commit, the v22 P-impl-1-v22 per-commit-end LOC boundary fires AT commit-end. CH-11a evidence: implementer's `61288db` commit consolidated 7 phases (P-API-SKELETON + P-AUTH + P-TLS-AND-CORS + P-ROUTES + P-OPENAPI + P-SSE-HARDENING + P-WEBHOOK-STUBS); all 5 Band 3 LOC overruns (`auth.rs` 1.85× / `error.rs` 1.96× / `tls.rs` 1.62× / `cors.rs` 1.52× / `whatsapp.rs` 1.53×) + 1 file-count overrun (20 NEW files vs 11 predicted; 1.82×) surfaced **POST-FACT at gate-2.5** because the consolidated-commit boundary aggregated 7 phases — the v22 P-impl-1-v22 commit-end check fired ONCE at the end, after all 7 overruns had already materialised. Orchestrator-routed Route A retroactively at gate-2.5; sound outcome but mid-flight pause-discipline would have surfaced overruns earlier.
+
+v23 P-impl-1-v23 EXTENDS the pause-discipline to fire at **per-file-add granularity** during consolidated-commit body-fill:
+
+1. **AFTER each NEW file write** (any `Write` tool call creating a `src/<path>.rs` file under the chunk's scope), the implementer MUST grep the file's LOC + compare against plan §3.B per-file cap.
+2. **If LOC > 1.5× cap** (Band 3 trigger) → PAUSE via AskUserQuestion presenting Route A/B/C deviation routing options BEFORE proceeding to the next file. Do not batch overruns; surface one-at-a-time as encountered.
+3. **If LOC > cap AND ≤ 1.5× cap** (Band 2 trigger) → log in deviation list + continue (cap-to-1.5×-ceiling-acceptance per v15 P-impl-2; no pause needed).
+4. **If file-count cumulative > 1.5× predicted** at any new-file-add → PAUSE via AskUserQuestion presenting Route A/B/C options.
+5. **Pairs with v22 P-impl-1-v22 commit-end check** as belt-and-suspenders: v23 catches mid-flight; v22 catches at commit-end. Both fire when consolidated commit aggregates ≥ 2 plan phases.
+
+**Why mid-flight is necessary**: when 5+ NEW files land in a single commit, each at Band 3, the commit-end check (v22) is a single late-firing signal that hides the per-file design decisions behind a wall of consolidated diff. Per-file mid-flight check (v23) makes each Band 3 a discrete decision point. The implementer ratifies Route A for each overrun (or pivots to Route B extraction) BEFORE the next file lands, preventing pile-up.
+
+**Scope**: applies whenever consolidated commit aggregates ≥ 2 plan phases. Single-phase commits use the v15 P-impl-1 within-phase boundary (no change). v23 is a layered defense between v15 (within-phase) and v22 (commit-end); mid-phase consolidated-commit body-fill is where v23 fires.
+
+**CH-11a evidence** (cycle-audit §6 D-1 through D-6): 5 Band 3 + 1 file-count overrun all surfaced at v22 commit-end check; user-ratified Route A at gate-2.5. v23 would have surfaced each overrun as a discrete mid-flight AskUserQuestion (5-6 questions across the consolidated commit body-fill), enabling per-file design decision granularity. Codifies the proposal #2 retro narrative + closes the consolidated-commit class with finer granularity than v22 alone.
+
 ## Output handoff format
 
 ```

@@ -220,6 +220,41 @@ Why: Claude Code's Bash matcher splits compound commands at shell operators (`&&
 
 Sub-agent shells share working-directory state across calls — a stray `cd` mid-audit can shift later commands' relative paths. Absolute paths eliminate that risk + match allow rules cleanly.
 
+## v14 additions (CH-11a-i-phi retro `86e2f4ae`, 2026-05-25)
+
+Two-update bundle absorbing CH-11a retro proposals #1 (HIGH; doc-LOC content-coverage axis) + #3 (LOW; i-phi drift verified-header convention codify).
+
+### Audit-B doc-LOC threshold check — relax to content-coverage axis (added 2026-05-25 per CH-11a-i-phi retro `86e2f4ae` proposal #1 HIGH)
+
+When auditing per-doc LOC budgets in §4.C from plan, the Audit B claim verifying doc LOC budgets is RELAXED:
+
+- **Old form (deprecated)**: "specs/api.md ≥150 LOC" → fail if actual < 150 even when content fidelity is 100%.
+- **New form (v14)**: "specs/api.md ≥ precedent-baseline LOC AND 100% content-coverage axis" → PASS if (a) ≥ precedent-baseline OR (b) content-coverage axis is 100% (all required sections present in dense form).
+
+**Content-coverage axis verification** (auditor procedure):
+
+1. Identify the required sections from plan §4.C row (e.g., "wire-shape tables + auth requirements + error code reference + standardised error response shape").
+2. Grep the actual doc for each required section's anchor heading or topic-sentence.
+3. PASS if 100% sections present (regardless of LOC); PARTIAL if 1-2 sections missing; FAIL if ≥ 3 sections missing.
+4. Cite the per-section grep evidence in the claim body.
+
+**Companion to chunk-planner v31 P-plan-12-v31 per-doc-class precedent matrix**: planner-side grounds the LOC prediction in cycle-validated baselines; auditor-side relaxes threshold to content-coverage. Both layers close the doc-cardinality plan-narrative drift class proactively.
+
+**CH-11a evidence**: Audit B PARTIAL on specs/api.md (103 vs ≥150) + design/api.md (90 vs ≥180) at 100% content fidelity. Old form forced PARTIAL despite content-completeness; new form passes both with content-coverage citation.
+
+### i-phi drift verified-header convention codify (added 2026-05-25 per CH-11a-i-phi retro `86e2f4ae` proposal #3 LOW; project-context-override)
+
+**i-phi-specific project-context-override** for chunk-auditor (mirrors the CI-guards-EXECUTE override at v13):
+
+- **Drift files at `docs/v0/design/drifts/` are header-less by convention**. DO NOT include "verify drift verified-headers" or "grep `<!-- Last verified: -->` on drift files" as audit claims for i-phi cycles.
+- `check-verified-headers.sh` walks only `docs/v0/{specs,design,user-guide}/` (excluding `design/drifts/`); drift entries are governed by their close-criterion + allocation row instead.
+- Codifies the 5+ cycle precedent (CH-08-i-phi `2a786a5b` + CH-09-i-phi `075c07cf` + CH-10-i-phi `281cb58d` + CH-11a-i-phi `86e2f4ae` follow-up drifts all ship without the header).
+- Future audit prompts MUST NOT over-specify drift-header requirements; the canonical `check-verified-headers.sh` exit-0 path covers the canonical doc tree.
+
+Rationale: drifts are forward-pointing placeholders for future-cycle work; per-cycle "Last verified" annotation would be perpetually stale-by-design as drift bodies remain frozen until closed.
+
+**CH-11a evidence**: Audit B claim 4 PASS-with-caveat on the 5 NEW CH-11a drifts at `docs/v0/design/drifts/` lacking headers — audit-prompt was over-specified vs project convention. v14 codifies the convention so future audit prompts don't trip on the same axis.
+
 ## Output handoff format (return inline, after writing the log)
 
 ```
