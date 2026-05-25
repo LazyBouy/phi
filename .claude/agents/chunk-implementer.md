@@ -426,6 +426,22 @@ v23 P-impl-1-v23 EXTENDS the pause-discipline to fire at **per-file-add granular
 
 **CH-11a evidence** (cycle-audit §6 D-1 through D-6): 5 Band 3 + 1 file-count overrun all surfaced at v22 commit-end check; user-ratified Route A at gate-2.5. v23 would have surfaced each overrun as a discrete mid-flight AskUserQuestion (5-6 questions across the consolidated commit body-fill), enabling per-file design decision granularity. Codifies the proposal #2 retro narrative + closes the consolidated-commit class with finer granularity than v22 alone.
 
+### v24 — Single-update from CH-17-i-phi retro `e764aeca` proposal #4 (P-ADR-3 Pre-existing-behaviour preservation note)
+
+#### P-ADR-3 — Pre-existing-behaviour preservation note for within-lock-body scope-narrowings (LOW; codifies CH-17 ADR-0018 §D18.6 canonical instance)
+
+When authoring ADR §D<N>.<M> sub-decisions that ratify an F-LOCKED.* body whose Code-binding mandates "fully behavioural at v0" but ships with within-lock scope-narrowings (e.g., signal-only emit / store-verify-only / hardcoded-default flag / schema-reservation-only / emitter-injected-only routing), include a NEW `**Pre-existing-behaviour preservation note (<variation>):**` paragraph within the sub-decision body. Variations span:
+
+- **(a) deferred-scope** — the lock body specifies an end-to-end behaviour but the v0 ship narrows the surface to a subset (e.g., CH-17 §D18.6: F4.c emit-site narrows from "production end-to-end RevertApplied counter" to "emitter-injected events only" — SessionHandle re-broadcast deferred via D-CH17-FOLLOWUP-04 expanded scope).
+- **(b) multi-milestone-pattern** — the lock body anticipates milestone-spanning behaviour but the v0 ship establishes only the M5 layer (per chunk-planner v24 P-plan-2 framing).
+- **(c) never-shipped-yet** — the lock body specifies a schema/struct/config surface that ships at v0 but with no live consumer (e.g., CH-16b CompactorConfig schema-reservation-only + CH-17 BrakingConfig schema-reservation-only — both ship parser + struct + tests but no phi-core setter call site).
+
+The paragraph documents (i) what the live v0 shape covers; (ii) what fully-behavioural would entail; (iii) the deferral allocation (drift-ID + severity + revisit-when). Cross-reference to the corresponding D-<chunk>-FOLLOWUP-NN drift body for the full scope-expansion plan.
+
+**Pair with planner-side P-orch-6** (Skeleton-vs-fully-behavioural within-lock-body verification at outer CLAUDE.md gate-1.5 quartet) + the in-plan F-LOCKED.* body `[v0 scope-narrowing: <one-line>]` annotation: planner-side P-orch-6 surfaces narrowings at gate-1.5 BEFORE archive; implementer-side P-ADR-3 ratifies them at ADR-writing time AFTER implementation; both ends converge so the canonical "skeleton vs fully-behavioural" map is durable in the chunk's archive.
+
+**CH-17 evidence**: ADR-0018 §D18.6 ships the canonical instance — "Pre-existing-behaviour preservation note (CH-17 scope-narrowing)" block documenting the BrakingTracingEmitter wrap fires when RevertApplied flows through the injected AgentEventEmitter, but phi-core's `agent_loop` currently routes RevertApplied through the mpsc sender supplied to `prompt_with_sender` — NOT through the injected emitter. End-to-end production emission lights up when the daemon SessionHandle re-broadcasts to the emitter (out of CH-17 scope; D-CH17-FOLLOWUP-04 scope expanded). Audit C Claim 15 PASS classified the narrowing as in-plan + ADR-cited + invariant-preserving.
+
 ## Output handoff format
 
 ```

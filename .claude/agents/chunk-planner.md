@@ -1044,6 +1044,31 @@ When plan §1 / §6 ADR sub-decision body cites "struct field-set extended from 
 
 **CH-11a evidence**: plan §6 §D13.10 cited "field-set extended from 7 to 9" for SessionHandle; actual baseline at chunk-archive time was 11 fields (post-CH-09 + post-CH-07a additions of `interrupt_tx` + `parent_session_id` + `registry` not reflected in plan §6 ADR draft); new total post-CH-11a was 13 fields. The +2 delta was correct; the 7→9 cite was stale by 4 fields. Surface-area scanned at iter-1 draft-time used a pre-CH-09 snapshot of SessionHandle. Applying P-plan-13-v31 at iter-2 archive surfaces the stale-citation class as Trivial-1L plan-edit.
 
+## v32 additions (CH-17-i-phi retro `e764aeca`, 2026-05-25)
+
+### P-plan-1-v32 — Post-fork-lock §3.B per-file LOC cap re-derivation refinement (added 2026-05-25 per CH-17-i-phi retro `e764aeca` proposal #5 MEDIUM)
+
+When an iter-2 plan absorbs ≥ 1 USER-DIVERGENT lock that adds ≥ 2 functional axes to an EXTEND-file (e.g., F4.b adds a 4-path TTY × applied/rejected matrix + 2 MAY-COVER inline tests to `cli/output.rs`; F4.c adds `BrakingTracingEmitter` wrap + emit-site closure threading to `agent_factory/builder.rs`), the iter-2 §3.B cap for that file MUST be re-derived from the per-axis sum, NOT mirrored from the iter-1 baseline cap.
+
+**Rule**: each new functional axis added by the lock contributes ≥ ~15-25 LOC to the cap (per chunk-planner v23 cap baseline values + cycle-validated functional-axis estimates):
+- New render-path / match-arm body: ~15-20 LOC each (ansi branching, helper fn, doc-comment).
+- New wrap/emit closure: ~25-40 LOC (struct + impl + 1-2 inline tests).
+- New helper fn called from the EXTEND surface: ~10-15 LOC.
+- New inline-test (MAY-COVER): ~15-20 LOC each.
+- Multi-axis absorption multiplies the cap delta linearly.
+
+**Procedure**: at iter-2 plan-draft, for each EXTEND-file gaining ≥ 2 new functional axes from the lock-set, compute:
+
+```
+new_cap = iter1_baseline_cap + sum(per_axis_LOC_estimate for each new axis)
+```
+
+Update §3.B table to show the re-derived cap + cite the per-axis breakdown in a footnote. Implementer downstream consumes the re-derived cap; mid-flight pause-discipline (v23 P-impl-1-v23) fires against the re-derived cap, not the iter-1 stale value.
+
+**CH-17 evidence**: `cli/output.rs` cap held at iter-1's ≤225 LOC despite F4.b absorbing 4 render paths (2 ansi × 2 applied/rejected) + 2 inline tests; actual landed at 294 LOC (1.31× Band 2). Re-derived cap should have been ≤ 290 LOC (baseline 195 + 4 paths × ~15 LOC + 2 inline tests × ~15 LOC + 4 LOC overhead). `agent_factory/builder.rs` similarly absorbed F4.c emit-site + F2.a SkillSet path-resolution helper without proportional cap-widening from iter-1's ≤470 to a re-derived ≤500-510. Both surfaces silently absorbed within Band 2 ceiling via v22+v23 P-impl-1 — no Route A/B/C escalation needed — but the cap-derivation methodology missed the multi-axis-absorption signal. Applying P-plan-1-v32 at iter-2 archive surfaces re-derived caps proactively.
+
+**Pair with v23 P-plan-1 functional-scope-derivation**: v23 establishes that LOC caps mirror per-precedent baselines + functional-scope justifications; v32 extends to iter-2 post-fork-lock re-derivation when locks add ≥ 2 functional axes to an EXTEND-file.
+
 ## Output handoff format (return this verbatim)
 
 ```
