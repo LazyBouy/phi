@@ -280,16 +280,22 @@ This is the orchestrator's gate-4. **Sub-agent auditors cannot run the MUST-RUN 
 4. Capture `df -h /root | head -3` (after).
 5. Log "disk reclaimed" into `cycle-audit.md` §7 metrics row.
 
-### Phase 6 — Retrospective (skip if `skip_retrospective = yes`)
+### Phase 6 — Retrospective (DEFAULT: batched joint-retro per CH-11b 2026-05-26 user directive)
 
-**Phase 5 → Phase 6 transition gate (added 2026-05-18 per CH-03-i-phi retro P8 + user feedback memory `feedback_pause_before_retrospector.md`, cycle hex `c542648f`)**: BEFORE spawning the chunk-retrospector, orchestrator MUST present a Phase 5 → Phase 6 transition summary via AskUserQuestion. The summary covers: cycle hex + slug, audit verdict (PASS/FAIL counts + iteration accounting), gate-4 MUST-RUN outcomes, disk reclaimed at gate-5, paperwork ledger status, anything notable for the retrospector to weigh. User options:
+**Per-cycle retrospector dispatch SUSPENDED (user-locked 2026-05-26 at CH-11b cycle `bf1139be` Phase 5→6 transition gate)**. Each chunk-close lands a tight `<cycle folder>/retro-context.md` capturing retro-thoughts; every 3-4 chunks a **joint-retro session** reads the accumulated `retro-context.md` files + cycle-audits and proposes consolidated standards updates. Goal: prevent unchecked growth of outer CLAUDE.md + agent prompts + chunk-initiate skill + save tokens on per-cycle retrospectives.
 
-- **Proceed with retrospector dispatch (Recommended)** → spawn retrospector per the steps below.
-- **Skip retrospective (`skip_retrospective=yes` equivalent)** → Phase 6 bypassed; cycle-index Status flips to `audited-pending-retro` instead of `retro-complete`. Choose this when the cycle was trivial + retro proposals would be light.
-- **Provide context for retrospector first** → user supplies free-text guidance (e.g., axes to weigh, cross-cycle patterns to consider); orchestrator includes in the retrospector prompt.
-- **Pause longer / abort here** → stop at Phase 5; cycle paperwork stays complete; retrospective unwritten; Status stays `in-flight`.
+**Phase 5 → Phase 6 transition gate (mandatory pause; updated 2026-05-26)**: orchestrator presents the transition summary via AskUserQuestion with 4 options:
 
-This pause is **mandatory** — equivalent to the Phase 1.5 plan-approval gate. Treats the retrospector as the last expensive sub-agent spawn in the cycle (produces standards-update proposals the user reviews one-by-one) and gives the user a checkpoint before paying for it.
+- **Land retro-context.md + skip retrospector (Recommended; new default 2026-05-26)** → orchestrator writes `<cycle folder>/retro-context.md` capturing observations worth carrying (process gaps + hypothesis updates + standards-update candidates + cycle stats). Status stays `audited-pending-retro`. Joint-retro pending. **No retrospector dispatched; no standards updates applied this cycle.**
+- **Dispatch chunk-retrospector now (legacy per-cycle path)** → spawn the retrospector per the steps below; produces full `retrospective.md` + proposes standards updates surfaced one-by-one via AskUserQuestion. Status flips to `retro-complete` if proposals applied.
+- **Joint-retro session NOW (batched mode)** → spawn the retrospector with the **list of accumulated `retro-context.md` paths** + cycle-audit references from the prior 2-4 chunks; produces a single consolidated `retrospective.md` covering the batch. Use this when 3-4 retro-context.md files have accumulated. All batch chunks' Status flips to `retro-complete` together.
+- **Pause / abort** → stop at Phase 5; paperwork stays complete; Status stays `audited-pending-retro` for batched-retro path or `in-flight` for abort.
+
+**Retro-context.md shape** (canonical CH-11b precedent at `i-phi/docs/v0/proposal/plan/build/ch-11b-web-chat-ui-bf1139be/retro-context.md`): Cycle context block + Observations worth carrying (process gaps / hypothesis updates / notable wins / code observations / plan-narrative inconsistencies / LOC absorption) + Standards-update proposals drafted (NOT applied; joint-retro decides) + Cycle-folder artifacts + Status.
+
+**Joint-retro batch sizing**: 3-4 chunks per batch is the user-locked window. Smaller batches (2) acceptable when the cycle surface is large + retro-contexts are dense; larger batches (5+) discouraged because cross-chunk pattern detection degrades.
+
+#### Legacy per-cycle path (selected via option 2 above)
 
 1. Spawn `chunk-retrospector` agent. Prompt MUST include:
    - The cycle hex.
@@ -301,6 +307,14 @@ This pause is **mandatory** — equivalent to the Phase 1.5 plan-approval gate. 
    - **Apply** → orchestrator applies the change; bump the affected file's version; append a row to `.claude/agents/_changelog.md`.
    - **Defer** → log the proposal in the retrospective with a "deferred — revisit next cycle" tag.
    - **Reject** → log the proposal with a "rejected — <reason>" tag.
+
+#### Joint-retro batch path (selected via option 3 above)
+
+1. Identify the batch window: accumulated `retro-context.md` files since the last joint-retro (typically 2-4 chunks).
+2. Spawn `chunk-retrospector` agent with batch-mode prompt including: every batch chunk's `retro-context.md` path + corresponding `cycle-audit.md` + `plan.md` + diffs across the batch window.
+3. The retrospector reads ALL inputs, identifies cross-cycle patterns + recurring process gaps + load-bearing standards-update candidates, runs `permissions-audit` skill once across the batch window's tool-use log, and writes a single consolidated `retrospective-joint-<first-hex>-to-<last-hex>.md` at `i-phi/docs/v0/proposal/plan/retros/` (NEW directory) or equivalent baby-phi path.
+4. Surface each consolidated proposal one-by-one via AskUserQuestion (Apply / Defer / Reject).
+5. ALL batch chunks' cycle-index Status flips to `retro-complete` together; joint-retro link recorded in EACH batch chunk's Retro cell.
 
 ### Phase 7 — Summary
 
