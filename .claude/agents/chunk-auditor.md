@@ -164,26 +164,15 @@ When the audit prompt lists fork-locks for verification (typical Audit-A code-co
 
 **Symmetry**: also applies to Audit-B paperwork verification (e.g., a multi-section ADR with one section missing a required cross-ref shows as `ADR-NNNN §D<X>: PASS (a)header ✓ + (b)body ✓ + (c)cross-refs ✗`).
 
-### Audit-A interface-contract claim (v13 — added per CH-07b-i-phi retro `283d3949` proposal #4; closes the method-vs-free-function interface-drift class surfaced at Audit C iter-1 Claim 5 FAIL)
+### Audit-A interface-contract claim (v13 — consolidated to interface-contract-verify skill at Chunk C 2026-05-26)
 
-When the audit prompt's `## Code-correctness claims` list includes a fork-lock or plan §X deliverable citing a method form of the shape `<TypeName>::<method_name>(...)` (e.g., `AgentHandle::harvest_from_subagent_session(...)`, `SessionHandle::checkpoint_now()`, `AgentFactory::build(...)`), the auditor MUST add a dedicated **interface-contract claim** with the following shape:
+When the audit prompt's `## Code-correctness claims` list includes a fork-lock or plan §X deliverable citing a method form of the shape `<TypeName>::<method_name>(...)`, the auditor MUST add a dedicated **interface-contract claim** invoking skill `interface-contract-verify` with the method-form deliverable as input. Skill returns PASS / PARTIAL / FAIL per the 4-axis verification (method-exists / impl-block-exists / body-inside-impl / signature-match). The claim verdict mirrors the skill output:
 
-```
-N. **Interface contract — `<TypeName>::<method_name>` exposed as method**: per plan §X deliverable Y / forward-scope item Z / ADR §D<N>.<M>. Verify:
-   (a) `grep -n 'fn <method_name>' <PROJECT_ROOT>/src/` returns ≥ 1 hit.
-   (b) `grep -rn 'impl <TypeName>' <PROJECT_ROOT>/src/` returns ≥ 1 hit.
-   (c) `fn <method_name>` body lives INSIDE one of the matching impl blocks (not just shipped as a free function with a similar name).
-   (d) Signature matches plan §X / forward-scope literal: arg list + arg names + return type cross-checked.
-Cite: `src/.../<file>.rs:NN` for the impl block; `src/.../<file>.rs:MM` for the method body.
-```
+- PASS → claim PASS with cited file:line for impl block + method body.
+- PARTIAL (axis d signature divergence, typically semantic-equivalent arg-shape per CH-10) → claim PASS-with-caveat documenting the wording-divergence + load-bearing-equivalence.
+- FAIL (most commonly axis c — free function ships at `<method_name>` but no `impl <TypeName>` exposes it as a method) → claim FAIL with cited gap. Resolution is Trivial-multi (5-50 LOC delegate method) most commonly applied at gate-3 by the orchestrator.
 
-A FAIL on any of (a)/(b)/(c)/(d) is a verified plan-vs-code drift. Most common form: (a) + (b) PASS but (c) FAIL — free function ships at `<method_name>` but no `impl <TypeName>` exposes it as a method. This is a Trivial-multi resolution (5-50 LOC delegate method) most commonly applied at gate-3 by the orchestrator.
-
-**Why this is a dedicated claim and not subsumed by §A lock-compliance**: interface contracts (method-vs-free-function surface) are orthogonal to fork-lock semantic compliance. A fork-lock can ship perfectly at semantic granularity (logic correct, tests pass) while still missing the consumer-facing method-exposure surface that the plan/forward-scope/ADR all promised. CH-07b evidence: F1 F-harvest-spec.a (composable HarvestSelectionSpec) PASSED at semantic granularity (enum variants correct, tests pass, free function works) but `AgentHandle::harvest_from_subagent_session(...)` method form expected by plan §8 P-HARVEST deliverable 2 + forward-scope item 10 + ADR-0010a §"For CH-07b" went un-shipped. Audit C iter-1 Claim 5 surfaced it via cross-cluster lane (interface-contract focus); v13 codifies the claim as a dedicated Audit-A check so future cycles catch it at the code-correctness lane directly.
-
-**Pairs with**: chunk-implementer v20 P-impl-1-v20 (implementer-side P-IMPL self-check) + outer CLAUDE.md gate-3 method-signature paraphrase cross-check (orchestrator-side gate-3 defense). **3-layer defense** for the method-vs-free-function interface-drift class.
-
-**Scope**: applies whenever the audit prompt cites a method-form deliverable; HIGH-value for surfaces with method-rich type contracts (`AgentHandle`, `SessionHandle`, `AgentFactory`, etc.). When the audit prompt cites ONLY free functions (no method forms), this claim is a no-op for the cycle.
+**Why dedicated claim (not subsumed by §A lock-compliance)**: interface contracts (method-vs-free-function surface) are orthogonal to fork-lock semantic compliance. A fork-lock can ship perfectly at semantic granularity (logic correct, tests pass) while still missing the consumer-facing method-exposure surface that the plan/forward-scope/ADR all promised. **3-layer defense**: chunk-implementer v20 (P-IMPL self-check) + this claim (Audit-A check) + outer CLAUDE.md gate-3 audit-prompt-cross-check.sh axis 4 — all invoke the same skill. **Scope**: applies whenever the audit prompt cites a method-form deliverable; no-op when the prompt cites only free functions. Full evidence narrative at `discipline-archive.md` `#ch-07b-i-phi-interface-contract-drift` + `#ch-10-i-phi-arg-shape-divergence` (PARTIAL precedent).
 
 ## Constraints
 

@@ -284,30 +284,13 @@ Example wording template:
 
 Pairs with P-impl-1-v19 (which surfaces the scope-narrowing in deviation log) by ensuring the surfaced scope-narrowing also lands in the ADR body where future readers will discover it.
 
-### v20 — Single-update from CH-07b-i-phi retro `283d3949` (P-impl-1-v20 method-form-deliverable self-check)
+### v20 — Method-form-deliverable self-check (consolidated to interface-contract-verify skill at Chunk C 2026-05-26)
 
-#### P-impl-1-v20 — Method-form-deliverable self-check before phase commit (closes CH-07b Audit C iter-1 Claim 5 FAIL — `AgentHandle::harvest_from_subagent_session(...)` method missing)
+When a phase's plan §8 deliverable cites a method form of the shape `<TypeName>::<method_name>(...)` (e.g., `AgentHandle::harvest_from_subagent_session(...)`, `SessionHandle::checkpoint_now()`, `AgentFactory::build(...)`), the implementer at the phase boundary MUST invoke skill `interface-contract-verify` with the method-form deliverable as input. The skill runs 4 axes: (a) method definition exists / (b) impl block exists / (c) method body lives INSIDE one of the impl blocks (NOT a free function with similar name) / (d) signature arg-list + return-type matches plan literal.
 
-When a phase's plan §8 deliverable cites a method form of the shape `<TypeName>::<method_name>(...)` (e.g., `AgentHandle::harvest_from_subagent_session(...)`, `SessionHandle::checkpoint_now()`, `AgentFactory::build(...)`), the implementer at the phase boundary MUST verify BOTH:
+If skill returns FAIL on axis (c) — most common failure mode (free function ships at the same name but no `impl <TypeName>` exposes it as a method) — the implementer MUST surface as a phase-commit blocker → either (a) ship the impl-block method delegate before phase commit, OR (b) escalate to orchestrator with a "spec-vs-code drift" finding for in-flight resolution. PARTIAL on axis (d) (semantic-equivalence with diff arg-shape per CH-10 precedent) is acceptable with deviation-log entry.
 
-1. **Method definition exists**: `grep -n 'fn <method_name>' <PROJECT_ROOT>/src/` returns ≥ 1 hit.
-2. **Impl block exists for the type**: `grep -rn 'impl <TypeName>' <PROJECT_ROOT>/src/` returns ≥ 1 hit AND the function `fn <method_name>` lives INSIDE one of those impl blocks (i.e., the method is exposed on the type, not just shipped as a free function with a similar name).
-
-If either check fails (most commonly: free function ships at the same name but no `impl Type` block exposes it as a method), the implementer MUST surface as a phase-commit blocker — either (a) ship the impl-block method delegate before phase commit, OR (b) escalate to orchestrator with a "spec-vs-code drift" finding for in-flight resolution.
-
-**Mechanical procedure** at each phase boundary AFTER source files land but BEFORE commit:
-
-```bash
-# Extract method-form tokens from the plan §8 phase deliverable text (manual scan or script).
-# For each <TypeName>::<method_name> token:
-grep -n "fn <method_name>" <PROJECT_ROOT>/src/  # confirm method body exists
-grep -rn "impl <TypeName>" <PROJECT_ROOT>/src/  # confirm impl block exists
-# Then read each matching impl block and verify <method_name> is inside it.
-```
-
-**Failure-mode codified**: CH-07b evidence: plan §8 P-HARVEST deliverable 2 + forward-scope item 10 + ADR-0010a §"For CH-07b" all called for `AgentHandle::harvest_from_subagent_session(...)` method form. Implementer shipped the free function `harvest_from_subagent_session(...)` at `src/agent_factory/harvest.rs:77` correctly but did NOT add an `impl AgentHandle { pub async fn harvest_from_subagent_session(...) }` delegate. Surfaced at gate-3 Audit C iter-1 Claim 5 FAIL; orchestrator-applied Trivial-multi 37-LOC delegate patch (commit `56e53fa`). v20 catches the class at implementer-tier P-HARVEST commit (or whichever phase ships the method-form deliverable); pairs with chunk-auditor v13 interface-contract claim (audit-side defense at Audit A scaffold) + outer CLAUDE.md gate-3 method-signature paraphrase cross-check (orchestrator-side defense). **3-layer defense for the method-vs-free-function interface-drift class.**
-
-**Scope**: applies whenever plan §8 cites `<TypeName>::<method_name>(...)` literally — HIGH-value for surfaces with method-rich type contracts (`AgentHandle`, `SessionHandle`, `AgentFactory`, etc.).
+**Scope**: applies whenever plan §8 cites `<TypeName>::<method_name>(...)` literally — HIGH-value for surfaces with method-rich type contracts (`AgentHandle`, `SessionHandle`, `AgentFactory`, etc.). **3-layer defense**: implementer-tier (this rule) + chunk-auditor v13 Audit-A interface-contract claim + outer CLAUDE.md gate-3 audit-prompt-cross-check.sh axis 4 — all invoke the same skill. Full evidence narrative at `discipline-archive.md` `#ch-07b-i-phi-interface-contract-drift`.
 
 ### v21 — Single-update from CH-09-i-phi retro `075c07cf` proposal #8 (verified-header annotation-length cap)
 
