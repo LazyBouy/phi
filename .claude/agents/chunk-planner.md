@@ -68,26 +68,31 @@ Where the rest of this file references `baby-phi/...`, interpret as `<PROJECT_RO
 - §12 verification recipe: complete shell commands ready to copy-paste.
 - `## Forks for orchestrator` section at the top is empty (`(none)`) or each entry has 2–3 options + recommendation.
 
-### Per-fork pause-threshold re-derivation after gate-1 fork-locks (v17 — added per CH-02b-i-phi retro Row 1, cycle hex `57b20bda`; closes Audit-A claim 21 observation + cycle-audit §6 dev 1)
+### Post-gate-1 estimate-vs-actual reconciliation rule (v17 P1 + v21 R1 unified per Chunk C consolidation 2026-05-26)
 
-§3 cascade-fan-out pause-thresholds (file count, per-file LOC, Cargo.lock transitive churn) are derived at plan-draft time **before** gate-1 fork-locks. When the orchestrator locks a fork that materially expands chunk scope (e.g., F4.b broader 6 handlers vs planner-rec F4.a minimal 3; F-error.b thiserror enum vs F-error.a anyhow), the original pause-thresholds may no longer reflect the actual locked scope.
+§3 cascade-fan-out pause-thresholds (file count, per-file LOC, Cargo.lock transitive churn) AND cascade cardinality predictions (acceptance-test call-sites, fixture-extension counts) are derived at plan-draft time **before** gate-1 fork-locks. When the orchestrator locks a fork that materially expands chunk scope, OR when a fork's cascade prediction interacts with an **implicit-emission rule** from a prior ADR (e.g., CH-25 ADR-0060 §D60.1's `Edge::Owns` emission at `apply_org_creation`), the plan-draft estimates may no longer reflect actual landed scope.
 
-**Rule (v17)**: in plan §3 cascade discipline paragraph, you MUST emit a **per-fork pause-threshold table** that lists each fork × its impact on the §3.B/§3.C cascade-vector thresholds. Example shape:
+**Unified Rule**: in plan §3 cascade discipline paragraph, you MUST emit a **per-fork × cascade-axis table** covering both threshold deltas AND cardinality bands:
 
 ```
-| Fork | If locked | Δ file-count cap | Δ key-file LOC cap | Δ Cargo.lock cap |
-|---|---|---|---|---|
-| F4.a (planner-rec) | minimal-3 | 21 | server.rs ≤ 250 | +30 |
-| F4.b (alternative) | broader-6 | 24 (+3 handlers) | handlers.rs ≤ 250; server.rs unchanged | +30 |
-| F-error.a (planner-rec) | anyhow | unchanged | unchanged | unchanged |
-| F-error.b (alternative) | thiserror enum | +1 file (error.rs) | error.rs ≤ 100 | +1 (thiserror crate) |
+| Fork | If locked | Δ file-count cap | Δ key-file LOC cap | Δ Cargo.lock cap | Cascade band (sites) |
+|---|---|---|---|---|---|
+| F4.a (planner-rec) | minimal-3 | 21 | server.rs ≤ 250 | +30 | [N-implicit, N] e.g. [9, 18] |
+| F4.b (alternative) | broader-6 | 24 (+3 handlers) | handlers.rs ≤ 250 | +30 | [N-implicit, N] |
+| F-error.a (planner-rec) | anyhow | unchanged | unchanged | unchanged | n/a |
+| F-error.b (alternative) | thiserror enum | +1 file | error.rs ≤ 100 | +1 (thiserror crate) | n/a |
 ```
 
-The orchestrator at gate-1 reads the locked-fork outcomes, then re-derives the active pause-thresholds by summing the deltas from each locked option. The implementer at chunk-open is handed the **re-derived** thresholds, not the plan-draft thresholds.
+**Threshold-axis sub-rule (v17 P1 origin)**: orchestrator at gate-1 reads locked-fork outcomes + re-derives active pause-thresholds by summing deltas. Implementer at chunk-open is handed the re-derived thresholds, NOT the plan-draft thresholds. **CH-02b precedent**: `src/daemon/ipc/server.rs` shipped at 354 LOC vs plan §3.B-stated 250-LOC pause-trigger (1.5× predicted 150 LOC); implementer did NOT pause because the threshold was NOT re-derived after gate-1 locked F4.b. Planning-precision drift codified.
 
-**Why**: CH-02b's `src/daemon/ipc/server.rs` shipped at 354 LOC vs the plan §3.B-stated 250-LOC pause-trigger (1.5× predicted 150 LOC). Implementer did NOT pause as plan prescribed. Root cause: planner under-predicted F2.a transport-dual complexity at plan-draft, and the threshold was NOT re-derived after gate-1 locked F4.b (which the planner had anticipated would push scope but didn't re-quantify). Not a quality issue, but a planning-precision drift — codified here.
+**Cardinality-band sub-rule (v21 R1 origin)**: when plan §3 cascade-enumeration predicts ≥ N test sites that "use production path X" (e.g., `apply_org_creation`, `spawn_claimed_with_org`, `bootstrap_org_via_wizard`), planner MUST cross-reference whether X carries an **implicit-emission rule** from a prior ADR. If yes:
+- Cascade-band MUST widen to `[N - implicit-covered-subset, N]` with cascade-collapse rationale ready (NOT a single point estimate).
+- Plan §3 MUST explicitly cite the prior ADR's implicit-emission rule as the rationale for the wider band.
+- Plan §3 SHOULD identify the subset of cascade sites that **bypass** the production-path (hand-craft Org/Project nodes, mock the compound-tx, etc.) — those are the explicit-seeding-required sites.
 
-**Implementer-side companion rule** at `chunk-implementer.md` v11 §"Pause-discipline strengthening": on any §3 cascade pause-threshold breach (post-re-derivation), implementer MUST emit AskUserQuestion to the orchestrator — NOT just log + push through. Surface-then-decide is the canonical flow.
+**CH-27 precedent**: plan §3 Artifact C predicted "12-18 acceptance tests need explicit `seed_owner_grants(ceo, [org_id])` call". Actual landed cascade: 9 call-sites across 6 test files (-3 below lower band). Cascade-collapse rationale: tests using `apply_org_creation` production path obtain `Edge::Owns` implicitly via CH-25 ADR-0060 §D60.1; only tests bypassing the production compound-tx needed explicit seeding. Cardinality cascade documented at 7 doc locations via gate-3 Trivial-multi patch.
+
+**Implementer-side companion**: chunk-implementer.md v11 §"Pause-discipline strengthening" — on any §3 cascade pause-threshold breach (post-re-derivation) the implementer MUST emit AskUserQuestion to the orchestrator, NOT log + push through. Cascade-band ACTUAL vs predicted markers (COLLAPSE / WITHIN / OVERRUN) ship via chunk-implementer v13 P-FIXTURES actuals snapshot.
 
 ### Explicit ADR-section enumeration in plan §5 (v17 — added per CH-02b-i-phi retro Row 2, cycle hex `57b20bda`; closes Audit-B-iter1 claim 21 FAIL + claim 5 PARTIAL; HIGH priority + mid-cycle confirmed)
 
@@ -109,19 +114,17 @@ The plan §5 ADR-drafted-at-phase paragraph MUST explicitly list which sections 
 
 **Baby-phi compat**: baby-phi ADRs follow the same shape (verify via `i-phi-ADR-0002.md` ↔ baby-phi `ADR-0059.md` cross-check). The v17 rule applies uniformly; per-project deviations should appear as `N/A — <reason>` annotations on individual sections.
 
-### Carry-forward test names grep-verify in plan §8 (v17 — added per CH-02b-i-phi retro Row 3, cycle hex `57b20bda`; closes cycle-audit §6 dev 3; LOW priority — wording-drift only)
+### Baseline snapshot (v17 P3 + v19 P4 + numeric-citation consolidated to skill at Chunk C 2026-05-26)
 
-Plan §8 "Tests summary" includes a "Named expected-still-green tests" subsection listing test fn names from prior cycles (carry-forward invariants). v17 mandates grep-verifying these against actual repo state at plan-draft time.
+Plan §3 (phi-core leverage map) + §6 (carry-forward invariants) + §8 (Tests summary) ground their numeric assertions via the `baseline-snapshot` skill at plan-draft time. The skill outputs JSON covering 3 axes:
 
-**Rule (v17)**: before emitting the carry-forward test-names list in §8, run:
+- **Axis A — test count**: workspace `cargo test --no-run` baseline + binary/inline decomposition (per v30 P-plan-9 §8 baseline rule).
+- **Axis B — phi-core import count**: per-file leverage-sites (preferred over raw `use phi_core` line counts per v20 P4) for §3 prediction.
+- **Axis C — numeric-citation grounding**: struct-field counts / enum-variant counts / route counts / utoipa-path counts for any plan body citation that asserts a literal cardinality.
 
-```bash
-grep -hE "^fn (test_|smoke_)" <PROJECT_ROOT>/tests/*.rs | head -30
-```
+For carry-forward test fn names in §8, plus baseline import counts in §3, plus any numeric citation the plan body asserts as a current-state literal, use the skill output verbatim — do NOT paraphrase from prior-cycle plan or retrospective text. CH-02b precedent: plan §8 listed CH-02a carry-forward test names (`test_daemon_start_and_programmatic_shutdown_returns_within_5s`) that didn't match actual fn names (`test_daemon_starts_and_shuts_down_via_programmatic_shutdown`); v17 P3 closed the wording-drift class. CH-02c precedent: plan §3 predicted "6 baseline → 8 final"; actual was "8 baseline → 11 final" (skill axis B output would have grounded the baseline; +1 incidental in new test file is the cap-and-allowance to surface separately).
 
-(or equivalent for the project's test-naming convention). Use the actual fn names verbatim in the plan §8 listing. Do NOT paraphrase from prior-cycle plan or retrospective text — those may have drifted relative to actual source.
-
-**Why LOW + wording-drift only**: CH-02b's plan §8 listed CH-02a carry-forward test names like `test_daemon_start_and_programmatic_shutdown_returns_within_5s` that didn't match the actual fn names (`test_daemon_starts_and_shuts_down_via_programmatic_shutdown`). No harm — implementer kept actual names; CH-02b tests stayed green. Surfaced for retrospective; codified at v17 for cheap insurance.
+**Orchestrator gate-1.5 P-orch-3 reads the same JSON**: pre-archive numeric-citation cross-check + struct-field-count axis verification all flow through `baseline-snapshot` output. Single source-of-truth across planner + orchestrator tiers.
 
 ### Hygiene bundle (v19 — added per CH-02c-i-phi retro Rows P1+P2+P3+P4+P5, cycle hex `81f0c24e`; 5 small additive refinements to v17 P1+P2+P3 disciplines)
 
@@ -162,17 +165,9 @@ Per CH-02c retro Row P3 (cycle-audit §6 dev 4). When the per-session task body 
 
 Add to the §3.E pattern catalog. CH-02c precedent: `sessions/task.rs:94-100` emits `ProgressMessage` instead of `AgentStart` for this exact reason.
 
-#### v19 P4 — Baseline-import-count grep invocation in §3
+#### v19 P4 — Baseline-import-count (consolidated to baseline-snapshot skill at Chunk C 2026-05-26)
 
-Per CH-02c retro Row P4 (cycle-audit §6 dev 5). Plan §3 leverage map MUST explicitly emit a baseline-import-count grep at plan-draft (parallel to v17 P3 carry-forward-test-name grep):
-
-```bash
-grep -rn "use phi_core" /root/projects/phi/<project>/src/ /root/projects/phi/<project>/tests/ | wc -l
-```
-
-Then the "expected delta" must account for the new test file's incidental imports: if the chunk adds `tests/<feature>_test.rs` with `use phi_core::AgentEvent`, that's a +1 incidental delta. Planner accounts for it explicitly in §3.B "Predicted at chunk-close" row.
-
-CH-02c precedent: plan §3 predicted "6 baseline → 8 final"; actual was "8 baseline → 11 final". Net direct-reuse +2 matched plan intent; +1 was incidental in the new test file. Wording-drift; codified at v19.
+See unified §"Baseline snapshot" section above. The skill's axis B (phi-core import count + per-file leverage-sites) provides the §3 baseline grounding. The "expected delta" still accounts for incidental imports in new test files; planner records the expected incremental delta in §3.B "Predicted at chunk-close" row.
 
 #### v19 P5 — Hand-rolled helper centralization decision-prompt in §3.E
 
@@ -236,15 +231,7 @@ CH-03 precedent: F4.b watcher is a pure-library primitive at CH-03; CH-07 agent-
 
 ### v21 bundle (added 2026-05-18 per CH-27 retro Rows R1+R5+R6+R7, cycle hex `0edcaba9`; planning-precision quad surfaced by CH-27's F4.b USER-DIVERGENT helper cycle)
 
-#### R1 — Cascade-collapse-cardinality-banding when implicit-emission rules apply (closes Audit-A claim 7 FAIL)
-
-When plan §3 cascade-enumeration predicts ≥ N test sites that "use production path X" (e.g., `apply_org_creation`, `spawn_claimed_with_org`, `bootstrap_org_via_wizard`), planner MUST cross-reference whether X carries an **implicit-emission rule** from a prior ADR (e.g., CH-25 ADR-0060 §D60.1's `Edge::Owns` emission at `apply_org_creation`). If yes:
-
-- Plan §3 cascade-band MUST widen to `[N - implicit-covered-subset, N]` with **cascade-collapse rationale ready** (NOT a single point estimate).
-- Plan §3 MUST explicitly cite the prior ADR's implicit-emission rule as the rationale for the wider band.
-- Plan §3 SHOULD identify the subset of cascade sites that **bypass** the production-path (hand-craft Org/Project nodes, mock the compound-tx, etc.) — those are the explicit-seeding-required sites.
-
-**Failure-mode codified**: CH-27 plan §3 Artifact C predicted "12-18 acceptance tests need explicit `seed_owner_grants(ceo, [org_id])` call". Actual landed cascade: **9 call-sites across 6 test files** (-3 below lower band). Cascade-collapse rationale: tests using `apply_org_creation` production path obtain `Edge::Owns` implicitly via CH-25 ADR-0060 §D60.1 — the synth-owner-grant rule covers those tests at engine `step_2_resolve_grants` without per-test explicit seeding. Only tests that hand-craft Org/Project nodes bypassing the production compound-tx needed explicit seeding. Cardinality cascade documented at 7 doc locations via gate-3 Trivial-multi patch. **R1 codifies the discipline so future cycles surface the cascade-collapse possibility at plan-draft, NOT as a gate-3 audit-FAIL routed to retro.**
+> **R1 — Cascade-collapse-cardinality-banding** merged into the unified §"Post-gate-1 estimate-vs-actual reconciliation rule" above (Chunk C consolidation 2026-05-26). Full CH-27 evidence narrative + cardinality-band sub-rule live at the unified rule.
 
 #### R5 — Plan §8 band-derivation for top-level HTTP scenarios (closes Gate-4 cycle-audit deviation #1)
 
@@ -271,26 +258,15 @@ P3-scenario-naming MUST match actual handler operation name. At plan-draft P3 de
 
 ### v22 bundle (added 2026-05-18 per CH-04-i-phi retro P1+P2+P7+P12+P13, cycle hex `8a9c50ea`; five-update bundle closing 2-of-2-cycle v20 P2 regression + test-count overshoot + proc-macro dev-dep miss + ADR-location drift + P3c clarification)
 
-#### P13 — v20 P2 locked-fork-details appendix self-check loop (closes CH-04 retro §3 row 10 — 2-of-2-cycle compliance regression)
+#### P13 — Locked-fork-details appendix self-check (v22 P13 + v23 P-plan-3 ALWAYS-FIRE, consolidated to skill)
 
-When ≥ 1 user-lock is recorded in plan §3 (i.e., `LOCKED at gate-1` rows present), at end-of-draft the planner MUST self-grep its own draft for the `## Locked fork details` (or `### Locked fork details`) heading + verify:
+When ≥ 1 `LOCKED at gate-1` row exists in plan §3, at end-of-draft the planner MUST invoke skill `chunk-template-validate-locked-appendix` against the draft path. Skill performs 4-step mechanical validation (heading exists / subsection count ≥ lock count / each subsection ≥ 3 sentences) + returns PASS/FAIL.
 
-- Heading exists (NOT optional when ≥ 1 lock recorded).
-- One `#### F<N> = F<N>.<letter>` subsection per top-level lock (gate-1.5 sub-fork locks may share parent F<N> subsection or get their own §D<N>.X subsections).
-- Each subsection carries 3-6 sentences of plain-English semantics (what the lock means, NOT just the headline).
+**If skill returns FAIL**: re-emit the appendix to address the cited gap + re-invoke until PASS. Do NOT punt to orchestrator post-draft cleanup.
 
-**If self-check fails (heading missing OR sub-section count < lock count OR sub-section bodies are < 3 sentences):** planner retries the appendix emission BEFORE returning the draft to orchestrator. Do NOT punt to orchestrator post-draft cleanup.
+**Belt-and-suspenders**: chunk-archive-plan v3+ archive-tier hard-assertion at archive close re-invokes the same skill independently (both layers fire so a planner-tier slip is caught at archive-tier before the row lands in cycle-index).
 
-**Failure-mode codified**: CH-03-i-phi (cycle `c542648f`) AND CH-04-i-phi (cycle `8a9c50ea`) BOTH had to be patched post-draft because iter-2 planner did NOT emit the appendix natively despite v20 P2 mandate. 2-of-2-cycles = pattern-level signal. User flagged conversationally at CH-04: *"The plan does not again have a detailed locked outcome section. I thought it was ingrained in the memory, or?"* P13 closes the regression at planner-tier; P14 (chunk-archive-plan skill hard-assertion) closes it at archive-tier as belt-and-suspenders.
-
-**v23 P-plan-3 reinforcement (added 2026-05-19 per CH-05-i-phi retro `f7a354b6`)**: P13 self-check is now an **ALWAYS-FIRE end-of-draft assertion**, not an optional verification. CH-05 became the **3rd consecutive cycle** under v22 to surface the appendix missing at orchestrator-side gate-1.5 — pattern is now 3-of-3 under v22. **The mandatory mechanical procedure at end-of-draft (before returning the draft path to the orchestrator)**:
-
-1. **Run `grep -c "^### Locked fork details" <draft-path>`** as a literal subshell. If `0` AND ≥ 1 `LOCKED at gate-1` row exists in plan §3, the appendix is missing → emit it + re-run grep until `≥ 1`.
-2. **Run `grep -c "^#### F" <draft-path>`** within the appendix region. If count < `LOCKED at gate-1` row count, sub-sections are missing → emit them + re-run grep until counts match.
-3. **For each `#### F<N>` subsection, count sentences via `awk` or sentence-end-punctuation grep**. If any subsection body has < 3 sentences, expand it + re-run.
-4. **Belt-and-suspenders**: chunk-archive-plan v3+ archive-tier hard-assertion at archive close (independent of planner self-check) — both layers fire so a planner-tier slip is caught at archive-tier before the row lands in cycle-index.
-
-The user's standing rule (saved as memory `feedback_locked_fork_details_appendix.md` at CH-05 mid-cycle): *"Irrespective of whether the locks diverge or not, the plan must have a locked fork details section before it is sent for approval."* The v23 ALWAYS-FIRE rule codifies this — the appendix ships in iter-1 archive without exception when ≥ 1 lock exists, NOT contingent on divergence count or whether the planner "thinks" it emitted the section. Companion rules at chunk-initiate v? Phase 1.5 (mandatory iter-2 planner re-spawn after fork-locks regardless of divergence) + chunk-archive-plan v3+ archive-tier hard-assertion.
+User's standing rule (memory `feedback_locked_fork_details_appendix.md`): *"Irrespective of whether the locks diverge or not, the plan must have a locked fork details section before it is sent for approval."* Companion rule at chunk-initiate Phase 1.5 Step A (mandatory iter-2 planner re-spawn after fork-locks regardless of divergence). Empirical precedent: 3-of-3 regression at CH-03/CH-04/CH-05-i-phi pre-skill consolidation. Full evidence narrative at `discipline-archive.md` `#ch-05-i-phi-pre-archival-quartet-evidence`.
 
 #### P1 — §8 per-Tier test-cardinality breakdown (closes CH-04 retro §3 row 1 — 2-of-2-cycle test-count overshoot)
 
