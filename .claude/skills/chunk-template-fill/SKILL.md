@@ -1,16 +1,23 @@
 ---
 name: chunk-template-fill
-description: Read the canonical 12-section per-chunk-planning-template and emit a fully-filled scaffold draft. Every required subsection populated; no stubs or TODO lines. Used by chunk-planner to bootstrap a new cycle plan.
+description: Read the canonical 12-section per-chunk-planning-template and emit a fully-filled scaffold draft. Every required subsection populated; no stubs or TODO lines. Used by chunk-planner to bootstrap a new cycle plan. Project-aware via PROJECT_ROOT.
 ---
 
 # chunk-template-fill
 
 Bootstrap a fresh cycle plan with all 12 sections populated from the chunk's forward-scope row. Used by chunk-planner only.
 
+## Project context (v2 — project-aware path resolution; added 2026-05-26 per Chunk C consolidation 6)
+
+The per-chunk-template canonical lives at `/root/projects/phi/baby-phi/docs/specs/v0/implementation/m5_1/process/per-chunk-planning-template.md` and is shared cross-submodule (i-phi consumes the same template per chunk-planner v15 project context). Caller passes `PROJECT_ROOT` to resolve where the **drafted plan** is written:
+- **Unset / absent** → baby-phi conventions (cycle plan at `<PROJECT_ROOT>/docs/specs/plan/build/<slug>-<8hex>/plan.md`).
+- **`/root/projects/phi/i-phi`** → i-phi conventions (cycle plan at `<PROJECT_ROOT>/docs/v0/proposal/plan/build/<slug>-<8hex>/plan.md`).
+
 ## Inputs (caller provides)
 
 1. **Forward-scope row** for the chunk — slug, scope summary, drifts closed, concept docs touched, prerequisites, deliverables.
-2. **Per-chunk-template path** — `baby-phi/docs/specs/v0/implementation/m5_1/process/per-chunk-planning-template.md`.
+2. **Per-chunk-template path** — `/root/projects/phi/baby-phi/docs/specs/v0/implementation/m5_1/process/per-chunk-planning-template.md` (shared cross-submodule).
+3. **PROJECT_ROOT** (optional) — resolves the cycle plan destination per the project context above.
 
 ## Procedure
 
@@ -48,4 +55,4 @@ A markdown document matching the template exactly. Hand back to chunk-planner fo
 
 ## Reference
 
-per-chunk-template canonical: `baby-phi/docs/specs/v0/implementation/m5_1/process/per-chunk-planning-template.md`.
+per-chunk-template canonical: `/root/projects/phi/baby-phi/docs/specs/v0/implementation/m5_1/process/per-chunk-planning-template.md` (shared cross-submodule; baby-phi-rooted but consumed by both baby-phi + i-phi planner cycles).

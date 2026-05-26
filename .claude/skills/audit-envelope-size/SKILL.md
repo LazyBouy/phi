@@ -1,15 +1,25 @@
 ---
 name: audit-envelope-size
-description: Pick the audit envelope (1, 2, or 3 audit agents) and draft per-letter audit prompt scaffolds for plan §11. Used by chunk-planner only.
+description: Pick the audit envelope (1, 2, or 3 audit agents) and draft per-letter audit prompt scaffolds for plan §11. Used by chunk-planner only. Project-aware via PROJECT_ROOT.
 ---
 
 # audit-envelope-size
 
 Apply the per-chunk-template §11 sizing rule to the chunk's phase count, then draft the per-audit-letter prompt scaffolds.
 
+## Project context (v2 — project-aware path resolution; added 2026-05-26 per Chunk C consolidation 6)
+
+The caller passes `PROJECT_ROOT` in the runtime context:
+- **Unset / absent** → `/root/projects/phi/baby-phi` (back-compat default; behaviour matches v1 exactly).
+- **`/root/projects/phi/i-phi`** → i-phi conventions (cycle plan path = `<PROJECT_ROOT>/docs/v0/proposal/plan/build/<slug>-<8hex>/plan.md`).
+- **`/root/projects/phi/phi-core`** → phi-core conventions (cycle plan path = `<PROJECT_ROOT>/docs/specs/plan/build/<slug>-<8hex>/plan.md` — phi-core uses baby-phi-shape paths).
+
+Scaffold templates below use `<PROJECT_ROOT>` placeholder; caller substitutes at invocation time.
+
 ## Inputs (caller provides)
 
 1. **Phase count** — from plan §7 (count the `### P<N>` headers).
+2. **PROJECT_ROOT** (optional) — resolves project paths in scaffolds.
 
 ## Procedure
 
@@ -25,7 +35,7 @@ Apply the per-chunk-template §11 sizing rule to the chunk's phase count, then d
 ### Audit A (code + phi-core + K8s) scaffold
 
 ```
-You are auditing CH-NN in baby-phi at /root/projects/phi/baby-phi/. Read-only on source. Plan at <cycle-folder>/plan.md.
+You are auditing CH-NN in <project> at <PROJECT_ROOT>. Read-only on source. Plan at <cycle-folder>/plan.md.
 
 Verify each claim with file:line citation:
 1. <chunk-specific code claim from plan §7 deliverables>

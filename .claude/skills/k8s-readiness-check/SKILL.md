@@ -1,11 +1,18 @@
 ---
 name: k8s-readiness-check
-description: Walk the 7-axis K8s microservice readiness evaluation for a baby-phi chunk. Classifies each axis (in-process state, IPC, pod-local resources, migration runner, trait-shape, cross-pod state, audit hash-chain symmetry). Drafts CHK8S-D-NN deferred-ledger entries when new blocker classes are discovered.
+description: Walk the 7-axis K8s microservice readiness evaluation for a chunk. Classifies each axis (in-process state, IPC, pod-local resources, migration runner, trait-shape, cross-pod state, audit hash-chain symmetry). Drafts CHK8S-D-NN deferred-ledger entries when new blocker classes are discovered. Project-aware via PROJECT_ROOT (baby-phi-only at execution time; accepts arg cleanly).
 ---
 
 # k8s-readiness-check
 
 Run the per-chunk-template §3.B 7-axis evaluation for K8s microservice readiness. Used at plan-time and audit-time.
+
+## Project context (v2 — project-aware path resolution; added 2026-05-26 per Chunk C consolidation 6)
+
+Caller passes `PROJECT_ROOT`:
+- **Unset / absent** → `/root/projects/phi/baby-phi` (default; K8s posture is baby-phi-specific; M7b-era resolution target).
+- **`/root/projects/phi/i-phi`** → i-phi has NO K8s posture at v0. Skill returns `N/A — i-phi has no K8s posture` for all 7 axes + skips ledger entry drafting.
+- **`/root/projects/phi/phi-core`** → phi-core is a library, not a daemon; K8s readiness not applicable. Skill returns N/A.
 
 ## The 7 axes (per per-chunk-template §3.B + ADR-0033)
 
@@ -21,8 +28,9 @@ Run the per-chunk-template §3.B 7-axis evaluation for K8s microservice readines
 
 ## Inputs (caller provides)
 
-1. **Cycle plan path** — for the §3.B table draft (plan-time mode) or verification (audit-time).
+1. **Cycle plan path** — project-appropriate path (e.g., `<PROJECT_ROOT>/docs/specs/plan/build/<slug>-<8hex>/plan.md`) — for the §3.B table draft (plan-time mode) or verification (audit-time).
 2. **Mode** — `draft` (plan-time, fill the table) or `verify` (audit-time, confirm classifications hold against actual code).
+3. **PROJECT_ROOT** (optional) — resolves K8s applicability per project context above.
 
 ## Procedure (draft mode)
 
@@ -32,7 +40,7 @@ Run the per-chunk-template §3.B 7-axis evaluation for K8s microservice readines
    - Classify: `no impact` (axis not touched), `compatible` (touched but multi-pod-safe), `new blocker class` (touched and would break multi-pod).
    - Justify the classification in one sentence with a code anchor.
 3. **For every `new blocker class`:**
-   - Look up next-free `CHK8S-D-NN` number at `baby-phi/docs/specs/v0/implementation/m7b/architecture/deferred-from-ch-k8s-prep.md`.
+   - Look up next-free `CHK8S-D-NN` number at `<PROJECT_ROOT>/docs/specs/v0/implementation/m7b/architecture/deferred-from-ch-k8s-prep.md` (baby-phi-only).
    - Draft the ledger entry: chunk slug, axis affected, blocker description, deferral rationale, proposed M7b-era resolution.
 
 ## Procedure (verify mode)
