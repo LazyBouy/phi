@@ -115,7 +115,35 @@ Until those updates ship, running `/chunk-initiate project=i-phi` requires passi
 
 **Gate-1 fork-lock decision flow (added 2026-05-18 per CH-03-i-phi retro P1, cycle hex `c542648f`; STRENGTHENED 2026-05-19 per CH-05-i-phi retro P-skill-1, cycle hex `f7a354b6` — mandatory iter-2 re-spawn after fork-locks regardless of divergence)**:
 
-**Step A (always-fire) — Mandatory iter-2 planner re-spawn after fork-locks**: when **ANY** locks land at gate-1.5 (divergent OR planner-rec; any lock count ≥ 1), the orchestrator re-spawns the planner for iter-2 to absorb the **`## §1 — Locked fork details`** section at **front-of-plan** (UPDATED 2026-05-21 per CH-16a-i-phi retro `066799f3` proposal #1 user-direction: was `### Locked fork details` appendix at end-of-plan / §13; user-direction at CH-16a iter-3 codified the §1 front-of-plan position because locked outcomes provide essential context for §2-§13 reading; placing at end-of-plan forced top-down re-read). All H4 `#### F<N> = F<N>.<letter>` subsection structure with 3-sentence Code-level binding / Rationale / Defers per option blocks unchanged. The re-spawn is the DEFAULT path, not conditional on divergence. Closes the 3-cycle pattern (CH-03 + CH-04 + CH-05) where the appendix did NOT auto-fire at iter-1 archive under chunk-planner v22's optional-self-check. **CH-05 evidence**: all 7 forks were planner-rec (zero divergence) but the appendix was still missing at iter-1; orchestrator surfaced + user codified the always-fire rule as standing memory `feedback_locked_fork_details_appendix.md`. Companion rule at chunk-planner v23 P13 ALWAYS-FIRE.
+**Step A (ALWAYS-FIRE iter-2 re-spawn UNLESS planner-rec-clean + §1 populated; updated 2026-05-26 per Chunk D intermediate-stabilization `36caa39f` Deliverable #6a — outer phi chunk-planner v32 iter-2 re-arch)**: the iter-2 planner re-spawn is mandatory AFTER fork-locks land at gate-1.5 with one EXCEPTION — when ALL forks lock at planner-rec AND iter-1 plan §1 carries populated bodies for every fork (verified via `chunk-template-validate-locked-appendix` skill returning PASS), iter-2 re-spawn is SKIPPED + the orchestrator proceeds directly to chunk-archive-plan with iter-1 plan.
+
+**Skip-condition decision tree**:
+
+```
+1. Read gate-1 lock-set (from AskUserQuestion answers).
+2. If ALL forks locked at planner-rec:
+   a. Run chunk-template-validate-locked-appendix skill on iter-1 plan.md.
+   b. If skill returns PASS → skip iter-2 re-spawn; proceed to chunk-archive-plan with iter-1 plan.
+   c. If skill returns FAIL (iter-1 §1 missing/malformed) → re-spawn planner at iter-2 to fix the appendix (regression-defense path; same as the v23 P-plan-3 ALWAYS-FIRE fallback during the cross-project 2-3-cycle hold-period).
+3. If ≥ 1 fork USER-DIVERGENT:
+   a. Re-spawn planner at iter-2 with the divergent locks + per-fork pause-threshold re-derivation if Step B material-scope-expansion triggers (the existing mechanic; unchanged).
+   b. At iter-2, ONLY the F<N> subsections corresponding to USER-DIVERGENT locks are re-authored; planner-rec subsections preserve their iter-1 draft wording verbatim.
+```
+
+The locked-fork-details section sits at **`## §1 — Locked fork details`** front-of-plan (UPDATED 2026-05-21 per CH-16a-i-phi retro `066799f3` proposal #1 user-direction: was `### Locked fork details` appendix at end-of-plan / §13; user-direction at CH-16a iter-3 codified the §1 front-of-plan position because locked outcomes provide essential context for §2-§13 reading; placing at end-of-plan forced top-down re-read). All H4 `#### F<N> = F<N>.<letter>` subsection structure with 3-sentence Code-level binding / Rationale / Defers per option blocks unchanged.
+
+**Hold-period (2-3 cycles AFTER v32 ships; cross-project)**: cycles count across baby-phi AND i-phi. During hold-period, v23 P-plan-3 ALWAYS-FIRE iter-2 re-spawn fallback remains active when chunk-archive-plan v4 hard-assertion catches a regression (iter-1 §1 missing/malformed). The chunk-archive-plan v4 hard-assertion is the primary archive-tier defense; chunk-planner v32 P-plan-1-v32 end-of-draft self-check is the planner-tier defense.
+
+**Cross-references**:
+
+- chunk-planner v32 P-plan-1-v32 — defines the iter-1 §1 template change with planner-rec bodies pre-filled (origin of the skip-condition's predicate).
+- Outer CLAUDE.md gate-1.5 P-orch-8 — orchestrator-side skip-condition mirror.
+- chunk-archive-plan v4 hard-assertion — invokes chunk-template-validate-locked-appendix BEFORE archiving (belt-and-suspenders to planner end-of-draft self-check).
+- chunk-template-validate-locked-appendix skill — mechanical 4-step PASS/FAIL.
+- per-chunk-planning-template.md `## §1 — Locked fork details` template structure.
+- User memory `feedback_locked_fork_details_appendix.md` — original directive; v32 satisfies it via iter-1-populated bodies (NOT iter-2 re-spawn) for the planner-rec-clean cohort.
+
+**Historical context (pre-v32)**: Step A was previously ALWAYS-FIRE iter-2 re-spawn regardless of divergence — to close the 3-cycle CH-03 + CH-04 + CH-05 i-phi regression pattern where the appendix did NOT auto-fire at iter-1 archive under chunk-planner v22's optional-self-check. CH-05 evidence: all 7 forks were planner-rec (zero divergence) but the appendix was still missing at iter-1; orchestrator surfaced + user codified the always-fire rule. v32 eliminates the iter-2 cost for planner-rec-clean cycles by pre-filling §1 at iter-1; the hard-assertion preserves the regression-defense.
 
 **Step B (conditional on divergence) — Material-scope-expansion gate**: if the locks introduce divergences from planner-rec that **materially expand scope** (defined as **≥ +5 deliverables** beyond iter-1 plan's count OR an **audit-envelope tier bump** Medium→Large / Large→XL), the iter-2 re-spawn ALSO re-derives per-fork pause-thresholds + surfaces any new sub-decisions. Surface the re-spawn decision to the user via AskUserQuestion with these options:
 

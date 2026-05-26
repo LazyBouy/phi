@@ -7,7 +7,7 @@ description: Generate the 8-hex cycle ID and create the per-cycle folder structu
 
 Open a fresh cycle: generate the hex, create the folder, archive the plan-mode plan to `<cycle folder>/plan.md`, and append the new row to the project's `_cycle-index.md`.
 
-## Project context (v2 — project-aware path resolution; added 2026-05-17 per CH-01-i-phi retro Row 1)
+## Project context (v2 — project-aware path resolution; added 2026-05-17 per CH-01-i-phi retro Row 1; v4 — chunk-template-validate-locked-appendix skill-based hard-assertion added 2026-05-26 per Chunk D intermediate-stabilization `36caa39f` Deliverable #6b; refines v3 inline-grep assertion to invoke the skill so the validation is consistent across planner end-of-draft + archive-tier)
 
 The orchestrator passes `PROJECT_ROOT` in the caller context. Resolve all paths relative to it:
 
@@ -54,23 +54,30 @@ For PROJECT_ROOT unset, all baby-phi paths apply unchanged.
    - baby-phi: `bash /root/projects/phi/baby-phi/scripts/check-doc-links.sh` must exit 0.
    - i-phi: no `scripts/check-doc-links.sh` exists at v0 → skip with a paperwork-side note in the output.
 
-8. **Locked-fork-details appendix hard-assertion (v3 — added 2026-05-18 per CH-04-i-phi retro P14, cycle hex `8a9c50ea`; belt-and-suspenders to chunk-planner v22 P13)**: BEFORE archiving the plan (step 4 copy / step 6 cycle-index row append), grep the plan body for ≥ 1 occurrence of the pattern `LOCKED at gate-1` (case-insensitive). If matches exist, the planner has user-locked forks; the plan MUST then carry a `### Locked fork details` (or `## Locked fork details`) heading + at least one `#### F<N> = F<N>.<letter>` subsection.
+8. **Locked-fork-details appendix hard-assertion (v3 — added 2026-05-18 per CH-04-i-phi retro P14, cycle hex `8a9c50ea`; v4 — skill-based assertion added 2026-05-26 per Chunk D intermediate-stabilization `36caa39f` Deliverable #6b; belt-and-suspenders to chunk-planner v22 P13 + v23 P-plan-3 + v32 P-plan-1-v32 planner end-of-draft self-check)**: BEFORE archiving the plan (step 4 copy / step 6 cycle-index row append), invoke skill `chunk-template-validate-locked-appendix` against the plan path. The skill performs the 4-step mechanical validation (heading exists / subsection count ≥ lock count / each subsection body ≥ 3 sentences) + returns PASS/FAIL.
 
-   **Mechanical check**:
+   **Mechanical (v4)**:
    ```bash
-   # detect locked forks
-   if grep -qiE 'LOCKED at gate-1' <plan-mode plan path>; then
-       # then require the appendix heading
-       if ! grep -qE '^#{2,3} Locked fork details' <plan-mode plan path>; then
-           echo "ERROR: plan has ≥ 1 user-lock but no '### Locked fork details' appendix"
-           exit 1
-       fi
+   # Invoke the validation skill (skill body at .claude/skills/chunk-template-validate-locked-appendix/SKILL.md).
+   # Skill exit code: 0 on PASS, 1 on FAIL.
+   bash -c '<run chunk-template-validate-locked-appendix with PLAN_PATH=<plan-mode plan path>>'
+
+   if [[ $? -ne 0 ]]; then
+       echo "ERROR: chunk-template-validate-locked-appendix returned FAIL"
+       echo "Plan has ≥ 1 user-lock but §1 Locked fork details is missing or malformed."
+       echo "Per chunk-planner v32 P-plan-1-v32, the planner MUST ship §1 populated at iter-1 plan-draft time."
+       echo "Per chunk-initiate Phase 1.5 Step A: re-spawn planner at iter-2 to fix (v23 P-plan-3 fallback during the cross-project 2-3-cycle hold-period)."
+       exit 1
    fi
    ```
 
-   **If assertion fails**: skill aborts with the error above. The chunk-planner re-emits the appendix; orchestrator does not see the broken plan archived. This is belt-and-suspenders to chunk-planner v22 P13 (planner self-check) — both layers fire. v22 P13 catches the regression at planner-tier (self-correction); P14 catches it at archive-tier (gating).
+   **If assertion fails (v4 path)**: skill returns FAIL with a specific reason (which subsection is malformed, what's missing). chunk-archive-plan aborts. The orchestrator's chunk-initiate Phase 1.5 Step A skip-condition decision tree branch 2(c) handles the recovery: re-spawn planner at iter-2 to fix the appendix (regression-defense path; the v23 P-plan-3 ALWAYS-FIRE fallback during the cross-project 2-3-cycle hold-period). Orchestrator does not see the broken plan archived.
 
-   **2-of-2-cycle regression context**: CH-03-i-phi (cycle `c542648f`) + CH-04-i-phi (cycle `8a9c50ea`) BOTH had to be patched post-draft because iter-2 planner did NOT emit the appendix natively despite chunk-planner v20 P2 mandate. P14 (this assertion) + P13 (planner self-check) jointly close the regression.
+   **3-layer defense (v32-era)**: chunk-planner v32 P-plan-1-v32 end-of-draft self-check (planner-tier, self-correction); chunk-archive-plan v4 hard-assertion (archive-tier, gating); outer CLAUDE.md gate-1.5 P-orch-8 + chunk-initiate Phase 1.5 Step A skip-condition (orchestrator-tier, routing). All three layers invoke the same `chunk-template-validate-locked-appendix` skill for consistent PASS/FAIL semantics.
+
+   **Historical context (pre-v4)**: v3 used an inline grep for `^#{2,3} Locked fork details` heading only. v4 upgrades to the skill which additionally validates subsection count ≥ lock count + each subsection body ≥ 3 sentences — catching malformed-but-headed appendices that v3 would have passed. The skill body lives at `.claude/skills/chunk-template-validate-locked-appendix/SKILL.md`.
+
+   **2-of-2-cycle regression context (pre-v32)**: CH-03-i-phi (cycle `c542648f`) + CH-04-i-phi (cycle `8a9c50ea`) BOTH had to be patched post-draft because iter-2 planner did NOT emit the appendix natively despite chunk-planner v20 P2 mandate. P14 (v3 archive-tier assertion) + P13 (v22 planner self-check) jointly closed the regression. v32 + chunk-archive-plan v4 + P-orch-8 skip-condition extend the defense to the iter-1-populated regime.
 
 ## Output format
 
