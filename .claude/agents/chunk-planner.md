@@ -1095,6 +1095,58 @@ Update §3.B table to show the re-derived cap + cite the per-axis breakdown in a
 
 **Pair with v23 P-plan-1 functional-scope-derivation**: v23 establishes that LOC caps mirror per-precedent baselines + functional-scope justifications; v32 extends to iter-2 post-fork-lock re-derivation when locks add ≥ 2 functional axes to an EXTEND-file.
 
+## v33 additions (joint-retro `bf1139be-to-8b7e80a3` 5-chunk batch, 2026-05-27)
+
+### P-plan-1-v33 — Framework-boilerplate LOC cap derivation rule (HIGH; closes 2-of-2 batch Band-3 false-positives — CH-13b D-2 `permissions_watcher.rs` 1.56× + CH-14 D-4 `answers.rs` 2.03×)
+
+When deriving per-file LOC caps at §3.A (per v23 P-plan-1 functional-scope-derivation + v24 P-plan-1-v24 cascade-plumbing refinement), explicitly account for **framework boilerplate** that is mandatory-by-the-framework but not part of the locked-fork functional scope:
+
+| Framework axis | Per-occurrence allowance |
+|---|---|
+| `#[derive(Serialize, Deserialize)]` boilerplate on top-level structs/enums | ~30-50 LOC per top-level type (struct + impl + ValidationError + helpers) |
+| `tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap()` boilerplate in async integration tests | ~30 LOC per async test (runtime construction + setup + teardown) |
+| `wiremock::MockServer` setup + endpoint registration | ~50 LOC per mock-server-driven test (server boot + expect-then-respond chain) |
+| `mockall::mock! { }` macro bodies + test fixture impls | ~40 LOC per mock-trait |
+| Linux-only / Windows-only / macOS-only `#[cfg(target_os = "...")]` test pairs | counts as 2× the base allowance (test body + per-platform runtime + per-platform `#[cfg]` guards) |
+
+**Belt-and-suspenders** at chunk-implementer-tier: per v23 P-impl-1-v23 pause-trigger, when a NEW file lands in Band-3 (>1.5× cap), the implementer report MUST distinguish:
+- **non-test LOC**: the production-body lines (the locked-fork functional scope).
+- **test LOC**: inline test bodies including framework boilerplate.
+
+If `non-test-LOC < 1.5× cap` BUT `total-LOC ≥ 1.5× cap`, the Band-3 is **framework-boilerplate-driven** (Route A absorbed silently per cycle-audit §6); orchestrator does NOT need to surface AskUserQuestion for routing. Document the breakdown in the implementer's deviation log.
+
+**Empirical 2-cycle pattern**: CH-13b `permissions_watcher.rs` cap 225 → final 350 LOC (1.56×); production body ~270 LOC = Band 2 1.20× WITHOUT 2 Linux-only watcher tests (each ~50 LOC body + ~30 LOC tokio runtime construction = ~80 LOC test envelope). CH-14 `answers.rs` cap 115 → final 234 LOC (2.03×); production body absorbed serde-derive boilerplate for 9 sub-structs/enums = ~120 LOC + ~80 LOC test envelope. Both cycles Route A absorbed cleanly via implementer-tier pause-trigger NOT-crossed at 1.5×-ceiling; pattern: planner under-counted the test-envelope contribution at §3.A.
+
+**Pair with v23 P-plan-1 + v30 P-plan-11-v30**: v23 establishes functional-scope-derivation; v30 P-plan-11-v30 introduces wrapper/envelope/enum module cap-relaxation; v33 P-plan-1-v33 extends to framework boilerplate (mandatory-by-framework allowance separated from functional-scope).
+
+### P-plan-2-v33 — v0-scope-narrowing annotation rule for hedging qualifiers (MEDIUM; closes 5-of-5 batch within-lock v0 scope-narrowing pattern at planner-tier)
+
+When authoring `## §1 — Locked fork details` H4 subsection bodies (per v32 P-plan-1-v32), for each Code-level binding sentence containing **hedging qualifiers** (`where possible` / `if applicable` / `best-effort` / `may` / `unless` / `otherwise`), annotate inline with:
+
+```
+[v0 scope: <fully-behavioral | skeleton-with-stubs | signal-only | hardcoded-default>]
+```
+
+immediately after the qualifier. The annotation surfaces the implicit-scope-narrowing axis at plan-draft time (BEFORE archive) rather than at P-SEAL paperwork-time.
+
+**Belt-and-suspenders** at gate-1.5: P-orch-6 skeleton-vs-fully-behavioural verification (outer CLAUDE.md) AskUserQuestion-style cross-check still fires; v33 P-plan-2-v33 is the planner-tier defense + P-orch-6 is the orchestrator-tier defense. Both layers reinforce.
+
+**Empirical 5-cycle pattern**: CH-09 F-pause-resume-harvest-routes.a (skeleton-with-stubs at UDS path / signal-only at pause / store-verify-only at resume / hardcoded-default at Incognito::No); CH-13a F2.c photo-routing scope-narrowing + §D15.6 secret-mismatch StatusCode narrowing; CH-13b F5.a non-initiator attribution skeleton; CH-14 F5.a rustyline FSM skeleton + F7.a live-demo skeleton; CH-15 F5.a "consumes CH-10 REPL render primitives where possible" hedging. All 5 surfaced at P-SEAL via chunk-implementer v19 P-impl-2-v19 codification + ADR scope-narrowing notes; pattern: planner did not pre-annotate the hedging axes.
+
+**Pair with v26 P-plan-1-v26 + v32 P-plan-1-v32**: v26 introduces user-facing fork framing; v32 introduces iter-1 §1 populated bodies; v33 P-plan-2-v33 adds the inline scope-narrowing annotation discipline within those bodies.
+
+### P-plan-3-v33 — Production-readiness-ship-now axis (c) anticipation rule for Surface-N chunks (MEDIUM; closes 5-of-5 cohort widening at planner-rec framing-shift)
+
+When drafting `## Forks for orchestrator` for a **Surface-N chunk** (Surface-2 OR post-surface — defined per `chunk-graph.md` cluster classification), the planner SHOULD add a divergence-anticipation note to each fork's body:
+
+> *Production-readiness-ship-now axis (c) anticipation*: this fork is at the production-readiness axis where user-locked outcomes have diverged from planner-rec in 5-of-5 recent Surface-N cycles (CH-11a + CH-17 + CH-13a + CH-13b + CH-14 + CH-15). Planner-rec frames the lower-friction option but the user-locked outcome typically chooses the production-tier option.
+
+This is **anticipation, not recommendation-bias-shift**: the planner still recommends the option with cleanest engineering tradeoff at the current chunk's scope, BUT explicitly surfaces the production-readiness divergence trend so the user can read the fork in axis-(c) context. The note appears as a footnote-style block AFTER the standard 4-line fork option matrix (per v26 P-plan-1-v26).
+
+**Empirical 5-cycle cohort**: CH-11a F-cors-policy.c + F-tls-strategy.c USER-DIVERGENT (production-ready CORS + production-ready TLS instead of dev-defaults); CH-17 F3.c BrakingConfig schema + F4.b+F4.c observability USER-DIVERGENT (production-ready observability surface); CH-13a 5-of-8 USER-DIVERGENT (long-poll AND webhook + media + inline-keyboards + CredentialProvider integration; all production-tier); CH-13b F7.c file-watcher USER-DIVERGENT (production-ready hot-reload); CH-14 F3.d consent-gate + F4.d custom-templates + F8.b iphi doctor USER-DIVERGENT (production-ready trust model + operator-customization + maintenance UX); CH-15 F4.b full-tree audit + F5.b release-notes bundle + F6.a semver USER-DIVERGENT (production-ready release artifacts + version-tag).
+
+**Pair with v26 P-plan-1-v26 fork framing**: v26 ensures forks surface user-impact + product-trajectory; v33 P-plan-3-v33 adds the axis-(c) anticipation overlay for Surface-N chunks specifically.
+
 ## Output handoff format (return this verbatim)
 
 ```

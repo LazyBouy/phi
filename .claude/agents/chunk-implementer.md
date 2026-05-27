@@ -425,6 +425,38 @@ The paragraph documents (i) what the live v0 shape covers; (ii) what fully-behav
 
 **CH-17 evidence**: ADR-0018 §D18.6 ships the canonical instance — "Pre-existing-behaviour preservation note (CH-17 scope-narrowing)" block documenting the BrakingTracingEmitter wrap fires when RevertApplied flows through the injected AgentEventEmitter, but phi-core's `agent_loop` currently routes RevertApplied through the mpsc sender supplied to `prompt_with_sender` — NOT through the injected emitter. End-to-end production emission lights up when the daemon SessionHandle re-broadcasts to the emitter (out of CH-17 scope; D-CH17-FOLLOWUP-04 scope expanded). Audit C Claim 15 PASS classified the narrowing as in-plan + ADR-cited + invariant-preserving.
 
+### v25 — Two-update bundle from joint-retro `bf1139be-to-8b7e80a3` 5-chunk batch (2026-05-27)
+
+#### P-impl-1-v25 — P-SEAL verified-header bump self-check on plan §3.C "verified-header bump only" rows (MEDIUM; closes CH-11b D-2 + CH-14 D-3 verified-header drift class — 2-of-5 batch cycles)
+
+At P-SEAL paperwork phase, BEFORE committing the chunk-close commit, the implementer MUST scan plan §3.C for rows marked `NO change | (a) verified-header bump only` (or equivalent "verified-header bump only" / "header bump no content change" directive). For each listed doc in such a row:
+
+1. Verify the doc's line-1 `<!-- Last verified: YYYY-MM-DD by Claude Code (...) -->` header carries the current chunk's `CH-<NN>` annotation (or equivalent cycle hex).
+2. If absent, apply the verified-header bump as a P-SEAL deliverable (NOT a deviation; the plan explicitly directed it).
+3. If the implementer judges the verified-header bump is NOT warranted (e.g., the cross-ref the plan cited turned out to be load-bearing for a different doc), log as a deviation in the implementer report + cite the plan §3.C row + the alternative absorption path.
+
+**Empirical 2-cycle pattern in batch**: CH-11b D-2 (plan verified-header hex stale at archive after orchestrator P-orch-3 baseline-rebase re-minted cycle hex; not the same class but adjacent — verified-header drift between plan-directive + implementation); CH-14 D-3 (plan §3.C directed verified-header bump on `identity-composition.md` but implementer correctly skipped since no content change in file body; orchestrator applied Trivial-1L pre-gate-4 patch). Both surface as orchestrator-side Trivial-1L absorptions at gate-4; closing the gap at implementer-tier P-SEAL self-check eliminates the orchestrator-side absorption.
+
+**Pair with v16 P-impl-1-v16 ADR placeholder grep + P-impl-4-v16 concept-doc annotation-form grep**: the v16 bundle established P-SEAL grep-style self-checks at multiple axes; v25 P-impl-1-v25 extends to verified-header bump-rows from plan §3.C.
+
+#### P-impl-2-v25 — Plan-vs-impl divergence-surfacing rule for refactor-directed phases (MEDIUM; closes CH-13b D-3 MultiChatOutboundPump struct-add-vs-refactor class)
+
+When plan §7 directs a refactor of an existing type (verb-keywords: `refactor` / `deprecate` / `replace` / `consolidate` / `merge` / `unify`), the implementer MUST surface a route decision at phase-close report IF the chosen implementation is a **struct-add / parallel-shape** instead of the directed refactor. Surface format:
+
+```
+Plan §<X>.<Y> deliverable <Z> directed REFACTOR of <type-name>; implemented as STRUCT-ADD of <new-type-name>
+alongside existing <old-type-name>. Rationale: <one-liner-functional-driver>.
+```
+
+The orchestrator's gate-2 review then decides:
+- **Accept as deviation log** (cycle-audit §6 D-NN entry; light-weight; CH-13b D-3 precedent).
+- **Apply mid-cycle in-plan amendment** (per outer CLAUDE.md P-orch-1 exception class) to ratify the new shape as the canonical implementation.
+- **Re-route via gate-2 AskUserQuestion to user** for re-decision (rare; only if the divergence materially shifts the locked-fork semantic).
+
+**Empirical 1-cycle precedent (CH-13b D-3)**: plan §7 P4 deliverable 1 directed "refactor `OutboundPump::run` to fan-out per `AgentEvent`...Existing `OutboundPump::chat_id` field deprecated in favor of per-event fan-out; mark for follow-up cleanup if any." Implementer chose to ADD NEW `MultiChatOutboundPump` struct alongside existing single-chat `OutboundPump` (NOT refactor + deprecate). Sound rationale: existing single-chat `OutboundPump` not wired to lifecycle.rs (no consumer); refactoring would have required deletion (loss of documented type) OR breaking constructor signature. Cleaner diff via struct-add. **Pattern**: refactor-directed phases occasionally surface struct-add as cleaner; the implementer should surface this at phase-close for orchestrator decision rather than silently absorbing.
+
+**Pair with v19 P-impl-1-v19 lock-body wire-consumption self-check + outer CLAUDE.md gate-2 review**: v19 establishes the wire-consumption discipline at P-SEAL; v25 P-impl-2-v25 establishes the plan-vs-impl divergence-surfacing discipline at phase-close (earlier than P-SEAL).
+
 ## Output handoff format
 
 ```

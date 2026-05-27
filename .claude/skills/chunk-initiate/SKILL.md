@@ -234,6 +234,15 @@ Codifies + extends the user's standing rule (saved as `feedback_locked_fork_deta
    - `audit_envelope = medium` → 2 auditors (letters A + B).
    - `audit_envelope = large` → 3 auditors (letters A + B + C).
    - `audit_envelope = auto` → use the value derived by `audit-envelope-size` skill in Phase 1.
+
+   **MANDATORY pre-dispatch audit-prompt-authoring cross-check (P1; added 2026-05-27 per joint-retro `bf1139be-to-8b7e80a3` proposal #1; closes the 4-of-5 cycle recurring audit-prompt-authoring miss class CH-13a D-4 + CH-13b unflagged + CH-14 D-2 + CH-15 D-1)**: BEFORE the parallel Agent dispatch in step 2, the orchestrator MUST invoke:
+
+   ```bash
+   bash /root/projects/phi/.claude/scripts/audit-prompt-cross-check.sh <plan-path> <audit-prompt-text>
+   ```
+
+   per outer CLAUDE.md gate-3 6-axis cross-check (axis-1 F-token / axis-2 lock-body paraphrase / axis-3 test-name allocation / axis-4 method-signature paraphrase / axis-5 arg-shape divergence / axis-6 literal-count). Any DIVERGENT axis surfaces as Trivial-1L pre-dispatch text-edit to the audit prompt. If the script is not yet authored (TODO per outer CLAUDE.md Update #1), apply the 6-axis inline-grep procedure manually. Empirical 4-of-5 cycle pattern affirms recurrence; the gap is workflow-discipline, not capability.
+
 2. Spawn the auditors **in parallel** (single message, multiple Agent tool calls). Each gets a distinct prompt focus:
    - **Letter A** — code-correctness + phi-core leverage + tests.
    - **Letter B** — docs / paperwork / verified-headers / cycle-index row / ADR / drift entries.
@@ -242,7 +251,7 @@ Codifies + extends the user's standing rule (saved as `feedback_locked_fork_deta
 4. Read all audit logs.
 5. **Triage findings per CLAUDE.md tiers**:
    - **Trivial-1L** (≤ 1-line patch on a verified-header / changelog row / index entry): orchestrator applies the patch; **no auditor re-spawn**. Log the patch in `cycle-audit.md` §"Iteration accounting".
-   - **Trivial-multi** (> 1-line trivial patch like a small docstring or cross-ref): orchestrator applies the patch; re-spawn the **same auditor** at iter N+1 to confirm.
+   - **Trivial-multi** (> 1-line trivial patch like a small docstring or cross-ref): orchestrator applies the patch; re-spawn the **same auditor** at iter N+1 to confirm. **Direct-verification release (P7; added 2026-05-27 per joint-retro proposal #7)**: when the orchestrator-applied Trivial-multi patch is verified-clean via direct read of the patched file at gate-4 (the orchestrator reads the post-patch file content + confirms each finding closed), the same-auditor re-spawn MAY be skipped with the deviation logged in `cycle-audit.md` §"Iteration accounting" as `Trivial-multi (direct-verification; no re-spawn)`. Saves ~5-10 min + token cost per cycle when applicable.
    - **Tactical FAIL**: re-spawn `chunk-implementer` with the audit log path. Then re-spawn all auditors at iter N+1.
    - **Architectural FAIL**: re-spawn `chunk-planner` with the audit log path. **Always escalate to the user** via AskUserQuestion before re-spawning. Then re-spawn implementer + auditors.
 6. **Iteration cap**: if any finding hits iter ≥ 3 → STOP, escalate to the user via AskUserQuestion.
@@ -293,7 +302,7 @@ This is the orchestrator's gate-4. **Sub-agent auditors cannot run the MUST-RUN 
 
 **Retro-context.md shape** (canonical CH-11b precedent at `i-phi/docs/v0/proposal/plan/build/ch-11b-web-chat-ui-bf1139be/retro-context.md`): Cycle context block + Observations worth carrying (process gaps / hypothesis updates / notable wins / code observations / plan-narrative inconsistencies / LOC absorption) + Standards-update proposals drafted (NOT applied; joint-retro decides) + Cycle-folder artifacts + Status.
 
-**Joint-retro batch sizing**: 3-4 chunks per batch is the user-locked window. Smaller batches (2) acceptable when the cycle surface is large + retro-contexts are dense; larger batches (5+) discouraged because cross-chunk pattern detection degrades.
+**Joint-retro batch sizing**: **3-5 chunks per batch** (P10 widened 2026-05-27 per joint-retro `bf1139be-to-8b7e80a3` §5 empirical assessment — 5-chunk CH-11b→CH-15 batch maintained HIGH cross-chunk pattern detection quality with 8 patterns identified + 2 patterns requiring window-width to surface confidently). Smaller batches (2) acceptable when the cycle surface is large + retro-contexts are dense; larger batches (6+) discouraged because cross-chunk pattern detection degrades + retro-context accumulation creates stale standards-update backlog. **Prior window**: 3-4 (user-locked 2026-05-26 at CH-11b; widened to 3-5 after empirical validation at CH-15 close).
 
 #### Legacy per-cycle path (selected via option 2 above)
 
