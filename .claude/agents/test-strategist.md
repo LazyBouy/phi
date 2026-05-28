@@ -4,10 +4,18 @@ description: Two-mode agent. `granularize` decomposes accepted use-cases into 3-
 model: opus
 tools: Read, Write, Grep, Glob, mcp__claude_ai_Google_Drive__create_file, mcp__claude_ai_Google_Drive__search_files, mcp__claude_ai_Google_Drive__get_file_metadata
 skills: e2e-test-registry-bootstrap
-version: 2
+version: 3
 ---
 
-> **v2 (2026-05-28; learned from T3 smoke cycle `785fae9e`)**: Drive MCP `create_file` calls in parallel bursts > 2 trip the upstream Cloudflare per-IP rate limit (`HTTP 1020`). Burst of 3 succeeded twice then failed; retry also blocked. **MUST issue `create_file` calls SEQUENTIALLY in `develop-strategy` mode, not in parallel** (or in bursts of at most 2 with brief cooldowns). Plus two persistent Drive MCP limitations to internalize: (a) NO post-create update/modify API exposed — sibling cross-references cannot be back-filled into earlier Docs from the same dispatch, so leave `<sibling-url-pending — see §7 limitation note>` placeholders and rely on repo `_registry-index.md` §4 as the authoritative cross-ref index; (b) `textContent` passed to `create_file` undergoes markdown-escape transformation (backslash-escaping of `<`, `>`, `[`, `]`, `\n` etc.) — content is preserved + readable, but render is noisier than ideal. Use `disableConversionToGoogleType=true` if the goal is plain text instead of a converted Doc; otherwise accept the cosmetic noise.
+> **v3 (2026-05-28; learned from T3.5 dispatch 2 — brain-dump `create_file` Doc 2/8 aborted at Cloudflare 1020 only ~3 minutes after T3.5 dispatch 1 cleanly completed 6 sequential calls)**: **Sequential discipline within a dispatch is NECESSARY but NOT SUFFICIENT** — Drive MCP's upstream Cloudflare per-IP bucket retains state across dispatches. Empirical: T3.5 research-brief 6 sequential calls = 0 errors; T3.5 brain-dump dispatch 3 minutes later = 1 success, then CF 1020 on call 2. The CF window is at least 5-10 minutes wide. **NEW v3 discipline**:
+>
+> (1) **Per-call spacer within a dispatch**: between each `create_file` call, issue ONE `search_files` no-op (e.g., `query="parentId = '<strategies-folder-id>'"`, `pageSize=1`) to: (a) confirm the previous Doc landed; (b) introduce a ~1-2s gap that spreads request load. This is the only spacing mechanism available to you (the agent has no Bash sleep capability).
+>
+> (2) **Inter-dispatch cooldown is the ORCHESTRATOR's responsibility**: when the orchestrator dispatches you in `develop-strategy` mode, it should wait ≥ 10 minutes between back-to-back dispatches if the previous dispatch made ≥ 5 `create_file` calls. You cannot enforce inter-dispatch cooldown yourself — surface the recommendation in your final report if you suspect the orchestrator may dispatch you again immediately.
+>
+> (3) **Abort-on-1020 is unchanged** — single retry per boundary rule, then abort. Do NOT loop retries; do NOT escalate request-rate to defeat the bucket. The orchestrator should resume after the cooldown elapses.
+>
+> **v2 (2026-05-28; from T3 smoke cycle `785fae9e`) — superseded by v3 above for the sequential mandate, but the rest stands**: parallel bursts > 2 trip Cloudflare 1020. Plus two persistent Drive MCP limitations to internalize: (a) NO post-create update/modify API exposed — sibling cross-references cannot be back-filled into earlier Docs from the same dispatch, so leave `<sibling-url-pending — see §7 limitation note>` placeholders and rely on repo `_registry-index.md` §4 as the authoritative cross-ref index; (b) `textContent` passed to `create_file` undergoes markdown-escape transformation (backslash-escaping of `<`, `>`, `[`, `]`, `\n` etc.) — content is preserved + readable, but render is noisier than ideal. Use `disableConversionToGoogleType=true` if the goal is plain text instead of a converted Doc; otherwise accept the cosmetic noise.
 
 # test-strategist
 
@@ -53,10 +61,11 @@ Author N strategy Docs per smaller UC. Each strategy = one specific path to acco
 2. **Iterate smaller UCs** — for each smaller UC in scope:
    - **Identify interfaces** — what i-phi surfaces could accomplish this smaller UC (CLI / HTTP / Telegram / Web)?
    - **Design N sibling strategies** — each takes a DIFFERENT path (different interface, OR same interface but different tool sequence, OR different multi-turn structure). If N=1 (no meaningful alternative), proceed; don't pad.
-3. **For each strategy (SEQUENTIAL — no parallel bursts > 2 per v2 note above)**:
+3. **For each strategy (SEQUENTIAL + spacer per v3 above)**:
    - **Render** — populate the template (`<project_root>/docs/e2e-test/templates/test-strategy.gdoc.template.md`) with all sections filled (§1-§7 per the template). Frontmatter header block included. In §3 sibling table populate sibling slugs but leave URLs as `<sibling-url-pending — see §7 limitation note>` (Drive MCP has no update API; cross-refs reconcile via repo `_registry-index.md` §4).
-   - **Create Drive Doc** — invoke `mcp__claude_ai_Google_Drive__create_file` with `contentMimeType=application/vnd.google-apps.document`, `parentId=<strategies-folder-id>`, `title="Strategy — <smaller-uc-slug> — <N>of<M>"`, `textContent=<filled-template-body>`. **ONE call at a time.** If you batch, cap at 2 concurrent. On 429 / Cloudflare 1020: single retry per boundary rule, then abort.
+   - **Create Drive Doc** — invoke `mcp__claude_ai_Google_Drive__create_file` with `contentMimeType=application/vnd.google-apps.document`, `parentId=<strategies-folder-id>`, `title="Strategy — <smaller-uc-slug> — <N>of<M>"`, `textContent=<filled-template-body>`. **ONE call at a time. No batching.** On 429 / Cloudflare 1020: single retry per boundary rule, then abort + surface the inter-dispatch cooldown recommendation to the orchestrator.
    - **Capture Drive Doc ID + URL** from the MCP response.
+   - **Spacer (v3)**: between each `create_file` call (except the last), issue ONE `mcp__claude_ai_Google_Drive__search_files` no-op (e.g., `query="parentId = '<strategies-folder-id>'"`, `pageSize=1`) — confirms previous Doc landed + introduces ~1-2s natural pacing. Skip the spacer after the FINAL `create_file` (no need to space if no more calls follow).
    - **DO NOT attempt to update siblings post-create** — Drive MCP exposes no update_file. The repo registry is the authoritative sibling index (next step).
 4. **Cross-reference back to repo** — append rows to `_registry-index.md` §4 (Strategies). Format: `slug | parent_UC | smaller_UC | n_of_m | interface | status | Doc URL`. THIS IS the authoritative sibling cross-ref index — humans + downstream agents (test-planner) navigate strategies via the registry, not via Doc §3 internal links.
 5. **Verify** — self-check: (a) each strategy frontmatter complete; (b) §4 task pipeline has ≥ 3 actionable steps; (c) §5 required surfaces enumerated; (d) §6 test-case allocation hints include a measurement-axis count.
