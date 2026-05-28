@@ -1,0 +1,38 @@
+# Thin custom image for i-phi cargo + runtime.
+# Extends rust:1.95-slim with system deps required by transitive crates
+# (openssl-sys -> libssl-dev + pkg-config; possibly more later).
+#
+# Build:
+#   docker build -t iphi-rust:1.95-slim -f /root/projects/phi/.claude/scripts/Dockerfile.iphi-rust /root/projects/phi/.claude/scripts/
+#
+# Re-build on:
+#   - Upstream rust:1.95-slim image refresh (rare; ~quarterly)
+#   - New transitive crate adds a new C-library dep (then add it to the apt-get line below)
+#
+# Used by:
+#   /root/projects/phi/.claude/scripts/docker-cargo.sh (RUST_IMAGE env default)
+#   /root/projects/phi/.claude/scripts/docker-iphi.sh (RUST_IMAGE env default)
+
+FROM rust:1.95-slim
+
+# System deps:
+#   - pkg-config + libssl-dev: transitive openssl-sys (via reqwest)
+#   - ca-certificates: TLS chain validation for crates.io + reqwest test fixtures
+#   - curl: utoipa-swagger-ui build script downloads Swagger UI tarball at build time
+#   - git: `test_factory_phi_core_zero_lines_changed` shells out to `git -C .../phi-core diff HEAD`
+#   - python3: `test_executor_python_script` runs a `#!/usr/bin/env python3` hook script
+#     (the JS counterpart has a runtime-detection skip-helper; python does not)
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends \
+       pkg-config \
+       libssl-dev \
+       ca-certificates \
+       curl \
+       git \
+       python3 \
+  && rm -rf /var/lib/apt/lists/*
+
+# Rust toolchain components (slim image strips these by default):
+#   - rustfmt for `cargo fmt`
+#   - clippy for `cargo clippy`
+RUN rustup component add rustfmt clippy

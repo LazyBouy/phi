@@ -12,7 +12,10 @@ This is a **multi-crate workspace** with three git submodules:
 
 ## Build & Development
 
-All cargo commands must use the cargo binary at `/root/rust-env/cargo/bin/cargo`. There is no Docker container.
+**Project-specific cargo toolchain** (split as of Phase 1.5, 2026-05-28):
+
+- **phi-core + baby-phi**: host cargo at `/root/rust-env/cargo/bin/cargo` (no Docker).
+- **i-phi**: Docker-wrapped via `bash /root/projects/phi/.claude/scripts/docker-cargo.sh <args>` (rust:1.95-slim + libssl-dev/pkg-config; named-volume caches). The built `i-phi` binary runs via `bash /root/projects/phi/.claude/scripts/docker-iphi.sh <iphi-args>`. Memory: `[[feedback_cargo_toolchain_split]]`.
 
 ```bash
 # phi-core (the main crate — run from phi-core/)
@@ -25,11 +28,20 @@ cd phi-core
 /root/rust-env/cargo/bin/cargo fmt -- --check
 RUSTFLAGS="-Dwarnings" /root/rust-env/cargo/bin/cargo clippy --all-targets
 
-# baby-phi (run from baby-phi/)
+# baby-phi (host cargo; run from baby-phi/)
 cd baby-phi
 /root/rust-env/cargo/bin/cargo build
 /root/rust-env/cargo/bin/cargo run
+
+# i-phi (Docker-wrapped; absolute-path wrapper invocation)
+bash /root/projects/phi/.claude/scripts/docker-cargo.sh build -j 4
+bash /root/projects/phi/.claude/scripts/docker-cargo.sh test -j 4
+bash /root/projects/phi/.claude/scripts/docker-cargo.sh fmt -- --check
+RUSTFLAGS="-Dwarnings" bash /root/projects/phi/.claude/scripts/docker-cargo.sh clippy --all-targets -j 4
+bash /root/projects/phi/.claude/scripts/docker-iphi.sh --help   # run built binary inside container
 ```
+
+`cargo clean` discipline for i-phi: `docker volume rm iphi-cargo-target` (then re-create on next docker-cargo.sh call). For baby-phi: `cargo clean --manifest-path /root/projects/phi/baby-phi/Cargo.toml` (unchanged).
 
 CI treats all clippy warnings as errors (`RUSTFLAGS="-Dwarnings"`). Always run clippy before considering work complete.
 
@@ -101,7 +113,11 @@ Pre-existing chunks (CH-09, CH-10, CH-23) keep their flat-file legacy layout; th
 
    Precedent cycles: CH-14 + CH-15-baby-phi (initial widening triggers), CH-08 + CH-16b-i-phi (regex generalizations to FOLLOWUP-PHICORE + planning-time placeholder), CH-02a-i-phi (ADR ↔ open-questions cross-check), CH-04-i-phi (dynamic-pattern derivation), CH-17-i-phi (cycle-bound TBD extension) — full narratives at `discipline-archive.md` anchors `#ch-14-baby-phi-doc-sync-widened-sweep-trigger` / `#ch-15-baby-phi-doc-sync-widened-sweep-extension` / `#ch-04-i-phi-dynamic-pattern-derivation` / `#ch-16b-i-phi-non-f-token-paraphrase-extension` / `#ch-17-i-phi-approval-gate-summary-divergence`.
 3. **Audit review.** Read each iteration's audit log; spot-check 1–2 random claims by reading cited file:line. **Audit-prompt-authoring cross-check (6-axis script consolidation)**: BEFORE dispatching auditors at gate-3, invoke `bash /root/projects/phi/.claude/scripts/audit-prompt-cross-check.sh <plan.md> <audit-prompt>`. Script runs 6 axes — (1) F-token / (2) lock-body paraphrase / (3) test-name allocation / (4) method-signature paraphrase / (5) arg-shape divergence refinement / (6) literal-count paraphrase (enum variants / struct fields / routes / utoipa paths / middleware-order). Emits `[axis]<name>: PASS|DIVERGENT - <evidence>` per axis; exit 1 if any axis diverges, 0 if all PASS. Surface DIVERGENT axes as Trivial-1L pre-dispatch text-edits OR escalate as Trivial-multi if a delegate method/file is missing; may suppress informational false-positives (e.g., DIVERGENT method-sig where the cited symbol is a phi-core surface name resolved via project context). Heuristic script interpretation still requires manual judgment for PARTIAL cases (semantic equivalence preserved with wording-divergent paraphrase). For axis-4 method-form deliverables specifically, the consolidated `interface-contract-verify` skill provides the 4-axis impl-block-membership verification (method-exists / impl-block-exists / body-inside-impl / signature-match) — invoke via the skill when the axis returns DIVERGENT to disambiguate FAIL (missing delegate) vs PARTIAL (semantic-equivalent with diff arg-shape). Empirical precedent cycles: CH-04-i-phi (F-token), CH-16b-i-phi (lock-body), CH-07a/CH-07b-i-phi (method-sig + test-name), CH-10-i-phi (arg-shape), CH-11a-i-phi (literal-count 6th-axis crystallization), CH-17-i-phi (clean 6-axis pass empirical-stability confirmation) — full narratives at `discipline-archive.md` anchors `#ch-04-i-phi-audit-prompt-authoring-cross-check-trigger` / `#ch-16b-i-phi-non-f-token-paraphrase-extension` / `#ch-07b-i-phi-interface-contract-drift` / `#ch-10-i-phi-arg-shape-divergence` / `#ch-11a-i-phi-literal-count-axis-crystallization`.
-4. **Final cycle re-audit (mandatory).** After all sub-agent audits go green, I personally re-read every diff, re-run full workspace tests + 4 CI guards, run phi-core-leverage-check + k8s-readiness-check skills, verify all paperwork. Write `cycle-audit.md`. May re-trigger Implementer or Planner re-spawn. Never skipped. **MUST-RUN list (sub-agents cannot execute these reliably):** `RUSTFLAGS="-Dwarnings" cargo clippy -j 4 --workspace --all-targets` + the 4 `bash scripts/check-*.sh` CI guards. Sub-agent auditors will mark these claims `NOT-EXECUTED-IN-AUDIT` (sandbox-blocked) — orchestrator closes them at this gate.
+4. **Final cycle re-audit (mandatory).** After all sub-agent audits go green, I personally re-read every diff, re-run full workspace tests + 4 CI guards, run phi-core-leverage-check + k8s-readiness-check skills, verify all paperwork. Write `cycle-audit.md`. May re-trigger Implementer or Planner re-spawn. Never skipped. **MUST-RUN list (sub-agents cannot execute these reliably) — PROJECT-CONDITIONAL as of Phase 1.5 2026-05-28:**
+   - **baby-phi**: `RUSTFLAGS="-Dwarnings" /root/rust-env/cargo/bin/cargo clippy -j 4 --workspace --all-targets` + the 4 `bash /root/projects/phi/baby-phi/scripts/check-*.sh` CI guards.
+   - **i-phi**: `RUSTFLAGS="-Dwarnings" bash /root/projects/phi/.claude/scripts/docker-cargo.sh clippy --all-targets -j 4` + the 4 `bash /root/projects/phi/i-phi/scripts/check-*.sh` CI guards.
+
+   Sub-agent auditors will mark these claims `NOT-EXECUTED-IN-AUDIT` (sandbox-blocked) — orchestrator closes them at this gate.
 
    **cycle-audit §6 deviation-class row template (added 2026-05-21 per CH-16b-i-phi retro `634ce263` proposal #6)**: when authoring `cycle-audit.md` §6 deviations, surface `audit-prompt-authoring miss` as an explicit deviation-class row WHEN APPLICABLE (orchestrator-side process miss where audit prompt wording diverged from plan §1 lock-body wording or §3 lock variants). Standard row shape:
    ```
@@ -125,9 +141,17 @@ Pre-existing chunks (CH-09, CH-10, CH-23) keep their flat-file legacy layout; th
 
    **Cargo-clean discipline operates at TWO placements (refined 2026-05-10 per CH-18 retro Row 1, USER DIRECTIVE, cycle hex `c77937bc`)**:
 
-(1) **Immediate-post-test cleanup (NEW per CH-18)**: AFTER each `cargo test --workspace` invocation across the cycle (sub-agent audits A + B, orchestrator gate-4 final test, retrospector permissions-audit script), the invoker MUST run `cargo clean --manifest-path /root/projects/phi/baby-phi/Cargo.toml` BEFORE issuing the next cargo invocation. Per-invocation cleanup ensures the next invocation starts from clean target/ and prevents accumulation across multiple test runs within a single cycle. CH-18 evidence: 2 duplicate cargo-test workspace background runs accumulated target/ to 146 GB → 100% disk → 1h24m hung process → user-directed kill + cargo clean reclaimed 151 GiB. The user directive that codified this: *"tests should be cleaned up immediately after the run as it may block future tests"* (2026-05-10).
+(1) **Immediate-post-test cleanup (NEW per CH-18; PROJECT-CONDITIONAL as of Phase 1.5 2026-05-28)**: AFTER each `cargo test` invocation across the cycle (sub-agent audits A + B, orchestrator gate-4 final test, retrospector permissions-audit script), the invoker MUST issue a clean BEFORE the next cargo invocation:
+   - **baby-phi**: `/root/rust-env/cargo/bin/cargo clean --manifest-path /root/projects/phi/baby-phi/Cargo.toml`
+   - **i-phi**: `docker volume rm iphi-cargo-target` (then re-create on next `docker-cargo.sh` call)
 
-(2) **Gate-5 final close cleanup (CH-17 retro Row 1, USER REQUESTED 2026-05-09, cycle hex `40c4d759`)**: after standards updates landed + cycle-index row flipped to `retro-complete`, the orchestrator runs `/root/rust-env/cargo/bin/cargo clean --manifest-path /root/projects/phi/baby-phi/Cargo.toml` as the closing step before user commit. Capture `du -sh /root/projects/phi/baby-phi/target` BEFORE + `df -h /root | head -3` AFTER and log disk reclaimed in the cycle-audit's §7 metrics row.
+Per-invocation cleanup ensures the next invocation starts from clean target/ and prevents accumulation across multiple test runs within a single cycle. CH-18 evidence: 2 duplicate cargo-test workspace background runs accumulated target/ to 146 GB → 100% disk → 1h24m hung process → user-directed kill + cargo clean reclaimed 151 GiB. The user directive that codified this: *"tests should be cleaned up immediately after the run as it may block future tests"* (2026-05-10).
+
+(2) **Gate-5 final close cleanup (CH-17 retro Row 1, USER REQUESTED 2026-05-09, cycle hex `40c4d759`; PROJECT-CONDITIONAL as of Phase 1.5)**: after standards updates landed + cycle-index row flipped to `retro-complete`, the orchestrator runs the cleanup:
+   - **baby-phi**: `/root/rust-env/cargo/bin/cargo clean --manifest-path /root/projects/phi/baby-phi/Cargo.toml`. Capture `du -sh /root/projects/phi/baby-phi/target` BEFORE + `df -h /root | head -3` AFTER.
+   - **i-phi**: `docker volume rm iphi-cargo-target`. Capture `docker system df` BEFORE + AFTER.
+
+Log disk reclaimed in the cycle-audit's §7 metrics row.
 
 **Why TWO placements (not just one)**: CH-17 retro Row 1's gate-5-close-only placement was insufficient because target/ can balloon DURING gate-4 if multiple test invocations run concurrently or sequentially without cleanup. CH-18 evidence proved per-invocation cleanup is necessary; gate-5 final close is still mandatory as a final pre-commit cleanup. Both placements together prevent within-cycle disk-pressure incidents AND ensure clean state at chunk release.
 

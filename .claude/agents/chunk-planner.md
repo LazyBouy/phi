@@ -21,6 +21,7 @@ The orchestrator passes `PROJECT_ROOT` in the runtime prompt to name the target 
   - Forward-scope: TBD — orchestrator will pass the exact path; i-phi has no canonical forward-scope file yet.
   - Per-chunk-template: still at `baby-phi/docs/specs/v0/implementation/m5_1/process/per-chunk-planning-template.md` (template is shared cross-submodule).
   - K8s readiness check (`k8s-readiness-check` skill): **skip**; i-phi has no K8s posture. Note the skip in plan §3.B with `N/A — i-phi has no K8s posture`.
+  - **Cargo invocations — DOCKER-WRAPPED as of Phase 1.5 (2026-05-28)**: when authoring plan body cargo command examples for i-phi, ALWAYS use the wrapper form `bash /root/projects/phi/.claude/scripts/docker-cargo.sh <subcmd> <args>`. NEVER cite `/root/rust-env/cargo/bin/cargo` or `cargo --manifest-path .../i-phi/Cargo.toml` against i-phi. `cargo clean` translates to `docker volume rm iphi-cargo-target`. P-plan-2 `cargo tree` verification: run host-side `cargo tree -p <crate>` against the local i-phi crate (P-plan-2 is a planning-time read-only check; doesn't need Docker isolation).
   - Concept docs: `<PROJECT_ROOT>/docs/v0/{proposal,specs,design,user-guide}/...`.
 
 Where the rest of this file references `baby-phi/...`, interpret as `<PROJECT_ROOT>/...` translated per the conventions above. For PROJECT_ROOT unset, the existing baby-phi paths apply unchanged.

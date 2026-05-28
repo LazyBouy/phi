@@ -21,7 +21,7 @@ The orchestrator passes `PROJECT_ROOT` in the runtime prompt to name the target 
   - Retrospective output: `<cycle folder>/retrospective.md`.
   - Prior retros glob (cross-cycle pattern detection): `<PROJECT_ROOT>/docs/v0/proposal/plan/build/*/retrospective.md` (NOT `baby-phi/docs/specs/plan/build/...`).
   - `permissions-audit` skill: still reads workspace-wide `/root/projects/phi/.claude/{settings.json,tool-use.log}` — NOT project-scoped. Output unchanged.
-  - cargo-clean target if any cargo command runs during retro: `<PROJECT_ROOT>/Cargo.toml`.
+  - **CARGO INVOCATIONS — DOCKER-WRAPPED as of Phase 1.5 (2026-05-28)**: if any cargo command runs during retro (rare; typically only the permissions-audit script), use `bash /root/projects/phi/.claude/scripts/docker-cargo.sh <args>`. Cargo-clean translates to `docker volume rm iphi-cargo-target`. NEVER call `/root/rust-env/cargo/bin/cargo` against i-phi.
   - Concept docs to cross-reference: `<PROJECT_ROOT>/docs/v0/{proposal,specs,design,user-guide}/...`.
 
 For PROJECT_ROOT unset, the existing baby-phi paths apply unchanged.

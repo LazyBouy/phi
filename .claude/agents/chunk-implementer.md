@@ -19,11 +19,13 @@ The orchestrator passes `PROJECT_ROOT` in the runtime prompt to name the target 
 - **`/root/projects/phi/i-phi`** → i-phi conventions:
   - Cycle plan path (read): `<PROJECT_ROOT>/docs/v0/proposal/plan/build/<slug>-<8hex>/plan.md`.
   - Cargo manifest: `<PROJECT_ROOT>/Cargo.toml` — may NOT exist before i-phi CH-01 (that chunk creates it). The orchestrator will confirm in the runtime prompt; if absent, skip cargo invocations entirely and report.
-  - cargo-clean / cargo test / cargo clippy / cargo fmt: use `--manifest-path <PROJECT_ROOT>/Cargo.toml` consistently (replaces hard-coded `--manifest-path /root/projects/phi/baby-phi/Cargo.toml` in the cargo commands below).
-  - CI guards (`scripts/check-*.sh`): **none for i-phi** — no `<PROJECT_ROOT>/scripts/` directory exists yet. Skip the CI-guard step.
+  - **CARGO INVOCATIONS — DOCKER-WRAPPED as of Phase 1.5 (2026-05-28)**: do NOT call `/root/rust-env/cargo/bin/cargo`; do NOT use `--manifest-path`. Instead use the wrapper at `/root/projects/phi/.claude/scripts/docker-cargo.sh <args>` for every cargo subcommand (build/test/clippy/fmt). Container CWD `/work` maps to host `<PROJECT_ROOT>`. Example forms: `bash /root/projects/phi/.claude/scripts/docker-cargo.sh test -j 4`; `RUSTFLAGS="-Dwarnings" bash /root/projects/phi/.claude/scripts/docker-cargo.sh clippy --all-targets -j 4`; `bash /root/projects/phi/.claude/scripts/docker-cargo.sh fmt -- --check`. Wrappers run inside `iphi-rust:1.95-slim` (custom image extends rust:1.95-slim with `pkg-config + libssl-dev + curl + rustfmt + clippy`).
+  - **cargo-clean discipline for i-phi**: `docker volume rm iphi-cargo-target` REPLACES `cargo clean --manifest-path <PROJECT_ROOT>/Cargo.toml`. The named volume is auto-recreated on next docker-cargo.sh call.
+  - **Binary runtime**: when the chunk needs to run the built `i-phi` binary (smoke tests, integration check), use `bash /root/projects/phi/.claude/scripts/docker-iphi.sh <iphi-args>` — builds on demand + runs inside same container image.
+  - CI guards (`scripts/check-*.sh`): **shipped at CH-07a per F-iphi-ci-guards-deadline.b USER-DIVERGENT lock** — 4 pure-bash scripts at `<PROJECT_ROOT>/scripts/check-{doc-links,verified-headers,phi-core-reuse,spec-drift}.sh`. Run each via `bash <PROJECT_ROOT>/scripts/check-<name>.sh`.
   - Concept docs touched at chunk-close paperwork: `<PROJECT_ROOT>/docs/v0/{proposal,specs,design,user-guide}/...`.
 
-The cargo-clean discipline (immediate-post-test + chunk-seal close) applies to whichever project's `Cargo.toml` is active. For PROJECT_ROOT unset, the existing baby-phi paths and commands apply unchanged.
+For PROJECT_ROOT unset (baby-phi default), the existing host-cargo paths and commands below apply unchanged. The cargo-clean discipline (immediate-post-test + chunk-seal close) applies to whichever project is active — `cargo clean` for baby-phi, `docker volume rm iphi-cargo-target` for i-phi.
 
 ## Inputs the orchestrator provides
 
