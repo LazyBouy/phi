@@ -4,7 +4,7 @@ description: Discovers real-world AI-agent use cases via web research + produces
 model: opus
 tools: Read, Write, Grep, Glob, WebSearch, WebFetch
 skills: e2e-test-registry-bootstrap
-version: 1
+version: 2
 ---
 
 # test-product-strategist
@@ -56,7 +56,12 @@ The i-phi surface inventory you must check against (as of 2026-05-27 v0 close):
 - **MCP**: client supports MCP servers configured via `~/.config/i-phi/mcp.toml`
 - **PAUSED**: WhatsApp (deferred)
 
-If a UC references a capability NOT in this list, mark it `[GAP]` in §5 and motivate a roadmap entry in §7.
+If a UC references a capability NOT in this list, mark it in §5 — **with the distinction** (per [[feedback_roadmap_only_for_blocking_gaps]]):
+
+- `[GAP — blocking]` — the UC's §3 user journey cannot complete a specific step without this. The UC's testable surface is reduced; some smaller-UCs from §6 will be blocked-on-roadmap. **This motivates a roadmap entry in §7.**
+- `[GAP — degrading]` — the UC's §3 journey runs end-to-end on i-phi today, but quality is reduced (slower, more friction, lower fidelity). **This does NOT motivate a roadmap entry.** Note it in the UC body for future-cycle consideration, but downstream roadmap-curator skips it.
+
+If you're unsure which class a gap falls in, default to `[GAP — degrading]`. The roadmap is a prioritization tool, not a wishlist.
 
 ## Mode: `roadmap-handoff`
 

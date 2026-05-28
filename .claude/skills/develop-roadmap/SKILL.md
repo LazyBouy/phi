@@ -39,9 +39,10 @@ Agent reads scoped UCs + clusters gaps + drafts roadmap-entry.md files.
 After agent returns:
 
 1. Read each new roadmap-entry file at `docs/e2e-test/roadmap/`.
-2. Self-check: (a) frontmatter complete; (b) ≥ 1 parent UC cited; (c) §4 gap delta concrete + cross-checked against today's i-phi surface; (d) §5 effort estimate has T-shirt size + chunk count + risk axes; (e) §6 priority matches rubric (P0 = ≥2 UCs unblocked AND ≤M effort, etc.); (f) `triage_status=proposed`.
-3. Spot-check: pick 1 entry; manually verify the §4 gap is real (grep i-phi source for the cited missing capability).
-4. Update `_registry-index.md` §3.
+2. **Block-statement check (LOAD-BEARING per [[feedback_roadmap_only_for_blocking_gaps]])**: every entry's §4 MUST contain a concrete "Without this feature, parent UC `<slug>` cannot complete step `<N>`..." sentence. If ANY entry lacks this, reject the entry + ask the curator to either rewrite with a concrete block-statement OR drop the candidate. Aspirational improvements without a blocking-statement are NOT roadmap entries.
+3. Self-check: (a) frontmatter complete; (b) ≥ 1 parent UC cited with block-statement; (c) §4 gap delta concrete + cross-checked against today's i-phi surface; (d) §5 effort estimate has T-shirt size + chunk count + risk axes; (e) §6 priority matches rubric (P0 = ≥2 UCs unblocked AND ≤M effort, etc.); (f) `triage_status=proposed`.
+4. Spot-check: pick 1 entry; manually verify the §4 gap is real (grep i-phi source for the cited missing capability).
+5. Update `_registry-index.md` §3.
 
 ## Phase 3 — approval gate (if `approval=yes`)
 

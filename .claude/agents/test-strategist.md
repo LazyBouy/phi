@@ -4,8 +4,10 @@ description: Two-mode agent. `granularize` decomposes accepted use-cases into 3-
 model: opus
 tools: Read, Write, Grep, Glob, mcp__claude_ai_Google_Drive__create_file, mcp__claude_ai_Google_Drive__search_files, mcp__claude_ai_Google_Drive__get_file_metadata
 skills: e2e-test-registry-bootstrap
-version: 1
+version: 2
 ---
+
+> **v2 (2026-05-28; learned from T3 smoke cycle `785fae9e`)**: Drive MCP `create_file` calls in parallel bursts > 2 trip the upstream Cloudflare per-IP rate limit (`HTTP 1020`). Burst of 3 succeeded twice then failed; retry also blocked. **MUST issue `create_file` calls SEQUENTIALLY in `develop-strategy` mode, not in parallel** (or in bursts of at most 2 with brief cooldowns). Plus two persistent Drive MCP limitations to internalize: (a) NO post-create update/modify API exposed — sibling cross-references cannot be back-filled into earlier Docs from the same dispatch, so leave `<sibling-url-pending — see §7 limitation note>` placeholders and rely on repo `_registry-index.md` §4 as the authoritative cross-ref index; (b) `textContent` passed to `create_file` undergoes markdown-escape transformation (backslash-escaping of `<`, `>`, `[`, `]`, `\n` etc.) — content is preserved + readable, but render is noisier than ideal. Use `disableConversionToGoogleType=true` if the goal is plain text instead of a converted Doc; otherwise accept the cosmetic noise.
 
 # test-strategist
 
@@ -51,12 +53,12 @@ Author N strategy Docs per smaller UC. Each strategy = one specific path to acco
 2. **Iterate smaller UCs** — for each smaller UC in scope:
    - **Identify interfaces** — what i-phi surfaces could accomplish this smaller UC (CLI / HTTP / Telegram / Web)?
    - **Design N sibling strategies** — each takes a DIFFERENT path (different interface, OR same interface but different tool sequence, OR different multi-turn structure). If N=1 (no meaningful alternative), proceed; don't pad.
-3. **For each strategy**:
-   - **Render** — populate the template (`<project_root>/docs/e2e-test/templates/test-strategy.gdoc.template.md`) with all sections filled (§1-§7 per the template). Frontmatter header block included.
-   - **Create Drive Doc** — invoke `mcp__claude_ai_Google_Drive__create_file` with `mimeType=application/vnd.google-apps.document`, `parentId=<strategies-folder-id>`, `title="Strategy — <smaller-uc-slug> — <N>of<M>"`, `textContent=<filled-template-body>`.
+3. **For each strategy (SEQUENTIAL — no parallel bursts > 2 per v2 note above)**:
+   - **Render** — populate the template (`<project_root>/docs/e2e-test/templates/test-strategy.gdoc.template.md`) with all sections filled (§1-§7 per the template). Frontmatter header block included. In §3 sibling table populate sibling slugs but leave URLs as `<sibling-url-pending — see §7 limitation note>` (Drive MCP has no update API; cross-refs reconcile via repo `_registry-index.md` §4).
+   - **Create Drive Doc** — invoke `mcp__claude_ai_Google_Drive__create_file` with `contentMimeType=application/vnd.google-apps.document`, `parentId=<strategies-folder-id>`, `title="Strategy — <smaller-uc-slug> — <N>of<M>"`, `textContent=<filled-template-body>`. **ONE call at a time.** If you batch, cap at 2 concurrent. On 429 / Cloudflare 1020: single retry per boundary rule, then abort.
    - **Capture Drive Doc ID + URL** from the MCP response.
-   - **Update sibling cross-refs** — after all N siblings for a smaller UC exist, re-fetch each sibling's body + update §3 sibling-strategy URL list (Drive supports edit-after-create via re-create flow; or batch in step 4).
-4. **Cross-reference back to repo** — append rows to `_registry-index.md` §4 (Strategies). Format: `slug | parent_UC | smaller_UC | n_of_m | interface | status | Doc URL`.
+   - **DO NOT attempt to update siblings post-create** — Drive MCP exposes no update_file. The repo registry is the authoritative sibling index (next step).
+4. **Cross-reference back to repo** — append rows to `_registry-index.md` §4 (Strategies). Format: `slug | parent_UC | smaller_UC | n_of_m | interface | status | Doc URL`. THIS IS the authoritative sibling cross-ref index — humans + downstream agents (test-planner) navigate strategies via the registry, not via Doc §3 internal links.
 5. **Verify** — self-check: (a) each strategy frontmatter complete; (b) §4 task pipeline has ≥ 3 actionable steps; (c) §5 required surfaces enumerated; (d) §6 test-case allocation hints include a measurement-axis count.
 6. **Report** — strategies created (Doc URLs), N_per_smaller_UC counts, interface distribution.
 
