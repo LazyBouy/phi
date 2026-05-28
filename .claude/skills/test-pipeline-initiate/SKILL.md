@@ -1,11 +1,13 @@
 ---
 name: test-pipeline-initiate
-description: Master orchestrator skill for the e2e-test pipeline. Modes: `full` (plan → execute → conditional triage), `plan` (test-planner only), `execute` (test-executor only), `triage` (test-issue-fixer only). Consumes accepted strategies + OpenRouter cohorts → produces TCs, executions, matrix, issues, fix-batches. Enforces budget + max-requests guardrails.
+description: Master orchestrator skill for the e2e-test pipeline. Modes: `full` (plan → execute → conditional triage), `plan` (test-planner only), `execute` (test-executor only), `triage` (test-issue-fixer only). Consumes accepted strategies + OpenRouter cohorts → produces TC markdown files, per-cycle executions.csv + benchmark-matrix.csv, issues + fix-batches as repo markdown. Enforces budget + max-requests guardrails.
 ---
 
 # test-pipeline-initiate
 
-Master orchestrator skill for the i-phi e2e-test pipeline. Runs the **downstream** half of the pipeline (test-planner → test-executor → test-issue-fixer). The upstream skills (`/collect-use-case`, `/develop-roadmap`, `/granularize-use-case`, `/develop-test-strategy`) run independently outside this skill.
+Master orchestrator skill for the i-phi e2e-test pipeline. Runs the **downstream** half of the pipeline (test-planner v2 → test-executor v2 → test-issue-fixer v2). The upstream skills (`/collect-use-case`, `/develop-roadmap`, `/granularize-use-case`, `/develop-test-strategy`) run independently outside this skill.
+
+> **v2 (2026-05-28; T3.6 storage architecture pivot — Drive write-path retired)**: per plan `/root/.claude/plans/hi-i-would-like-wobbly-naur.md` P1 lock, all downstream agents write repo markdown / CSV at `i-phi/docs/e2e-test/` (test-cases, issues, fix-batches, cycles/<hex>/executions.csv + benchmark-matrix.csv). Drive MCP pre-flight checks removed from Phase 0. The orchestrator + all 3 dispatched agents (test-planner v2, test-executor v2, test-issue-fixer v2) no longer touch Drive. GitHub Issues mirror unchanged (via `gh-rest.sh`).
 
 ## Quality + cost discipline (LOAD-BEARING)
 
@@ -30,10 +32,11 @@ Per [[feedback_quality_then_cost]]:
 
 1. **Verify env tokens** — `grep -cE '^(GITHUB_PAT_IPHI|OPENROUTER_TOKEN)=' /root/projects/phi/.env` should return 2.
 2. **Verify .env permissions** — `stat -c '%a' /root/projects/phi/.env` should return `600` (warn if looser).
-3. **Verify Drive MCP** — call `mcp__claude_ai_Google_Drive__search_files` with a benign query.
-4. **Verify gh-rest.sh** — `bash /root/projects/phi/.claude/scripts/gh-rest.sh self-test` → expect `OK: authenticated`.
-5. **Verify i-phi buildable** — `cargo build --manifest-path /root/projects/phi/i-phi/Cargo.toml -j 4` (cached after first build; ~free on warm cargo cache).
-6. **Mint cycle folder** — invoke `test-cycle-archive` skill: it generates 8-hex cycle ID + creates `i-phi/docs/e2e-test/cycles/<slug>-<hex>/cycle-plan.md` + appends row to `_registry-index.md` §8.
+3. **Verify gh-rest.sh** — `bash /root/projects/phi/.claude/scripts/gh-rest.sh self-test` → expect `OK: authenticated`.
+4. **Verify i-phi buildable** — `cargo build --manifest-path /root/projects/phi/i-phi/Cargo.toml -j 4` (cached after first build; ~free on warm cargo cache).
+5. **Mint cycle folder** — invoke `test-cycle-archive` skill: it generates 8-hex cycle ID + creates `i-phi/docs/e2e-test/cycles/<slug>-<hex>/cycle-plan.md` + appends row to `_registry-index.md` §8.
+
+(Drive MCP pre-flight check removed in T3.6 pivot. Drive is no longer used by any downstream agent.)
 
 ## Phase 1 — approval gate
 
@@ -58,37 +61,37 @@ Options:
 
 ### `mode=full`
 
-Sequential: test-planner → test-executor → conditional test-issue-fixer.
+Sequential: test-planner v2 → test-executor v2 → conditional test-issue-fixer v2.
 
-1. **test-planner**: mint TCs from accepted strategies; bind `models_in_scope` to `<cohort>`.
-2. **test-executor**: iterate minted TCs × cohort; produce executions Sheet + benchmark-matrix.
-3. **Issue threshold check**: count newly-filed D-TEST issues this cycle. If ≥ 10 global OR ≥ 3 per-UC → dispatch test-issue-fixer with `trigger=threshold-{global|per-uc}`.
+1. **test-planner v2**: mint TC markdown files from accepted strategies at `docs/e2e-test/test-cases/TC-NNNN.md`; bind `models_in_scope[]` to `<cohort>`.
+2. **test-executor v2**: iterate minted TCs × cohort; append rows to `cycles/<hex>/executions.csv`; generate `benchmark-matrix.csv` + `matrix-summary.md` at close.
+3. **Issue threshold check**: count newly-filed D-TEST issue files this cycle (`Grep -l 'cycle_hex: <hex>' docs/e2e-test/issues/*.md | wc -l`). If ≥ 10 global OR ≥ 3 per-UC → dispatch test-issue-fixer v2 with `trigger=threshold-{global|per-uc}`.
 
 ### `mode=plan`
 
-Dispatch test-planner only. Inputs: `strategies=<scope>`, `cohort_default=<cohort>`. Output: N new TC rows in `test-cases-master.gsheet`.
+Dispatch test-planner v2 only. Inputs: `strategies=<scope>`, `cohort_default=<cohort>`. Output: N new TC files at `docs/e2e-test/test-cases/TC-NNNN.md`.
 
 ### `mode=execute`
 
-Dispatch test-executor only. Inputs: `tcs=<scope>`, `cohort_override=<cohort>` (if provided), `budget_usd`, `max_requests`, `concurrency`. Output: executions Sheet + matrix + filed issues. Pre-estimate cost; surface warning if estimate > budget × 0.8.
+Dispatch test-executor v2 only. Inputs: `tcs=<scope>`, `cohort_override=<cohort>` (if provided), `budget_usd`, `max_requests`, `concurrency`, `cycle_slug`, `cycle_hex`. Output: `cycles/<slug>-<hex>/executions.csv` + `benchmark-matrix.csv` + `matrix-summary.md` + filed `D-TEST-NNNN.md` issue files. Pre-estimate cost; surface warning if estimate > budget × 0.8.
 
 ### `mode=triage`
 
-Dispatch test-issue-fixer only. Inputs: `trigger=user-direct`, `scope=<scope>`. Output: FB-NNNN Drive Docs + grouped issue rows.
+Dispatch test-issue-fixer v2 only. Inputs: `trigger=user-direct`, `scope=<scope>`. Output: `FB-NNNN.md` files at `docs/e2e-test/fix-batches/` + grouped issue frontmatter flips.
 
 ## Phase 3 — per-agent output review
 
 After each agent returns:
 
 1. Read the agent's reported deliverables.
-2. Spot-check 1-2 random artifacts (Sheet rows / Drive Docs / GitHub issues).
-3. Verify registry index updated.
+2. Spot-check 1-2 random artifacts (TC files / issue files / fix-batch files / GitHub issues).
+3. Verify registry index updated (`_registry-index.md` §4-§7).
 4. Verify cycle folder has the appropriate per-mode entry (cycle-plan.md scope reflects what was actually executed).
 
 ## Phase 4 — cycle close
 
-1. **Matrix verification** — for `mode=execute` or `mode=full`: read `benchmark-matrices/<cycle-hex>.gsheet` _summary tab; confirm verdict counts + cost match the executor's report.
-2. **Issue-count check** — re-count `issues-master.gsheet` rows where `status=open` AND `cycle_hex=<this>`. If conditional triage fired in Phase 2, verify fix-batches were authored.
+1. **Matrix verification** — for `mode=execute` or `mode=full`: read `cycles/<slug>-<hex>/benchmark-matrix.csv` + `matrix-summary.md`; confirm verdict counts + cost match the executor's report.
+2. **Issue-count check** — re-count `docs/e2e-test/issues/*.md` files where frontmatter `status: open` AND `cycle_hex: <this>`. If conditional triage fired in Phase 2, verify fix-batches were authored at `docs/e2e-test/fix-batches/FB-*.md`.
 3. **Author cycle-audit.md** — in the cycle folder. Sections: §1 deliverables, §2 verdict summary, §3 cost summary (vs budget), §4 issues filed, §5 anomalies (e.g., all-models-same-failure TCs flagged for test-bug vs model-bug review), §6 deviations from plan (if any), §7 routing handoffs (which fix-batches need human routing).
 4. **Update `_registry-index.md` §8** — flip the cycle's row from `audit=pending` to `audit=complete` with link to cycle-audit.md.
 
@@ -101,7 +104,7 @@ After each agent returns:
 ## Phase 6 — commit
 
 ```
-git -C /root/projects/phi/i-phi add docs/e2e-test/cycles/<slug>-<hex>/ docs/e2e-test/_registry-index.md
+git -C /root/projects/phi/i-phi add docs/e2e-test/cycles/<slug>-<hex>/ docs/e2e-test/_registry-index.md docs/e2e-test/test-cases/ docs/e2e-test/issues/ docs/e2e-test/fix-batches/
 git -C /root/projects/phi/i-phi commit -m "e2e-test: cycle <hex> mode=<mode> close (verdict <pass>/<partial>/<fail>, $<cost> spent)"
 ```
 
@@ -121,21 +124,25 @@ test-pipeline-initiate: <mode> OK
   Fix-batches:         <FB count> (if triage fired)
   Cost spent:          $<X> of $<budget>
   Runtime:             <T>min
-  Matrix:              <Sheet URL>
-  Audit:               <cycle-audit.md path>
+  Executions CSV:      docs/e2e-test/cycles/<slug>-<hex>/executions.csv
+  Matrix CSV:          docs/e2e-test/cycles/<slug>-<hex>/benchmark-matrix.csv
+  Matrix summary:      docs/e2e-test/cycles/<slug>-<hex>/matrix-summary.md
+  Audit:               docs/e2e-test/cycles/<slug>-<hex>/cycle-audit.md
   Commit:              <git-hash>
 ```
 
 ## Boundaries
 
 - **DO NOT** run upstream skills (collect-use-case / develop-roadmap / granularize-use-case / develop-test-strategy). Those are independent + user-invoked separately. This skill consumes their output.
-- **DO NOT** exceed `budget_usd` or `max_requests`. Hard caps enforced by test-executor.
+- **DO NOT** exceed `budget_usd` or `max_requests`. Hard caps enforced by test-executor v2.
 - **DO NOT** auto-route fix-batches. Output is triage proposals; human routes via `/chunk-initiate` or inline.
+- **DO NOT** write to Drive (retired post-T3.6).
 
 ## Cross-references
 
-- Agents: `[[test-planner]]`, `[[test-executor]]`, `[[test-issue-fixer]]`
+- Agents: `[[test-planner]]` v2, `[[test-executor]]` v2, `[[test-issue-fixer]]` v2
 - Plan: `i-phi/docs/v0/proposal/plan/e2e-test/pipeline-architecture.md` §"Master orchestrator skill"
 - Memory: `[[feedback_quality_then_cost]]` (LOAD-BEARING)
 - Companion skills: `/test-fix-triage` (user-direct fixer trigger), `test-cycle-archive` (utility)
-- Upstream prerequisites: accepted strategies (via `/develop-test-strategy`), populated benchmarks/{models,cohorts}.toml
+- Upstream prerequisites: accepted strategies (via `/develop-test-strategy` v4), populated benchmarks/{models,cohorts}.toml
+- T3.6 storage pivot plan: `/root/.claude/plans/hi-i-would-like-wobbly-naur.md`
