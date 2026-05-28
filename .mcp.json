@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "a-bonus-google-docs": {
+      "type": "stdio",
+      "command": "bash",
+      "args": [
+        "/root/projects/phi/.claude/scripts/launch-google-docs-mcp.sh"
+      ]
+    }
+  }
+}

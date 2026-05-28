@@ -53,6 +53,7 @@
       "Bash(bash /root/projects/phi/i-phi/scripts/check-spec-drift.sh*)",
       "Bash(bash /root/projects/phi/.claude/scripts/audit-prompt-cross-check.sh*)",
       "Bash(bash /root/projects/phi/.claude/scripts/gh-rest.sh*)",
+      "Bash(bash /root/projects/phi/.claude/scripts/launch-google-docs-mcp.sh*)",
       "Bash(/root/projects/phi/i-phi/target/release/iphi *)",
       "Bash(/root/projects/phi/i-phi/target/debug/iphi *)",
       "Bash(iphi --help*)",
@@ -149,7 +150,9 @@
       "Agent(claude-code-guide)",
       "Agent(Explore)",
       "Agent(general-purpose)",
-      "Agent(Plan)"
+      "Agent(Plan)",
+      "Agent(test-publish-curator)",
+      "mcp__a-bonus-google-docs__*"
     ],
     "deny": [
       "Bash(rm -rf *)",
