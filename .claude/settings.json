@@ -162,6 +162,7 @@
       "Agent(general-purpose)",
       "Agent(Plan)",
       "Agent(test-publish-curator)",
+      "Agent(test-executor)",
       "mcp__a-bonus-google-docs__*"
     ],
     "deny": [

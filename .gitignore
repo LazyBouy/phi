@@ -7,3 +7,6 @@
 .claude/tool-use.log.lock
 
 .env
+
+# Tag-mode worktrees for IPHI_SOURCE=tag (created on demand; transient)
+iphi-worktrees/
