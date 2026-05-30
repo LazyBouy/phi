@@ -33,13 +33,41 @@
 # Networking note: no -p port forwarding. Daemon-mode HTTP (TC-0003/0004)
 # needs port mapping; those TCs are deferred to T5.
 #
+# Auto-daemon mode (added at CC-03 P-IMPL-F3 per F3.a; cycle hex 0008b87d):
+#   IPHI_AUTO_DAEMON=0 (default) -> single container exec (legacy behavior).
+#   IPHI_AUTO_DAEMON=1            -> wrapper picks an ephemeral TCP port,
+#                                    spawns a sidecar `iphi daemon start
+#                                    --ipc-listen=tcp:<port>` inside the SAME
+#                                    container (backgrounded), polls
+#                                    `http://127.0.0.1:<port>/v1/status` with
+#                                    bounded retry (1s/2s/4s/1s; 8s ceiling),
+#                                    then exec's the user iphi command with a
+#                                    prefixed `--ipc-listen=tcp:127.0.0.1:<port>`
+#                                    (R6 back-compat: --ipc-listen doubles as
+#                                    client-side endpoint discovery). Traps
+#                                    SIGTERM / SIGINT / EXIT on the outer
+#                                    wrapper to docker-stop the container; the
+#                                    container-side trap forwards SIGTERM to
+#                                    the daemon sidecar PID before exit.
+#
+#   Use auto-daemon mode for e2e-test replay smokes where an out-of-band
+#   daemon would over-complicate test harness shape. Production users running
+#   `iphi prompt --auto-daemon ...` get equivalent behavior natively via the
+#   F1.c in-process spawn path; the wrapper mode is a docker-side convenience
+#   for replay scripts that exec the binary directly.
+#
 # Reference: Phase 1.5 plan at
 #   /root/projects/phi/i-phi/docs/v0/proposal/plan/e2e-test/dockerize-i-phi-30de6ed2.md
+#   CC-03 plan at
+#   /root/projects/phi/i-phi/docs/v0/proposal/plan/build/ch-cc-03-iphi-prompt-daemon-decoupling-and-wrapper-auto-daemon-0008b87d/plan.md
 
 set -euo pipefail
 
 # Source selection (v0-re-seal addition)
 IPHI_SOURCE="${IPHI_SOURCE:-submodule}"
+
+# Auto-daemon mode (CC-03 F3.a addition; see header comment for semantics)
+IPHI_AUTO_DAEMON="${IPHI_AUTO_DAEMON:-0}"
 
 case "${IPHI_SOURCE}" in
   submodule)
@@ -94,14 +122,77 @@ docker run --rm \
   "${RUST_IMAGE}" \
   bash -c "test -x ${BIN_REL_PATH} || cargo build ${build_flag}"
 
-# Phase 2: exec the binary (interactive stdin for prompt subcommand)
-exec docker run --rm -i \
-  -v "${IPHI_ROOT}:/work" \
-  -v "${TARGET_VOLUME}:/work/target" \
-  -w /work \
-  -e RUST_LOG="${RUST_LOG:-}" \
-  -e RUST_BACKTRACE="${RUST_BACKTRACE:-}" \
-  -e ANTHROPIC_API_KEY="${ANTHROPIC_API_KEY:-}" \
-  -e OPENROUTER_TOKEN="${OPENROUTER_TOKEN:-}" \
-  "${RUST_IMAGE}" \
-  "/work/${BIN_REL_PATH}" "$@"
+# Phase 2: exec the binary
+if [[ "${IPHI_AUTO_DAEMON}" == "1" ]]; then
+  # Auto-daemon mode: spawn sidecar `iphi daemon start --ipc-listen=tcp:<port>`
+  # inside the SAME container, poll /v1/status until ready, then run the user
+  # command. SIGTERM / SIGINT / EXIT trap tears down the container.
+  AUTO_PORT=$(( RANDOM % 10000 + 50000 ))
+  CONTAINER_NAME="iphi-auto-daemon-$$-${AUTO_PORT}"
+
+  # Trap on outer wrapper: stop the named container if signaled/exiting.
+  # `docker stop` cleanly SIGTERM's the entrypoint shell which propagates to
+  # the daemon sidecar (Rust signal handlers fire); --rm reaps the container.
+  trap 'docker stop --time=2 "${CONTAINER_NAME}" >/dev/null 2>&1 || true' EXIT INT TERM
+
+  # Single docker run wrapping a bash entrypoint that:
+  #   (a) backgrounds the daemon with --ipc-listen=tcp:${AUTO_PORT}
+  #   (b) polls http://127.0.0.1:${AUTO_PORT}/v1/status with 1s/2s/4s/1s backoff
+  #   (c) on readiness exec's the user command
+  #   (d) on poll-timeout exits 1 with diagnostic
+  exec docker run --rm -i \
+    --name "${CONTAINER_NAME}" \
+    -v "${IPHI_ROOT}:/work" \
+    -v "${TARGET_VOLUME}:/work/target" \
+    -w /work \
+    -e RUST_LOG="${RUST_LOG:-}" \
+    -e RUST_BACKTRACE="${RUST_BACKTRACE:-}" \
+    -e ANTHROPIC_API_KEY="${ANTHROPIC_API_KEY:-}" \
+    -e OPENROUTER_TOKEN="${OPENROUTER_TOKEN:-}" \
+    -e IPHI_DAEMON_TCP_PORT="${AUTO_PORT}" \
+    -e IPHI_BIN_REL_PATH="${BIN_REL_PATH}" \
+    "${RUST_IMAGE}" \
+    bash -c '
+      set -u
+      PORT="${IPHI_DAEMON_TCP_PORT}"
+      BIN="/work/${IPHI_BIN_REL_PATH}"
+      # Background the daemon sidecar
+      "${BIN}" daemon start --ipc-listen=tcp:${PORT} >/tmp/iphi-daemon.log 2>&1 &
+      DAEMON_PID=$!
+      # Container-side trap: SIGTERM the daemon on entrypoint exit
+      trap "kill -TERM ${DAEMON_PID} 2>/dev/null; wait ${DAEMON_PID} 2>/dev/null" EXIT INT TERM
+      # Readiness poll: 1s + 2s + 4s + 1s = 8s ceiling
+      for sleep_s in 1 2 4 1; do
+        sleep "${sleep_s}"
+        if curl -sf -m 1 "http://127.0.0.1:${PORT}/v1/status" >/dev/null 2>&1; then
+          # Daemon ready — exec user command against it. The top-level
+          # --ipc-listen flag doubles as client-side endpoint discovery per
+          # R6 back-compat (see src/main.rs:48-51); user-supplied "$@"
+          # follows and may include subcommand-form --ipc-listen on
+          # `daemon start` (mutual-exclusion validation accepts same values).
+          exec "${BIN}" --ipc-listen=tcp:127.0.0.1:${PORT} "$@"
+        fi
+        # Bail early if daemon process died
+        if ! kill -0 "${DAEMON_PID}" 2>/dev/null; then
+          echo "docker-iphi.sh: auto-daemon sidecar died before readiness" >&2
+          cat /tmp/iphi-daemon.log >&2
+          exit 1
+        fi
+      done
+      echo "docker-iphi.sh: auto-daemon readiness poll timed out after 8s (port ${PORT})" >&2
+      cat /tmp/iphi-daemon.log >&2
+      exit 1
+    ' bash "$@"
+else
+  # Legacy single-exec mode (interactive stdin for prompt subcommand)
+  exec docker run --rm -i \
+    -v "${IPHI_ROOT}:/work" \
+    -v "${TARGET_VOLUME}:/work/target" \
+    -w /work \
+    -e RUST_LOG="${RUST_LOG:-}" \
+    -e RUST_BACKTRACE="${RUST_BACKTRACE:-}" \
+    -e ANTHROPIC_API_KEY="${ANTHROPIC_API_KEY:-}" \
+    -e OPENROUTER_TOKEN="${OPENROUTER_TOKEN:-}" \
+    "${RUST_IMAGE}" \
+    "/work/${BIN_REL_PATH}" "$@"
+fi
