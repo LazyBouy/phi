@@ -163,6 +163,7 @@
       "Agent(Plan)",
       "Agent(test-publish-curator)",
       "Agent(test-executor)",
+      "Agent(test-judge)",
       "mcp__a-bonus-google-docs__*"
     ],
     "deny": [
