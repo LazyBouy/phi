@@ -30,8 +30,16 @@
 # Tag mode build cache is isolated by deriving the cargo-target volume name from
 # the basename of IPHI_TAG_DIR — so v0.1.0 builds don't poison the dev cache.
 #
-# Networking note: no -p port forwarding. Daemon-mode HTTP (TC-0003/0004)
-# needs port mapping; those TCs are deferred to T5.
+# Networking (port-forward; added 2026-05-31 for T6 to unblock TC-0003/0004
+# HTTP-daemon TCs):
+#   IPHI_DAEMON_PORT_FORWARD=1 (default 0) -> in auto-daemon mode, publish the
+#                                            ephemeral TCP port to the host
+#                                            via `-p ${PORT}:${PORT}` on the
+#                                            docker run, so HTTP clients on
+#                                            the host can reach the daemon's
+#                                            /v1/* routes. Legacy single-exec
+#                                            mode is unaffected (no daemon
+#                                            spawned).
 #
 # Auto-daemon mode (added at CC-03 P-IMPL-F3 per F3.a; cycle hex 0008b87d):
 #   IPHI_AUTO_DAEMON=0 (default) -> single container exec (legacy behavior).
@@ -130,6 +138,18 @@ if [[ "${IPHI_AUTO_DAEMON}" == "1" ]]; then
   AUTO_PORT=$(( RANDOM % 10000 + 50000 ))
   CONTAINER_NAME="iphi-auto-daemon-$$-${AUTO_PORT}"
 
+  # Optional port-forward (T6 addition) for HTTP-daemon TCs that drive routes
+  # from outside the container. Default off; opt-in via env var. When on,
+  # the daemon listen-mode is upgraded from `tcp:<port>` (loopback only) to
+  # `tcp:0.0.0.0:<port>` (all-interfaces) so Docker's port-forward proxy
+  # can reach the listener.
+  PORT_FORWARD_ARG=()
+  DAEMON_LISTEN_MODE="tcp:${AUTO_PORT}"
+  if [[ "${IPHI_DAEMON_PORT_FORWARD:-0}" == "1" ]]; then
+    PORT_FORWARD_ARG=(-p "${AUTO_PORT}:${AUTO_PORT}")
+    DAEMON_LISTEN_MODE="tcp:0.0.0.0:${AUTO_PORT}"
+  fi
+
   # Trap on outer wrapper: stop the named container if signaled/exiting.
   # `docker stop` cleanly SIGTERM's the entrypoint shell which propagates to
   # the daemon sidecar (Rust signal handlers fire); --rm reaps the container.
@@ -142,6 +162,7 @@ if [[ "${IPHI_AUTO_DAEMON}" == "1" ]]; then
   #   (d) on poll-timeout exits 1 with diagnostic
   exec docker run --rm -i \
     --name "${CONTAINER_NAME}" \
+    "${PORT_FORWARD_ARG[@]}" \
     -v "${IPHI_ROOT}:/work" \
     -v "${TARGET_VOLUME}:/work/target" \
     -w /work \
@@ -152,14 +173,16 @@ if [[ "${IPHI_AUTO_DAEMON}" == "1" ]]; then
     -e IPHI_OR_HTTP_REFERER="${IPHI_OR_HTTP_REFERER:-}" \
     -e IPHI_OR_X_TITLE="${IPHI_OR_X_TITLE:-}" \
     -e IPHI_DAEMON_TCP_PORT="${AUTO_PORT}" \
+    -e IPHI_DAEMON_LISTEN_MODE="${DAEMON_LISTEN_MODE}" \
     -e IPHI_BIN_REL_PATH="${BIN_REL_PATH}" \
     "${RUST_IMAGE}" \
     bash -c '
       set -u
       PORT="${IPHI_DAEMON_TCP_PORT}"
+      LISTEN_MODE="${IPHI_DAEMON_LISTEN_MODE}"
       BIN="/work/${IPHI_BIN_REL_PATH}"
       # Background the daemon sidecar
-      "${BIN}" daemon start --ipc-listen=tcp:${PORT} >/tmp/iphi-daemon.log 2>&1 &
+      "${BIN}" daemon start --ipc-listen=${LISTEN_MODE} >/tmp/iphi-daemon.log 2>&1 &
       DAEMON_PID=$!
       # Container-side trap: SIGTERM the daemon on entrypoint exit
       trap "kill -TERM ${DAEMON_PID} 2>/dev/null; wait ${DAEMON_PID} 2>/dev/null" EXIT INT TERM
