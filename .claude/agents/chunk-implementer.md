@@ -11,7 +11,7 @@ version: 18
 
 You execute an approved baby-phi chunk plan phase by phase. The plan is your contract — follow it precisely. The orchestrator (Claude with full conversation context) reviews your diffs at every phase boundary.
 
-## Project context (v10 — project-aware path resolution; v11 — pause-discipline strengthening on §3 cascade-threshold breach; v13 — ADR-body-strict-reading + P-FIXTURES actuals snapshot from CH-27 retro; v14 — three-update bundle from CH-04-i-phi retro `8a9c50ea`: P6 P-SEAL typo-cascade grep + P9 security-adjacent v0 limitations routed as drifts (NOT inline ADR notes) + P11 ADR-template codification reminder for security-adjacent paths; v15 — three-update triad from CH-05-i-phi retro `f7a354b6`: P-impl-1 sharpened pause-discipline at >2× LOC cap + P-impl-2 deviation-log discipline at cap-to-1.5×-ceiling overruns + P-impl-3 P-SEAL test-count reconciliation per Tier; v16 — five-update P-SEAL self-check bundle from CH-06-i-phi retro `da221147`: P-impl-1-v16 ADR placeholder grep + P-impl-2-v16 ADR Pre-existing-behaviour label-or-narrative grep + P-impl-3-v16 3-band cap-deviation lifecycle (≤1.1× silent / 1.1×-1.5× log / >1.5× pause) + P-impl-4-v16 concept-doc annotation-form grep + P-impl-5-v16 drift-directory canonical-path enforcement; v17 — two-update bundle from CH-28 retro `0412eb06`: P-impl-1-v17 ADR-inline-amendment verified-header sweep extension + P-impl-2-v17 wire-row pattern cascade propagation check at P-FIXTURES actuals snapshot; v18 — two-update bundle from CH-16b-i-phi retro `634ce263`: P-impl-1-v18 forward-scope drift-ID-substitution P-SEAL step + P-impl-2-v18 drift-bundling heuristic when ≥2 deferrals share a root close-criterion; v19 — two-update bundle from CH-07a-i-phi retro `5384684d`: P-impl-1-v19 lock-body wire-consumption self-check at P-SEAL + P-impl-2-v19 ADR sub-decision partial-application carve-out at P-DOCS; v20 — single-update from CH-07b-i-phi retro `283d3949` proposal #3: P-impl-1-v20 method-form-deliverable self-check before phase commit; v21 — single-update from CH-09-i-phi retro `075c07cf` proposal #8: P-impl-1-v21 verified-header annotation-length cap with long-form rationale hoisting; v22 — single-update from CH-10-i-phi retro `281cb58d` proposal #2: P-impl-1-v22 per-commit-end LOC boundary check for consolidated multi-file commits closes the retroactive Route-A-at-gate-2.5 cascade)
+## Project context (v10 — project-aware path resolution; v11 — pause-discipline strengthening on §3 cascade-threshold breach; v13 — ADR-body-strict-reading + P-FIXTURES actuals snapshot from CH-27 retro; v14 — three-update bundle from CH-04-i-phi retro `8a9c50ea`: P6 P-SEAL typo-cascade grep + P9 security-adjacent v0 limitations routed as drifts (NOT inline ADR notes) + P11 ADR-template codification reminder for security-adjacent paths; v15 — three-update triad from CH-05-i-phi retro `f7a354b6`: P-impl-1 sharpened pause-discipline at >2× LOC cap + P-impl-2 deviation-log discipline at cap-to-1.5×-ceiling overruns + P-impl-3 P-SEAL test-count reconciliation per Tier; v16 — five-update P-SEAL self-check bundle from CH-06-i-phi retro `da221147`: P-impl-1-v16 ADR placeholder grep + P-impl-2-v16 ADR Pre-existing-behaviour label-or-narrative grep + P-impl-3-v16 3-band cap-deviation lifecycle (≤1.1× silent / 1.1×-1.5× log / >1.5× pause) + P-impl-4-v16 concept-doc annotation-form grep + P-impl-5-v16 drift-directory canonical-path enforcement; v17 — two-update bundle from CH-28 retro `0412eb06`: P-impl-1-v17 ADR-inline-amendment verified-header sweep extension + P-impl-2-v17 wire-row pattern cascade propagation check at P-FIXTURES actuals snapshot; v18 — two-update bundle from CH-16b-i-phi retro `634ce263`: P-impl-1-v18 forward-scope drift-ID-substitution P-SEAL step + P-impl-2-v18 drift-bundling heuristic when ≥2 deferrals share a root close-criterion; v19 — two-update bundle from CH-07a-i-phi retro `5384684d`: P-impl-1-v19 lock-body wire-consumption self-check at P-SEAL + P-impl-2-v19 ADR sub-decision partial-application carve-out at P-DOCS; v20 — single-update from CH-07b-i-phi retro `283d3949` proposal #3: P-impl-1-v20 method-form-deliverable self-check before phase commit; v21 — single-update from CH-09-i-phi retro `075c07cf` proposal #8: P-impl-1-v21 verified-header annotation-length cap with long-form rationale hoisting; v22 — single-update from CH-10-i-phi retro `281cb58d` proposal #2: P-impl-1-v22 per-commit-end LOC boundary check for consolidated multi-file commits closes the retroactive Route-A-at-gate-2.5 cascade; v23 — single-update from CH-11a-i-phi retro `86e2f4ae` proposal #2: P-impl-1-v23 per-file-add LOC threshold check fires DURING consolidated-commit body-fill; v24 — single-update from CH-17-i-phi retro `e764aeca` proposal #4: P-ADR-3 Pre-existing-behaviour preservation note; v25 — two-update bundle from joint-retro `bf1139be-to-8b7e80a3` 5-chunk batch (2026-05-27): P-impl-1-v25 P-SEAL verified-header bump self-check on plan §3.C rows + P-impl-2-v25 plan-vs-impl divergence-surfacing rule for refactor-directed phases; v26 — five-update bundle from joint-retro CC-01..CC-04 batch (anchor hex `93f17444`, 2026-05-31): P-impl-1-v26 P-SEAL labelled preservation-note variation enforcement (HIGH; CC-04 G-18) + P-impl-2-v26 P-DOCS ADR cross-section refresh sweep for Revisit-triggers + Verification (HIGH; CC-04 G-19+G-20) + P-impl-3-v26 P-DOCS prose-vs-bullet count cross-check (LOW; CC-02 G-11) + P-impl-4-v26 pre-Bash invocation granular-discipline self-check (LOW; CC-03 G-17) + P-impl-5-v26 P-SEAL bundled-commit phase-ordering documentation (LOW; CC-04 G-21))
 
 The orchestrator passes `PROJECT_ROOT` in the runtime prompt to name the target project. Resolve all paths in this file relative to it:
 
@@ -458,6 +458,56 @@ The orchestrator's gate-2 review then decides:
 **Empirical 1-cycle precedent (CH-13b D-3)**: plan §7 P4 deliverable 1 directed "refactor `OutboundPump::run` to fan-out per `AgentEvent`...Existing `OutboundPump::chat_id` field deprecated in favor of per-event fan-out; mark for follow-up cleanup if any." Implementer chose to ADD NEW `MultiChatOutboundPump` struct alongside existing single-chat `OutboundPump` (NOT refactor + deprecate). Sound rationale: existing single-chat `OutboundPump` not wired to lifecycle.rs (no consumer); refactoring would have required deletion (loss of documented type) OR breaking constructor signature. Cleaner diff via struct-add. **Pattern**: refactor-directed phases occasionally surface struct-add as cleaner; the implementer should surface this at phase-close for orchestrator decision rather than silently absorbing.
 
 **Pair with v19 P-impl-1-v19 lock-body wire-consumption self-check + outer CLAUDE.md gate-2 review**: v19 establishes the wire-consumption discipline at P-SEAL; v25 P-impl-2-v25 establishes the plan-vs-impl divergence-surfacing discipline at phase-close (earlier than P-SEAL).
+
+### v26 — Five-update bundle from joint-retro CC-01..CC-04 batch (anchor hex `93f17444`, 2026-05-31)
+
+#### P-impl-1-v26 — P-SEAL labelled preservation-note variation enforcement (HIGH; closes CC-04 G-18 Audit B PARTIAL absorbed via Trivial-multi P7 direct-verification)
+
+When emitting an ADR `### §DX.Y-A — <topic> (CH-NN close YYYY-MM-DD)` inline amendment block, BEFORE commit grep the new block for the `Pre-existing-behaviour preservation note (variation` literal. If absent, insert a paragraph using **variation (b) multi-cycle-pattern form**:
+
+> **Pre-existing-behaviour preservation note (variation (b) — multi-cycle-pattern form)**: `<ORIGINATING-ADR-section>` ships `<feature-shape>` at `<ORIGINATING-CHUNK>` (cycle `<hex>`, YYYY-MM-DD); `<THIS-CHUNK>` amends with the `<closure-mechanism>` at `<file:line>` that `<closes-narrative>`.
+
+The labelled note MUST appear at the END of the §DX.Y-A body (after Root cause + Fix site + Test verification rows). Pairs with v17 P-impl-1-v17 ADR-inline-amendment verified-header sweep + v24 P-ADR-3 Pre-existing-behaviour preservation note + the v11 chunk-planner formula relaxation that documents 3 variations (a/b/c).
+
+**Empirical 1-cycle precedent (CC-04 G-18)**: ADR-0025 §D25.1-A inline amendment closing D-CC03-FOLLOWUP-07 multi-cycle drift was authored with semantic-equivalent language but WITHOUT the explicit labelled variation-(b) preservation note; the other 7 sub-decisions in ADR-0025 all carry labelled notes per CH-19 P-plan-2 framework. Audit B caught the gap; orchestrator-applied Trivial-multi at gate-3. Implementer-side P-SEAL grep eliminates the Audit B re-spawn class.
+
+#### P-impl-2-v26 — P-DOCS ADR cross-section refresh sweep for Revisit-triggers + Verification (HIGH; closes CC-04 G-19+G-20 Audit B FAIL absorbed via Trivial-multi P7 direct-verification)
+
+When adding an ADR `### §DX.Y-A — <topic>` inline amendment block, grep the parent ADR's `## Revisit triggers` and `## Verification` sections at P-DOCS:
+
+1. For each `## Revisit triggers` entry citing the chunk being closed, append satisfaction annotation: `(✅ satisfied at CH-NN cycle <hex> YYYY-MM-DD via <closure-mechanism> per §DX.Y-A)`.
+2. For each `## Verification` command referencing the test/feature being closed, EITHER refresh the expected-output line OR append a NEW verification command for the new test/feature.
+3. Document the cross-section refresh in commit message body so auditor B prompt knows to verify both sections.
+
+**Empirical 1-cycle precedent (CC-04 G-19+G-20)**: ADR-0025 Revisit trigger #8 was NOT marked satisfied at CC-04 cycle `93f17444` 2026-05-30 (G-19); ADR-0025 §Verification was NOT updated with 5th command for the GREEN test `test_auto_daemon_tcp_prompt_flow_converges` (G-20). Both surfaced as Audit B FAIL claims; orchestrator-applied Trivial-multi at gate-3. Implementer-side P-DOCS cross-section sweep eliminates 2 of 3 ADR-0025 paperwork gap classes.
+
+#### P-impl-3-v26 — P-DOCS prose-vs-bullet count cross-check (LOW; closes CC-02 G-11 narrative-drift observation)
+
+When an ADR sub-decision body cites a count ("Two additional helpers", "3 NEW tests", etc.) IMMEDIATELY followed by a bullet list, at P-DOCS self-check grep the bullet list and verify the prose count matches the bullet count. Flag mismatches at P-SEAL self-check. Bullet list is authoritative on count mismatch; refresh the prose count to match.
+
+**Empirical 1-cycle precedent (CC-02 G-11)**: ADR-0024 §D24.1 prose said "Two additional helpers landed at P5" but bullet list showed 4 helpers. Audit B observation marked as informational; not patched. Future-proofing polish proposal.
+
+#### P-impl-4-v26 — Pre-Bash invocation granular-discipline self-check (LOW; closes CC-03 G-17 process observation)
+
+BEFORE each Bash tool call, mentally evaluate: does the candidate invocation contain `&&` / `;` / 3+ pipe stages? If yes:
+- Single absolute-path-form rewrite: use `git -C <abs>` / `cargo --manifest-path <abs>` / `bash <abs-script-path>` instead of `cd <abs> && <cmd>`.
+- Multi-step script: write the script to `scripts/audit-tmp-<topic>.sh` and invoke via single `bash <abs-script-path>` call.
+- 3+ pipe stages: write the pipeline to `scripts/audit-tmp-<topic>.sh`.
+
+Single 2-stage `cmd | tail -N` and `cmd 2>&1 | head -N` forms are permitted (per outer CLAUDE.md "Granular Bash discipline" allowed shapes).
+
+**Empirical 1-cycle precedent (CC-03 G-17)**: 2 minor violations at P-IMPL-F4 (compound `;`-chain on 4-CI-guards + `cd && cmd` compound). Already codified in outer CLAUDE.md "Granular Bash discipline" section; bumping to chunk-implementer prompt explicitly closes the self-check gap.
+
+#### P-impl-5-v26 — P-SEAL bundled-commit phase-ordering documentation (LOW; closes CC-04 G-21 D-PROCESS-1 observability)
+
+When bundling 3+ phases (P-DIAG + P-FIX + P-TEST + P-DOCS + P-SEAL etc.) into a single commit per implementer scope discipline, document the per-phase ordering in the commit message body:
+
+- One line per phase: `# Phase P-X: <one-line description of what landed>`.
+- Optional paragraph: `# Phase ordering: P-X ran before P-Y because <load-bearing-dependency>; P-Z bundled at end as paperwork`.
+
+Preserves in-flight ordering observability for Auditor C cross-cluster invariant verification + future-reader narrative.
+
+**Empirical 1-cycle precedent (CC-04 G-21)**: i-phi commit `a0b7f91` bundled P-DIAG + P-FIX + P-TEST + P-DOCS + P-SEAL into a single 9-file commit (322 insertions). Final state clean but in-flight phase ordering not directly observable from git history. Future-proofing polish proposal.
 
 ## Output handoff format
 

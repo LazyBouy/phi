@@ -18,11 +18,11 @@ Pre-CH-05, the locked-fork-details appendix went missing 3 cycles in a row (CH-0
 
 ## Procedure (4-step mechanical validation)
 
-1. **Detect locked forks**: grep plan body for ≥ 1 `LOCKED at gate-1` row (case-insensitive).
+1. **Detect locked forks** (v2 — regex extended per CC-01 retro G-6 to detect both post-gate-1 LOCKED state AND v32 iter-1-populated pre-lock state): grep plan body for ≥ 1 lock-or-pre-lock row (case-insensitive). The alternation captures the canonical post-gate-1 wording AND the v32 iter-1 planner-rec pre-lock wording so the skill works at both planner end-of-draft (iter-1) AND chunk-archive-plan (post-lock).
    ```bash
-   LOCK_COUNT=$(grep -ciE 'LOCKED at gate-1' <plan>)
+   LOCK_COUNT=$(grep -ciE 'LOCKED at gate-1|LOCKED-CANDIDATE planner-rec|pre-lock draft; finalizes at gate-1 lock' <plan>)
    ```
-   If `LOCK_COUNT == 0`, return PASS (no locked forks → appendix not required). Skill exits cleanly.
+   If `LOCK_COUNT == 0`, return PASS (no locked forks → appendix not required). Skill exits cleanly. **Backward-compatible**: continues to match v22-era plans that used only `LOCKED at gate-1` wording.
 
 2. **Appendix heading exists**: grep plan body for `^### Locked fork details` OR `^## Locked fork details` OR `^## §1 — Locked fork details` (any of these heading forms is valid).
    ```bash
@@ -63,6 +63,12 @@ Exit code: 0 on PASS, 1 on FAIL.
 
 - chunk-planner v22 P13 (locked-fork-details appendix self-check loop) — origin.
 - chunk-planner v23 P-plan-3 (ALWAYS-FIRE upgrade) — escalation when v22 P13 alone was insufficient.
-- chunk-archive-plan v3 archive-tier hard-assertion (CH-04-i-phi retro P14) — paired defense.
+- chunk-planner v32 P-plan-1-v32 (iter-1 §1 populated with planner-rec bodies) — origin of the `LOCKED-CANDIDATE planner-rec` pre-lock wording that v2 regex now detects.
+- chunk-archive-plan v3 archive-tier hard-assertion (CH-04-i-phi retro P14) — paired defense; v4 invokes this skill instead of inline grep.
 - discipline-archive.md `#ch-05-i-phi-pre-archival-quartet-evidence` for the 3-of-3 regression narrative that motivated this skill.
 - User memory `feedback_locked_fork_details_appendix.md` — *"Irrespective of whether the locks diverge or not, the plan must have a locked fork details section before it is sent for approval."*
+
+## Version history
+
+- **v1** (initial) — 4-step mechanical validation; grep regex literal `LOCKED at gate-1` only.
+- **v2** (2026-05-31, joint-retro CC-01..CC-04 batch P7 LOW) — Step 1 regex extended to alternation `LOCKED at gate-1|LOCKED-CANDIDATE planner-rec|pre-lock draft; finalizes at gate-1 lock` to detect both post-gate-1 LOCKED state AND v32 iter-1-populated pre-lock state. Backward-compatible. Closes CC-01 cycle-audit §6 D-6 tooling observation (skill manually validated PASS structurally at plan-archive time because regex didn't recognize iter-1-populated pre-lock wording).
