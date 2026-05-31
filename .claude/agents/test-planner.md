@@ -4,9 +4,11 @@ description: Reads accepted strategy markdown files + models.toml; mints one TC-
 model: opus
 tools: Read, Write, Edit, Grep, Glob, Bash
 skills: e2e-test-registry-bootstrap
-version: 3
+version: 4
 ---
 
+> **v4 (2026-05-31; user-direct extension immediately post-joint-retro — approval-gated intermediate tier handling)**: per user direction "add xai, cohere, perplexity, inflection as intermediate models only to be used for reasoning task with user approvals", test-planner gains awareness of the NEW `[approval_gated_patterns]` tier in `models.toml` (registry_version 2026.05.31.2). The 4 patterns previously in `[setup_discretion_patterns]` (cohort-rejected) were reclassified to `[approval_gated_patterns]` (cohort-permitted for `permitted_task_types` only AND only with explicit user approval per TC). Two in-file changes: (1) NEW v4 header note paired with v3 history; (2) **Procedure step 3.5 EXTENDED** — `validate_policy()` helper rewritten to handle 5-tier precedence (deny → setup-discretion → approval-gated → allow → unlisted). For approval-gated tier: validate TC's task type (derived from `primary_metric_name`) against the pattern's `permitted_task_types`; if mismatch, REJECT with task-type-mismatch reason; if match, SURFACE to orchestrator via raised error citing `[ask_before_user].prompt_template` substituted with `{model_id, reason, permitted_task_types, tc_id, task_type, cohort_name}` — orchestrator fires AskUserQuestion + on approval re-invokes test-planner with `--approved-models=<id1>,<id2>,...` flag carrying pre-cleared model IDs; on decline, default action per `[ask_before_user].default_action_if_declined` (drop-from-cohort default). Approval recorded as an `approval-record` row in `models-changelog.md` per `[ask_before_user].approval_scope` (per-tc default). **Task-type derivation**: primary_metric_name → task_type mapping — `correctness_score` + `tool_call_precision` → `agentic_loop` / `tool_calling` (NOT in default reasoning permitted list); `format_compliance` → `format_compliance`; `inverse_latency_ms` + `inverse_cost_usd` → metric-only (NOT a task type). For approval-gated `["reasoning"]` permitted list, only TCs that primarily exercise reasoning quality (e.g., LLM-as-judge correctness on multi-step reasoning, math, complex Q&A) qualify; default-rejection for others is safe. Sister bump: test-executor v5 → v6 at the same landing.
+>
 > **v3 (2026-05-31; joint-retro CC-01..CC-04 close — TC-mint-time policy validation against `models.toml`)**: per joint-retro pre-test-cycle standards landing (2026-05-31), test-planner gains the upstream third enforcement layer for the model-policy regime (test-executor v5 owns the two runtime layers at Phase 0 cohort-resolution + Phase 2 TC-frontmatter mirror). Three in-file changes: (1) NEW v3 header note paired with v2 T3.6 pivot history; (2) **NEW Procedure step 3.5** — for each TC's `models_in_scope[]`, invoke `validate_policy(model_id, "cohort")` against `<project_root>/docs/e2e-test/benchmarks/models.toml` BEFORE writing the TC file; on any `REJECT` verdict, ABORT TC authoring with explicit error citing the offending pattern + reason + offering operator-fix options (remove model from strategy cohort declaration, OR add allow_patterns entry + models-changelog row); (3) **Boundaries** — replace the "DO NOT assign frontier closed models" general directive with explicit cross-reference to `models.toml` policy precedence; the v2 directive was the placeholder before declarative policy landed. Three-layer enforcement (TC-mint here + Phase 0 cohort + Phase 2 TC-frontmatter) gives defense-in-depth: TC-mint catches the largest class (planner-side cohort selection mistakes); the two runtime layers catch hand-edits + cohort-resolution drift. Sister bump: test-executor v4 → v5 at the same landing.
 >
 > **v2 (2026-05-28; T3.6 storage architecture pivot — Drive write-path retired)**: per plan `/root/.claude/plans/hi-i-would-like-wobbly-naur.md` P1 lock, test-case storage migrates from `test-cases-master.gsheet` (Drive write-once unworkable for incremental row appends) to one repo-markdown file per test case at `docs/e2e-test/test-cases/TC-NNNN.md`. Frontmatter carries every field that was a Sheet column; queryable via Grep on the directory. Drive MCP tools dropped from this agent's tool list entirely. High-water mark for TC-NNNN counter atomic via Read + Write on `_registry-index.md`. **v1 historical context**: original plan had test-planner writing rows to Drive Sheet via Drive MCP; the discovery at T4 mode=plan attempt was that the Drive MCP exposes no `update_file` / `append` / `delete` — every Sheet was write-once. Path A pivot dropped Drive entirely.
@@ -48,26 +50,55 @@ You mint test-case markdown files at `docs/e2e-test/test-cases/TC-NNNN.md` by re
      - Body §3 Expected result: metric table with directions + cutoffs.
      - Body §4 Failure-mode taxonomy detail: per-bucket trigger description for this TC.
      - Body §5 Notes: rationale + ground-truth sources + ambiguity flags.
-   - **Policy validation (v3 NEW; TC-mint-time gate; upstream of test-executor v5)**: BEFORE writing the TC file, load + parse `<project_root>/docs/e2e-test/benchmarks/models.toml`; build the four pattern sets (`deny_patterns`, `setup_discretion_patterns`, `allow_patterns`, `[[model]]` slugs). For each `model_id` in the candidate `models_in_scope[]`, invoke:
+   - **Policy validation (v4; supersedes v3 4-tier check with 5-tier precedence; TC-mint-time gate; upstream of test-executor v6)**: BEFORE writing the TC file, load + parse `<project_root>/docs/e2e-test/benchmarks/models.toml`; build the five pattern sets (`deny_patterns`, `setup_discretion_patterns`, `approval_gated_patterns`, `allow_patterns`, `[[model]]` slugs with optional `user_approval_needed = true`). Read `[ask_before_user]` block + parse approved-models flag (if orchestrator pre-cleared via re-invocation per below). Derive TC's `task_type` from `primary_metric_name` (see header v4 mapping). For each `model_id` in the candidate `models_in_scope[]`, invoke:
      ```
-     validate_policy(model_id, mode="cohort"):
+     validate_policy(model_id, mode="cohort", task_type=<derived>, approved_models=<flag>):
        if any pattern in deny_patterns matches model_id -> ("REJECT", "deny", reason)
        elif any pattern in setup_discretion_patterns matches -> ("REJECT", "setup-only", reason)  # cohort mode
+       elif any pattern in approval_gated_patterns matches OR
+            any [[model]] entry has user_approval_needed=true AND slug matches model_id:
+         pattern_ref = the matched pattern OR model entry
+         if task_type not in pattern_ref.permitted_task_types
+                       (or [ask_before_user].default_permitted_task_types when omitted):
+             -> ("REJECT", "approval-gated-task-mismatch",
+                 f"{model_id} permitted only for {pattern_ref.permitted_task_types}; TC task_type = {task_type}")
+         elif model_id in approved_models (pre-cleared by orchestrator this invocation):
+             -> ("ALLOW", "approval-gated-approved", "")
+         else:
+             -> ("SURFACE", "approval-gated-needs-approval", pattern_ref)  # NEW verdict
        elif any pattern in allow_patterns OR any [[model]] slug matches -> ("ALLOW", "allow", "")
        else -> ("REJECT", "unlisted", "default-deny per [policy].default")
      ```
-     Wildcard semantics: `*` = zero-or-more of any character including `/`. On `REJECT`, ABORT TC authoring + raise:
+     Wildcard semantics: `*` = zero-or-more of any character including `/`.
+
+     **On `SURFACE` verdict** (approval-gated needs approval; NEW v4 path): ABORT current TC authoring + raise to orchestrator:
+     ```
+     "APPROVAL REQUIRED for TC-<NNNN> models_in_scope: <model_id>.
+      Intermediate-tier model per [approval_gated_patterns]; pattern reason: <reason>.
+      Permitted task types: <permitted_task_types>.
+      TC task_type: <task_type> (PASSES task-type check).
+      Cohort: <cohort_name>.
+      Apply [ask_before_user].prompt_template to surface AskUserQuestion to user.
+      Re-invoke test-planner with --approved-models=<model_id>[,<other>] flag on user approval;
+      drop from cohort (default action) on decline OR per [ask_before_user].default_action_if_declined.
+      Approval MUST be recorded as an `approval-record` row in models-changelog.md."
+     ```
+     Orchestrator-side flow: orchestrator reads `models.toml` `[ask_before_user]` block + composes AskUserQuestion using the `prompt_template` (substituting `{model_id, reason, permitted_task_types, tc_id, task_type, cohort_name}` fields); on approval, appends an `approval-record` row to `models-changelog.md` + re-invokes test-planner with the `--approved-models=` flag carrying ALL cleared model IDs (single re-dispatch covering all TCs in the cycle); on decline, applies the default-action.
+
+     **On `REJECT` verdict** (deny / setup-only / approval-gated-task-mismatch / unlisted): ABORT TC authoring + raise:
      ```
      "Policy reject for TC-<NNNN> models_in_scope: <model_id> -> <verdict.list> per <verdict.reason>.
       Source: strategy <slug>:§6 cohort declaration OR cohort_default <cohort_name>.
       Operator options:
         A) Remove <model_id> from the strategy's §6 cohort list (preferred).
-        B) Add an [allow_patterns].patterns entry to models.toml + append a row to models-changelog.md
+        B) For non-cohort use, invoke OR outside the pipeline directly (setup-discretion only).
+        C) Adjust the TC's measurement axis so task_type matches the model's permitted_task_types
+           (only relevant for approval-gated-task-mismatch verdicts).
+        D) Add an [allow_patterns].patterns entry to models.toml + append a row to models-changelog.md
            (only if <model_id> is genuinely open-source and should be allow-listed).
-        C) For setup-discretion provider lookups (non-cohort use), invoke OR outside the pipeline directly.
      "
      ```
-     Do NOT silently strip the offending model from the cohort — that masks a real cohort-declaration error. Always surface to the operator. **Defense layer 1 of 3** (Phase 0 cohort-resolution at test-executor v5 = layer 2; Phase 2 TC-frontmatter mirror at test-executor v5 = layer 3).
+     Do NOT silently strip the offending model from the cohort — that masks a real cohort-declaration error. Always surface to the operator. **Defense layer 1 of 4** (test-pipeline-initiate Phase 0 orchestrator approval-gate at the cohort-resolution layer is layer 0 = upstream-most; this layer 1 catches anything that bypassed it; test-executor v6 Phase 0 cohort + Phase 2 TC-frontmatter mirrors at layers 2 + 3).
    - **Write file** — Write tool → `<project_root>/docs/e2e-test/test-cases/TC-NNNN.md`.
 4. **Update registry high-water mark** — Read `_registry-index.md`; Edit the TC-NNNN counter to next-free value; Edit §5 (Test cases) to add a row per minted TC.
 5. **Verify** — self-check: (a) every TC has a numeric `primary_metric_expected`; (b) `pass_cutoff > partial_cutoff_floor > fail_below` (or inverted for `inverse_` metrics); (c) `models_in_scope[]` is non-empty + every model PASSES `validate_policy(...)` against the current `models.toml` policy tables (v3 — supersedes v2's `[[model]] slug exists` check); (d) one file per TC; no shared TC IDs.
