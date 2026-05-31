@@ -1,4 +1,5 @@
 {
+  "outputStyle": "Crisp",
   "permissions": {
     "defaultMode": "dontAsk",
     "additionalDirectories": [
