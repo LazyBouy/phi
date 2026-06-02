@@ -71,6 +71,8 @@
       "Bash(bash /root/projects/phi/i-phi/docs/e2e-test/cycles/*/run-execution.sh*)",
       "Bash(bash /root/projects/phi/i-phi/docs/e2e-test/cycles/*/run-execution-cli.sh*)",
       "Bash(bash /root/projects/phi/i-phi/docs/e2e-test/cycles/*/run-execution-http.sh*)",
+      "Bash(bash /root/projects/phi/i-phi/docs/e2e-test/cycles/*/scripts/run-harness-htc.sh*)",
+      "Bash(bash /root/projects/phi/.claude/skills/test-preflight-validation/check.sh*)",
       "Bash(bash /root/projects/phi/i-phi/docs/e2e-test/cycles/*/judge-tc*.sh*)",
       "Bash(bash /root/projects/phi/i-phi/docs/e2e-test/cycles/*/inner-run.sh*)",
       "Bash(bash /root/projects/phi/i-phi/docs/e2e-test/cycles/*/inner-run-cli.sh*)",

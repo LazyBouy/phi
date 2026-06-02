@@ -1186,6 +1186,24 @@ Plan-narrative band declarations use only the production-tier number; auditor ve
 
 **Empirical 1-cycle precedent (CC-03 G-13)**: CC-03 plan §3 line 174 + 608 originally cited DaemonUnreachable cascade band 30-32 aggregate; actual 42 (29 production + 13 test). Trivial-1L applied at gate-3 pre-Phase-4: refined narrative to "production-cascade band 30-32 (test-tier NOT counted; F4.a test assertions contribute ~13 sites)". P-plan-3-v34 surfaces the distinction at planning-tier so test-tier contributions don't inflate cascade-grep counts without violating production-tier invariant.
 
+## v35 additions (joint-retro `b0c9acc6-to-aeed9751` 4-chunk batch, 2026-06-01)
+
+### P-plan-1-v35 — Path-citation discipline at plan-narrative time (added 2026-06-01 per joint-retro CC-05..CC-07 batch proposal P8 MEDIUM)
+
+Plans frequently cite file paths in §3.B (deliverables file list), §4.B (cross-cluster touch summary), and §6 (concept docs touched). Cited paths may be ship-time-stale due to chunk-implementer renaming files between iter-1 plan draft + ship (e.g., CC-06b plan cited `daemon/config/agent.rs` 3 times but actual ship landed at `daemon/config/policy.rs`; CC-06b D-2 deviation).
+
+**Rule (P-plan-1-v35)**: at plan-draft time + at iter-N draft refresh, for EACH cited file path in §3.B + §4.B + §6, run `test -f <abs-path>` (file existence check). If path does NOT exist, EITHER (a) confirm the path is NEW (planner is creating it; mark as `(NEW file at this cycle)` in plan body) OR (b) grep for the cited symbol in the repo to identify the actual current path, then correct the citation. Skill `baseline-snapshot` extension (planned for skill v3) will automate this; current discipline is manual planner self-check at end-of-draft.
+
+**Skill-LOC-estimate stale-cardinality annotation**: for NEW skill / template / NEW-artifact LOC estimates in §6 + §11 + §12, mark estimates as `draft-time estimate; ship-time may diverge per implementer P-IMPL` (canonical pattern). This prevents audit-prompt-authoring at gate-3 from pinning to stale numbers (CC-07 Audit B claim 5 evidence: audit-prompt cited NEW skill `~390 LOC` vs implementer's actual 522 LOC after 5 P3-P5 refinements; PASS-with-caveat outcome).
+
+**Empirical 2-cycle precedent**: CC-06b D-2 (plan-path `daemon/config/agent.rs` vs actual `policy.rs`; implementer 2-tier separation refinement) + CC-07 cycle-audit §6 D-5 (F3 skill 390 → 522 LOC stale-cardinality at audit-prompt time).
+
+### P-plan-2-v35 — Path-citation extension to audit-prompt-authoring (sibling extension for gate-3 cross-check)
+
+Extends outer CLAUDE.md gate-3 audit-prompt-authoring cross-check (6-axis script) with NEW axis-7: **path-citation freshness**. Before dispatching auditors at gate-3, for each file path cited in the audit-prompt body, verify (a) path exists, (b) cited line number ranges align with current ship-time file state. Mismatches surface as Trivial-1L pre-dispatch text-edits OR are routed via deviation log if ship-time refactor happened post-plan-draft.
+
+**Cross-reference**: outer CLAUDE.md gate-3 "Audit review" subsection lists 6 axes (F-token / lock-body / test-name / method-signature / arg-shape / literal-count); axis-7 adds path-citation freshness as a sibling. CC-07 already operates under this discipline (D-5 explicitly logged in cycle-audit §6).
+
 ## Output handoff format (return this verbatim)
 
 ```
