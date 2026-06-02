@@ -12,6 +12,7 @@
 #   issue-comment ISSUE# --body-file PATH
 #   issue-pull    ISSUE#
 #   label-create  --name NAME --color HHHHHH [--desc TEXT]
+#   pr-create     --title TITLE --head BRANCH --base BRANCH --body-file PATH
 #   self-test                          # smoke: verify token + repo access
 #   help                               # print usage
 #
@@ -285,6 +286,38 @@ cmd_label_create() {
   api_call POST "/repos/${REPO}/labels" "$req"
 }
 
+# ---------- subcommand: pr-create ----------
+
+cmd_pr_create() {
+  local title="" head="" base="" body_file=""
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --title) title="$2"; shift 2 ;;
+      --head) head="$2"; shift 2 ;;
+      --base) base="$2"; shift 2 ;;
+      --body-file) body_file="$2"; shift 2 ;;
+      *) die "pr-create: unknown arg '$1'" ;;
+    esac
+  done
+  [[ -n "$title" ]] || die "pr-create: --title required"
+  [[ -n "$head" ]] || die "pr-create: --head required"
+  [[ -n "$base" ]] || die "pr-create: --base required"
+  [[ -n "$body_file" && -f "$body_file" ]] || die "pr-create: --body-file must point to an existing file"
+
+  local body_json
+  body_json=$(file_as_json_string "$body_file")
+
+  local req
+  req=$(jq -nc \
+    --arg title "$title" \
+    --arg head "$head" \
+    --arg base "$base" \
+    --argjson body "$body_json" \
+    '{title: $title, head: $head, base: $base, body: $body}')
+
+  api_call POST "/repos/${REPO}/pulls" "$req"
+}
+
 # ---------- subcommand: self-test ----------
 
 cmd_self_test() {
@@ -315,6 +348,7 @@ main() {
     issue-comment)  load_token; cmd_issue_comment "$@" ;;
     issue-pull)     load_token; cmd_issue_pull "$@" ;;
     label-create)   load_token; cmd_label_create "$@" ;;
+    pr-create)      load_token; cmd_pr_create "$@" ;;
     self-test)      load_token; cmd_self_test "$@" ;;
     project-add-item|project-update-field|discussion-create|discussion-update)
       die "$sub is a T6+ subcommand; not yet implemented"

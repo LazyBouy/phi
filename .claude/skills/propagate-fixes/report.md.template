@@ -1,0 +1,41 @@
+# Backport propagation report — <DATE>
+
+**Source:** `dev-v0-e2e` (phi-e2e) → **Target:** `dev-v0.5` (phi-v05)
+**Scanned:** <N> candidate commit(s) past the merge-base.
+
+## §0 Outcome summary
+
+| Metric | Value |
+|---|---|
+| Candidates scanned | <N> |
+| Judged portable | <P> |
+| PRs opened | <O> |
+| Skipped (not portable) | <S> |
+| Blocked (conflict / red CI) | <B> |
+
+## §1 Opened PRs
+
+| Drift-id | Source SHA | PR URL | CI |
+|---|---|---|---|
+| <D-...> | <sha8> | <html_url> | green |
+
+## §2 Skipped — judged not portable
+
+| Drift-id | Source SHA | Reason |
+|---|---|---|
+| <D-...> | <sha8> | <e2e-harness-specific / test-only / …> |
+
+## §3 Blocked — prepare failed (no PR)
+
+| Drift-id | Source SHA | Exit | Diagnostic |
+|---|---|---|---|
+| <D-...> | <sha8> | 20 CONFLICT | conflicted: <files> |
+| <D-...> | <sha8> | 21 GUARD-FAIL | <guard name + output tail> |
+| <D-...> | <sha8> | 22 clippy | <failing tail> |
+| <D-...> | <sha8> | 23 test | <failing test> |
+
+## §4 Next steps
+
+- Review + merge the opened PR(s) on GitHub.
+- After merge, run `bash /root/projects/phi/.claude/scripts/backport-bump.sh --drift-id <D-...>` to bump the parent gitlink.
+- Re-run `/propagate-fixes` after merge to confirm the ported drift now shows as `already-on-v0.5` (idempotency check).

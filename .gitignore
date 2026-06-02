@@ -16,3 +16,9 @@ iphi-worktrees/
 # with its own i-phi/phi-core/baby-phi submodule checkouts on independent branches.
 # Settings.json + docker-cargo.sh IPHI_WORKTREE_TAG support these out-of-the-box.
 /worktrees/
+
+# Backport-PR agent transient files (propagate-fixes skill): PR-body temp files +
+# the scan-notifier's last-seen drift-id cache. The throwaway build worktree lives
+# under .git/backport-work/ and is never tracked.
+.claude/skills/propagate-fixes/.pr-body-*.md
+.claude/skills/propagate-fixes/.last-scan
