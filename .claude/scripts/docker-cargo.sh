@@ -18,7 +18,14 @@
 #   ANTHROPIC_API_KEY, OPENROUTER_TOKEN
 #
 # Cargo cache cleanup (replaces `cargo clean`):
-#   docker volume rm iphi-cargo-target
+#   docker volume rm iphi-cargo-target                # primary worktree
+#   docker volume rm iphi-cargo-target-v05            # IPHI_WORKTREE_TAG=v05
+#
+# Parallel-worktree isolation (added 2026-06-02 for /root/projects/phi/worktrees/ layout):
+#   Set IPHI_WORKTREE_TAG=<tag> to scope cargo named-volumes per worktree, preventing
+#   race/corruption when two worktrees build concurrently. The script also auto-derives
+#   the tag from IPHI_ROOT when the path matches /root/projects/phi/worktrees/<dir>/i-phi
+#   (strips a leading "phi-" prefix on <dir>: phi-v05 → v05, phi-e2e → e2e).
 #
 # Reference: Phase 1.5 plan at
 #   /root/projects/phi/i-phi/docs/v0/proposal/plan/e2e-test/dockerize-i-phi-30de6ed2.md
@@ -41,12 +48,25 @@ fi
 # CH-07a cross-submodule invariant (phi-core working tree must be clean).
 PHI_CORE_ROOT="${PHI_CORE_ROOT:-/root/projects/phi/phi-core}"
 
+# Per-worktree volume tag (parallel-worktree isolation). Empty → primary worktree → default
+# volume names (back-compat unchanged). Non-empty → suffix `-${TAG}` on every cargo volume.
+if [[ -z "${IPHI_WORKTREE_TAG:-}" ]]; then
+  case "${IPHI_ROOT}" in
+    /root/projects/phi/worktrees/*/i-phi)
+      _tag_dir="${IPHI_ROOT#/root/projects/phi/worktrees/}"
+      _tag_dir="${_tag_dir%/i-phi}"
+      IPHI_WORKTREE_TAG="${_tag_dir#phi-}"
+      ;;
+  esac
+fi
+VOLUME_SUFFIX="${IPHI_WORKTREE_TAG:+-${IPHI_WORKTREE_TAG}}"
+
 exec docker run --rm \
   -v "${IPHI_ROOT}:/work" \
   -v "${PHI_CORE_ROOT}:${PHI_CORE_ROOT}:ro" \
-  -v "iphi-cargo-target:/work/target" \
-  -v "iphi-cargo-registry:/usr/local/cargo/registry" \
-  -v "iphi-cargo-git:/usr/local/cargo/git" \
+  -v "iphi-cargo-target${VOLUME_SUFFIX}:/work/target" \
+  -v "iphi-cargo-registry${VOLUME_SUFFIX}:/usr/local/cargo/registry" \
+  -v "iphi-cargo-git${VOLUME_SUFFIX}:/usr/local/cargo/git" \
   -w /work \
   -e RUSTFLAGS="${RUSTFLAGS:-}" \
   -e CARGO_TERM_COLOR="${CARGO_TERM_COLOR:-always}" \

@@ -1,0 +1,70 @@
+#!/usr/bin/env bash
+# Per-worktree env initializer — source this AT THE START of any Claude Code shell
+# session running under /root/projects/phi/worktrees/<name>/ to isolate the cargo
+# cache, daemon socket, and config dir from sibling worktrees.
+#
+# Usage (manual):
+#   source /root/projects/phi/.claude/scripts/worktree-env.sh.template
+#   # then run iphi / cargo / docker-cargo.sh as normal
+#
+# Usage (auto via VSCode terminal profile, recommended): point each worktree's
+# terminal-profile env hook at this script; cwd-based detection sets the tag.
+#
+# Auto-detects IPHI_WORKTREE_TAG from $PWD ancestor:
+#   /root/projects/phi/worktrees/phi-v05/* → TAG=v05  (strips "phi-" prefix)
+#   /root/projects/phi/worktrees/phi-e2e/* → TAG=e2e
+#   /root/projects/phi                     → TAG="" (primary worktree; default volumes)
+#
+# Exports (per worktree):
+#   IPHI_WORKTREE_TAG   used by docker-cargo.sh for per-worktree cargo named volumes
+#   IPHI_ROOT           absolute path to this worktree's i-phi submodule checkout
+#   PHI_CORE_ROOT       absolute path to this worktree's phi-core submodule checkout
+#   IPHI_HOME           per-worktree iphi config + sessions dir (~/.iphi-<tag>)
+#   XDG_RUNTIME_DIR     per-worktree runtime socket dir (/tmp/i-phi-<tag>)
+#
+# Daemon launch (after sourcing this):
+#   iphi daemon --ipc-listen $XDG_RUNTIME_DIR/i-phi.sock
+#   iphi daemon --api-listen 127.0.0.1:<distinct-port-per-worktree>
+
+# Resolve the absolute phi-tree root by walking up from $PWD until we find the
+# phi git dir signature OR hit the /root boundary.
+_iphi_worktree_root() {
+  local d="$PWD"
+  while [[ "$d" != "/" && "$d" != "/root" ]]; do
+    if [[ "$d" == "/root/projects/phi" || "$d" =~ ^/root/projects/phi/worktrees/[^/]+$ ]]; then
+      printf '%s' "$d"
+      return 0
+    fi
+    d="$(dirname "$d")"
+  done
+  return 1
+}
+
+_phi_root="$(_iphi_worktree_root)" || {
+  echo "worktree-env.sh: cwd is not under /root/projects/phi or its worktrees/; skipping" >&2
+  return 1 2>/dev/null || exit 1
+}
+
+case "$_phi_root" in
+  /root/projects/phi/worktrees/*)
+    _tag="${_phi_root#/root/projects/phi/worktrees/}"
+    _tag="${_tag#phi-}"
+    export IPHI_WORKTREE_TAG="$_tag"
+    export IPHI_ROOT="$_phi_root/i-phi"
+    export PHI_CORE_ROOT="$_phi_root/phi-core"
+    export IPHI_HOME="$HOME/.iphi-$_tag"
+    export XDG_RUNTIME_DIR="/tmp/i-phi-$_tag"
+    mkdir -p "$IPHI_HOME" "$XDG_RUNTIME_DIR"
+    echo "[worktree-env] tag=$_tag root=$_phi_root home=$IPHI_HOME runtime=$XDG_RUNTIME_DIR"
+    ;;
+  /root/projects/phi)
+    unset IPHI_WORKTREE_TAG
+    export IPHI_ROOT="/root/projects/phi/i-phi"
+    export PHI_CORE_ROOT="/root/projects/phi/phi-core"
+    # IPHI_HOME + XDG_RUNTIME_DIR intentionally not exported — primary uses defaults.
+    echo "[worktree-env] primary worktree (default cargo volumes; default iphi paths)"
+    ;;
+esac
+
+unset -f _iphi_worktree_root
+unset _phi_root _tag _d

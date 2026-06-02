@@ -10,3 +10,9 @@
 
 # Tag-mode worktrees for IPHI_SOURCE=tag (created on demand; transient)
 iphi-worktrees/
+
+# Parallel-development worktrees (git worktree add target; per-branch isolated trees).
+# Each worktree at /root/projects/phi/worktrees/<name>/ is a separate phi checkout
+# with its own i-phi/phi-core/baby-phi submodule checkouts on independent branches.
+# Settings.json + docker-cargo.sh IPHI_WORKTREE_TAG support these out-of-the-box.
+/worktrees/
