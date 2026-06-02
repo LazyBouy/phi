@@ -397,6 +397,96 @@ if [[ "${TEST_CLASS}" == "harness" ]]; then
     record_check "C10" "config_correctness_checklist ≥ 4 entries" "FAIL" "found ${checklist_count} entries; per CC-07 F5 template ≥ 4 required"
   fi
 
+  # ─── C11 — catalog-membership: tools_invoked ⊆ effective catalog ──────
+  # CC-09b F5.a (D-TEST-0033 closure). Every `tools_invoked` target MUST be
+  # a member of the agent's EFFECTIVE tool catalog — otherwise the cycle
+  # would burn tokens prompting a model to call a tool that the daemon never
+  # exposes (HTC-0002/0003 origin).
+  #
+  # Catalog source — two paths:
+  #   (a) LIVE: when ${IPHI_LIST_TOOLS_URL} is exported (a booted daemon's
+  #       `GET /list-tools` / `GET /v1/list-tools`), curl it + parse the
+  #       JSON `["bash","read_file",...]` array (the real runtime catalog
+  #       per AgentFactory::effective_tool_names()).
+  #   (b) STATIC FALLBACK (documented, default at preflight time — preflight
+  #       runs BEFORE daemon boot): the catalog is the union of the 6
+  #       phi-core default tools (bash / read_file / write_file / edit_file /
+  #       list_files / search) + prun + prun_with_memo (always wired) +
+  #       any `[[agent.custom_tools]]` `name = "..."` + any
+  #       `[[agent.sub_agents]]` `name = "..."` declared in the setup config.
+  #       This mirrors the assembly order documented at
+  #       `src/agent_factory` + ADR-0027 §D27.4 (and is the F5.b-rejected
+  #       brittleness traded only for the pre-boot window — the LIVE path is
+  #       preferred whenever a daemon is reachable).
+  c11_missing=()
+  catalog=""
+  catalog_src=""
+  if [[ -n "${IPHI_LIST_TOOLS_URL:-}" ]] && command -v curl >/dev/null 2>&1; then
+    live_json="$(curl -fsS "${IPHI_LIST_TOOLS_URL}" 2>/dev/null || true)"
+    if [[ -n "${live_json}" ]]; then
+      # Extract quoted strings from the JSON array → newline-separated catalog.
+      catalog="$(echo "${live_json}" | grep -oE '"[^"]+"' | tr -d '"')"
+      catalog_src="live GET /list-tools (${IPHI_LIST_TOOLS_URL})"
+    fi
+  fi
+  if [[ -z "${catalog}" ]]; then
+    # Static-derivation fallback (documented).
+    catalog="$(printf '%s\n' bash read_file write_file edit_file list_files search prun prun_with_memo)"
+    if [[ -n "${SETUP_SCRIPT_PATH}" ]] && [[ -f "${SETUP_SCRIPT_PATH}" ]]; then
+      # custom_tools + sub_agents `name = "..."` from the setup config.
+      while IFS= read -r nm; do
+        [[ -n "${nm}" ]] && catalog="${catalog}"$'\n'"${nm}"
+      done < <(grep -E '^[[:space:]]*name[[:space:]]*=' "${SETUP_SCRIPT_PATH}" \
+                 | sed -E 's/^[[:space:]]*name[[:space:]]*=[[:space:]]*"?([^"]+)"?.*/\1/')
+    fi
+    catalog_src="static-derivation fallback (phi-core defaults + prun/prun_with_memo + setup custom_tools/sub_agents)"
+  fi
+  while IFS= read -r tool; do
+    [[ -z "${tool}" ]] && continue
+    if echo "${catalog}" | grep -qixF "${tool}"; then
+      : # member
+    else
+      c11_missing+=("${tool}")
+    fi
+  done < <(fm_list_all 'tools_invoked')
+  if [[ "$(fm_list_count 'tools_invoked')" == "0" ]]; then
+    record_check "C11" "catalog-membership (tools_invoked ⊆ effective catalog)" "PASS" "no tools_invoked declared (acceptable)"
+  elif [[ "${#c11_missing[@]}" -eq 0 ]]; then
+    record_check "C11" "catalog-membership (tools_invoked ⊆ effective catalog)" "PASS" "all targets in catalog [${catalog_src}]"
+  else
+    record_check "C11" "catalog-membership (tools_invoked ⊆ effective catalog)" "FAIL" "targets NOT in effective catalog: ${c11_missing[*]} [${catalog_src}]"
+  fi
+
+  # ─── C12 — non-empty system-prompt / identity (D-TEST-0026 fix c/d) ────
+  # CC-09b F5.a. FAIL when the agent-under-test ships with NO identity — an
+  # empty system prompt produces the `"system_prompt": ""` TurnRequest the
+  # T12 capture exposed (D-TEST-0026). v0 identity reaches the agent via
+  # `[agent].system_prompt_path` (a markdown file) OR, for a sub-agent,
+  # `[[agent.sub_agents]].system_prompt = "..."`. This is the preflight
+  # CHECK only; the daemon agent_id→identity full WIRING remainder is CC-10.
+  c12_detail=""
+  c12_ok=0
+  if [[ -n "${SETUP_SCRIPT_PATH}" ]] && [[ -f "${SETUP_SCRIPT_PATH}" ]]; then
+    # (a) `[agent].system_prompt_path = "..."` with a non-empty value.
+    sp_path="$(grep -E '^[[:space:]]*system_prompt_path[[:space:]]*=' "${SETUP_SCRIPT_PATH}" \
+                 | head -1 | sed -E 's/.*=[[:space:]]*"?([^"]*)"?.*/\1/')"
+    # (b) any `system_prompt = "..."` with a non-empty value (top-level or sub-agent).
+    sp_inline="$(grep -E '^[[:space:]]*system_prompt[[:space:]]*=' "${SETUP_SCRIPT_PATH}" \
+                   | head -1 | sed -E 's/.*=[[:space:]]*"?([^"]*)"?.*/\1/')"
+    if [[ -n "${sp_path}" ]]; then
+      c12_ok=1
+      c12_detail="system_prompt_path = ${sp_path}"
+    elif [[ -n "${sp_inline}" ]]; then
+      c12_ok=1
+      c12_detail="system_prompt = \"${sp_inline:0:40}...\""
+    fi
+  fi
+  if [[ "${c12_ok}" -eq 1 ]]; then
+    record_check "C12" "non-empty system-prompt / identity" "PASS" "${c12_detail}"
+  else
+    record_check "C12" "non-empty system-prompt / identity" "FAIL" "agent-under-test has NO identity: setup config declares neither [agent].system_prompt_path nor a non-empty system_prompt (D-TEST-0026; empty identity → empty TurnRequest system_prompt)"
+  fi
+
 elif [[ "${TEST_CLASS}" == "model" ]]; then
   # ─── C5' — cohort references resolve ──────────────────────────────────
   models_first="$(fm_list_first 'models_in_scope')"
