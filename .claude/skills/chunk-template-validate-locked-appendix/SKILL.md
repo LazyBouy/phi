@@ -20,7 +20,7 @@ Pre-CH-05, the locked-fork-details appendix went missing 3 cycles in a row (CH-0
 
 1. **Detect locked forks** (v2 — regex extended per CC-01 retro G-6 to detect both post-gate-1 LOCKED state AND v32 iter-1-populated pre-lock state): grep plan body for ≥ 1 lock-or-pre-lock row (case-insensitive). The alternation captures the canonical post-gate-1 wording AND the v32 iter-1 planner-rec pre-lock wording so the skill works at both planner end-of-draft (iter-1) AND chunk-archive-plan (post-lock).
    ```bash
-   LOCK_COUNT=$(grep -ciE 'LOCKED at gate-1|LOCKED-CANDIDATE planner-rec|pre-lock draft; finalizes at gate-1 lock' <plan>)
+   LOCK_COUNT=$(grep -ciE 'LOCKED at gate-1|LOCKED-CANDIDATE planner-rec|pre-lock draft; finalizes at gate-1 lock|\(LOCKED\)' <plan>)
    ```
    If `LOCK_COUNT == 0`, return PASS (no locked forks → appendix not required). Skill exits cleanly. **Backward-compatible**: continues to match v22-era plans that used only `LOCKED at gate-1` wording.
 
@@ -72,3 +72,4 @@ Exit code: 0 on PASS, 1 on FAIL.
 
 - **v1** (initial) — 4-step mechanical validation; grep regex literal `LOCKED at gate-1` only.
 - **v2** (2026-05-31, joint-retro CC-01..CC-04 batch P7 LOW) — Step 1 regex extended to alternation `LOCKED at gate-1|LOCKED-CANDIDATE planner-rec|pre-lock draft; finalizes at gate-1 lock` to detect both post-gate-1 LOCKED state AND v32 iter-1-populated pre-lock state. Backward-compatible. Closes CC-01 cycle-audit §6 D-6 tooling observation (skill manually validated PASS structurally at plan-archive time because regex didn't recognize iter-1-populated pre-lock wording).
+- **v3** (2026-06-02, CC-09a close) — Step 1 alternation extended with the literal `\(LOCKED\)` token to detect the USER-DIVERGENT fork-table bold-cell wording (`**F1.a USER-DIVERGENT (LOCKED)**`, `**F-SPLIT.b (LOCKED)**`, `**F2.a USER-DIVERGENT (LOCKED)**`). Recurrence of the CC-01 D-6 class: CC-09a (2 USER-DIVERGENT + 1 planner-rec locks) was detected as `LOCK_COUNT==0` by the v2 regex → skill returned PASS via the "no locks → appendix not required" false-negative path rather than genuinely validating the (well-formed) §1 appendix. The token is the literal `(LOCKED)` — matching the bold locked-OPTION cell **once per locked fork** (CC-09a → 3) so Step 3's `subsections ≥ LOCK_COUNT` floor stays correct (do NOT use a bare `\(LOCKED` or `gate-1 locks` — those over-count via section-headers/rationale lines and would false-FAIL Step 3). Backward-compatible (only adds one alternation). Defer broader retro consolidation to the joint CC-09a+CC-09b retrospective.
