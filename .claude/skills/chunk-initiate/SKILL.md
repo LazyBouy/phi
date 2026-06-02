@@ -47,6 +47,8 @@ Resolve these values from `project`:
 
 Reuse absolute paths in commands (e.g. `cargo --manifest-path /root/projects/phi/<project>/Cargo.toml ...`) per granular Bash discipline.
 
+**Worktree override — `IPHI_ROOT` prefix (added per i-phi v0.5 joint-retro `4e4d7547..7cdc82fa` proposal #1)**: when `project=i-phi` AND the cycle runs in a **git worktree** (e.g. `/root/projects/phi/worktrees/phi-v05/i-phi` on `dev-v0.5`), EVERY `docker-cargo.sh` invocation — Phase 2 phase-boundary checks, Phase 4 gate-4 MUST-RUN, and every sub-agent (implementer/auditor) dispatch prompt — MUST be prefixed with `IPHI_ROOT=<worktree-i-phi-root>` so the wrapper builds the worktree tree (not the primary checkout). Canonical form: `IPHI_ROOT=/root/projects/phi/worktrees/phi-v05/i-phi bash /root/projects/phi/.claude/scripts/docker-cargo.sh <args> -j 4` (volumes auto-tag to `iphi-cargo-target-v05`; gate-5 clean = `docker volume rm iphi-cargo-target-v05`). The settings.json allow-list carries both the bare `IPHI_ROOT=...* ` form and the stacked `RUSTFLAGS="-Dwarnings" IPHI_ROOT=... bash .../docker-cargo.sh *` form so the prefix triggers no permission prompts. Restate the prefix in each sub-agent dispatch prompt (sub-agents are stateless; the orchestrator owns the override).
+
 ---
 
 ## Sibling agent project-awareness

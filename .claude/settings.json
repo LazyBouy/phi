@@ -161,6 +161,7 @@
       "Bash(/root/projects/phi/worktrees/*/i-phi/target/debug/iphi *)",
       "Bash(IPHI_WORKTREE_TAG=* *)",
       "Bash(IPHI_ROOT=/root/projects/phi/worktrees/* *)",
+      "Bash(RUSTFLAGS=\"-Dwarnings\" IPHI_ROOT=/root/projects/phi/worktrees/* bash /root/projects/phi/.claude/scripts/docker-cargo.sh *)",
       "Bash(source /root/projects/phi/.claude/scripts/worktree-env.sh*)",
       "Bash(. /root/projects/phi/.claude/scripts/worktree-env.sh*)",
       "Bash(docker volume rm iphi-cargo-target-*)",
