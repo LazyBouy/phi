@@ -351,6 +351,33 @@ Each Bash tool invocation runs **one logical operation**. Multiple operations = 
 
 This discipline applies to the orchestrator (Claude with full conversation context). chunk-implementer + chunk-auditor agent prompts carry compatible discipline (CH-12 retro Row 6 cd-overuse + CH-13 retro Row 4 replace_all-avoidance, refactored to lead with the granular principle in v4). CH-14 retrospective will validate prompt-count drop (target: < 5 in CH-14, vs CH-13's 312).
 
+## Commit-subject drift-id-prefix discipline
+
+**Added 2026-06-02 per propagate-fixes skill scan miss on CC-08 5-commit batch (0-of-5 candidates surfaced; commit `a3e00cd` carried a true portable runtime slice but lacked subject-line drift-id token).**
+
+When a commit closes one or more drifts (`D-TEST-NNNN` / `D-CH<NN>-FOLLOWUP-NN` / `D-CC<NN>-FOLLOWUP-NN` / `M5-DEFERRED-NN`), prepend the closed drift-id(s) to the commit **SUBJECT** line, not just the body.
+
+**Good subject forms**:
+
+- `D-TEST-0014: smoke template ANSI-strip + CWD-align (CC-08 F2)`
+- `D-CC03-FOLLOWUP-07: TCP-IPC stall closure (CC-04 cycle 93f17444)`
+- `D-TEST-0013/0014/0015/0016: CC-08 closes 4 T11-execute defect drifts (5 forks)`
+
+**Bad subject forms (drift IDs body-only)**:
+
+- `CC-08 implementation: 5 forks F1-F5 land + 4 D-TEST drifts remediated` (CC-08 `a3e00cd` precedent; scanner dropped it)
+
+**Paperwork-only commits keep generic subjects** — cycle-index updates, chunk-order flips, plan archives, ADR amendments without code changes. The scanner correctly skips these.
+
+**Why**: the `propagate-fixes` skill's deterministic scanner filters on drift-id tokens in commit subjects. Without subject-line tokens, the scanner cannot surface portable backport candidates → backport opportunities silently dropped. Subject-line discipline lets the cross-branch backport flow (e.g., `dev-v0-e2e` → `dev-v0.5`) auto-detect runtime defect fixes.
+
+**How to apply**:
+
+- P-SEAL commits closing drifts → subject prepends `<drift-id>:` or `<drift-id>/<drift-id>:` (multi-drift form for joint closure)
+- Mixed commits (paperwork + drift-closure code) → still prepend drift-id; scanner's relevance judgment determines per-file portability
+- Pure paperwork commits → generic subject OK
+- Use the body of the commit message as before (full context, Co-Authored-By trailer, etc.)
+
 ## Memory conventions
 
 **Multi-rule policy memory structure (NEW per joint-retro CC-01..CC-04 batch P2, 2026-05-31, cycle hex `93f17444`)**: when codifying a policy that contains ≥ 2 enforcement rules into a user-memory file (under `/root/.claude/projects/-root-projects-phi/memory/`), use explicit `Rule N` labels — NOT narrative prose. Each rule gets its own bulleted paragraph with `**Rule N**: <one-sentence rule>` opening. Downstream agents + audit prompts cite individual rules by name (e.g., "Rule 2 of [[feedback_openrouter_open_source_only]] requires the deny-list literal `^(anthropic|openai|google/gemini)/`"). Verifiability strengthens dramatically when rules carry stable numeric anchors.
