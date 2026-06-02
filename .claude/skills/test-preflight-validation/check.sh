@@ -312,6 +312,37 @@ if [[ "${TEST_CLASS}" == "harness" ]]; then
     record_check "C7" "tools_invoked ⊆ permissions_required + sub-agent rule" "FAIL" "${c7_issues[*]}"
   fi
 
+  # ─── C7.5 — path-arg-tool glob-form (CC-08 F4 D-TEST-0013 closure) ──────
+  # WARN-only sub-check: for each allow-rule in the setup script with shape
+  # `<tool>(*)` where <tool> is a known path-arg tool (its args contain
+  # JSON path strings like `{"path":"workspace/foo.txt"}`), `*` will NOT
+  # match because matcher.rs:5 documents `*` as "matches any chars EXCEPT
+  # `/`" (Claude-Code-parity per ADR-0006 §D6.2 + §D6.16). Authors should
+  # use `<tool>(**)` form so path-containing args resolve to Allow.
+  #
+  # Path-arg-tool set: closed by enumeration per ADR-0006 §D6.16 +
+  # [[feedback_permission_glob_semantics]]. When phi-core adds new tools
+  # with path args, extend this array + amend ADR-0006 §D6.16.
+  PATH_ARG_TOOLS=(read_file write_file bash edit_file list_files search)
+  c7_5_warnings=()
+  if [[ -n "${SETUP_SCRIPT_PATH}" ]] && [[ -f "${SETUP_SCRIPT_PATH}" ]]; then
+    for tool in "${PATH_ARG_TOOLS[@]}"; do
+      # Case-insensitive match for `"<tool>(*)"` in the setup script's
+      # allow array. Use word-boundary-ish match to avoid catching `(**)`.
+      if grep -qiE "\"${tool}\\(\\*\\)\"" "${SETUP_SCRIPT_PATH}"; then
+        c7_5_warnings+=("${tool}(*) — use ${tool}(**) per ADR-0006 §D6.16 (path-arg tool; * excludes /)")
+      fi
+    done
+  fi
+  if [[ "${#c7_5_warnings[@]}" -eq 0 ]]; then
+    record_check "C7.5" "path-arg-tool glob-form (WARN-only)" "PASS" ""
+  else
+    # WARN-only: emit PASS verdict to avoid blocking, but surface guidance
+    # in the detail field. Operators see this in the JSON output even on
+    # overall PASS.
+    record_check "C7.5" "path-arg-tool glob-form (WARN-only)" "PASS" "WARN: ${c7_5_warnings[*]}"
+  fi
+
   # ─── C8 — workspace_dirs created ──────────────────────────────────────
   c8_missing=()
   while IFS= read -r workdir; do
