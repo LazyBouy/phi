@@ -411,7 +411,8 @@ if [[ "${TEST_CLASS}" == "harness" ]]; then
   #   (b) STATIC FALLBACK (documented, default at preflight time — preflight
   #       runs BEFORE daemon boot): the catalog is the union of the 6
   #       phi-core default tools (bash / read_file / write_file / edit_file /
-  #       list_files / search) + prun + prun_with_memo (always wired) +
+  #       list_files / search) + the braking trio revert_to_state + prun +
+  #       prun_with_memo (always wired via with_revert_tool/with_prun_tool) +
   #       any `[[agent.custom_tools]]` `name = "..."` + any
   #       `[[agent.sub_agents]]` `name = "..."` declared in the setup config.
   #       This mirrors the assembly order documented at
@@ -431,7 +432,7 @@ if [[ "${TEST_CLASS}" == "harness" ]]; then
   fi
   if [[ -z "${catalog}" ]]; then
     # Static-derivation fallback (documented).
-    catalog="$(printf '%s\n' bash read_file write_file edit_file list_files search prun prun_with_memo)"
+    catalog="$(printf '%s\n' bash read_file write_file edit_file list_files search revert_to_state prun prun_with_memo)"
     if [[ -n "${SETUP_SCRIPT_PATH}" ]] && [[ -f "${SETUP_SCRIPT_PATH}" ]]; then
       # custom_tools + sub_agents `name = "..."` from the setup config.
       while IFS= read -r nm; do
@@ -439,7 +440,7 @@ if [[ "${TEST_CLASS}" == "harness" ]]; then
       done < <(grep -E '^[[:space:]]*name[[:space:]]*=' "${SETUP_SCRIPT_PATH}" \
                  | sed -E 's/^[[:space:]]*name[[:space:]]*=[[:space:]]*"?([^"]+)"?.*/\1/')
     fi
-    catalog_src="static-derivation fallback (phi-core defaults + prun/prun_with_memo + setup custom_tools/sub_agents)"
+    catalog_src="static-derivation fallback (phi-core defaults + revert_to_state/prun/prun_with_memo + setup custom_tools/sub_agents)"
   fi
   while IFS= read -r tool; do
     [[ -z "${tool}" ]] && continue
