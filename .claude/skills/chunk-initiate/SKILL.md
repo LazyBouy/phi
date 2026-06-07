@@ -1,6 +1,6 @@
 ---
 name: chunk-initiate
-description: Orchestrate an end-to-end chunk implementation cycle (plan → user-approval gate → implement → audit → final cycle re-audit → cleanup → optional retrospective) for either baby-phi or i-phi. Wraps the chunk-planner / chunk-implementer / chunk-auditor / chunk-retrospector agents under the orchestrator gates documented in CLAUDE.md.
+description: Orchestrate an end-to-end chunk implementation cycle (optional deep investigation → plan → user-approval gate → implement → audit → final cycle re-audit → cleanup → optional retrospective) for either baby-phi or i-phi. Wraps the chunk-p0-investigator (opt-in, investigation=true) / chunk-planner / chunk-implementer / chunk-auditor / chunk-retrospector agents under the orchestrator gates documented in CLAUDE.md.
 ---
 
 # chunk-initiate
@@ -20,6 +20,7 @@ Caller provides (slash-command style: `key=value`):
 | `chunk` | yes | `CH-NN` or `NN` | — | Normalise to `CH-NN`. Must correspond to a forward-scope row in the project. |
 | `project` | yes | `baby-phi` \| `i-phi` | — | Determines paths, CI guards, MUST-RUN list. |
 | `approval` | yes | `yes` \| `no` | — | `yes` = always prompt the user via AskUserQuestion before implementation. `no` = auto-approve **only when the Direct-approval criteria hold** (else fall back to `yes`). |
+| `investigation` | no | `true` \| `false` (aliases `yes` \| `no`) | `false` | When `true`, run **Phase 0.5 — Deep investigation** (`chunk-p0-investigator`) BEFORE planning, producing `p0-investigation.md` that grounds the planner on established facts. **Default `false` → backward-compatible** (Phase 0.5 skipped entirely; the pipeline runs exactly as before). Only meaningful when `resume_from_phase=plan`. |
 | `resume_from_phase` | no | `plan` \| `implement` \| `audit` \| `retro` | `plan` | Skip earlier phases when resuming an interrupted cycle. Reads on-disk artifacts only. |
 | `skip_retrospective` | no | `yes` \| `no` | `no` | Skip Phase 6 (chunk-retrospector). |
 | `audit_envelope` | no | `small` \| `medium` \| `large` \| `auto` | `auto` | Override the auditor-count recommendation. `small`=1, `medium`=2, `large`=3. |
@@ -95,12 +96,36 @@ Until those updates ship, running `/chunk-initiate project=i-phi` requires passi
 8. Verify ≥ 30 GB free on the volume holding `<root>/target/` (`df -h /root | head -3`). If less, prompt the user before continuing.
 9. If `resume_from_phase != plan`, verify the expected cycle-folder + plan.md exist (or fail).
 
+### Phase 0.5 — Deep investigation (OPT-IN; runs only when `investigation=true` AND `resume_from_phase=plan`)
+
+**Added 2026-06-08 (user-directed). Default-OFF for backward compatibility** — when `investigation` is `false`/absent, skip this phase entirely and go straight to Phase 1; the pipeline behaves exactly as it did before. This phase codifies the manual P0 investigations the orchestrator has been running ad-hoc (canonical precedent: **CC-22 P0** — live instrumentation + unit repros root-caused the multi-turn render defect, ruled out `follow_up()+continue` as non-viable, and located the fix in the phi-core kernel, all *before* the plan was drafted; ADR-0034 Context).
+
+**Why before planning**: a chunk planned against hypotheses re-plans when the hypotheses turn out wrong. Establishing the load-bearing facts first (per `[[feedback_never_hedge]]`) lets the planner draft §1 forks / §3 scope / §4 phi-core leverage against reality.
+
+1. **Spawn `chunk-p0-investigator` (opus).** The dispatch prompt MUST include:
+   - `chunk` (normalised) + `project` + absolute project root.
+   - For `project=i-phi` in a **worktree**: the `IPHI_ROOT=<worktree-i-phi-root>` prefix to restate on every `docker-cargo.sh` build call (the agent is stateless; the orchestrator owns the override).
+   - The **forward-scope** row / file contents.
+   - The **issues / drifts** the chunk closes — IDs + bodies (or repo drift-markdown paths). Note that `gh-rest.sh` (token `GITHUB_PAT_IPHI` from `/root/projects/phi/.env`) is available for GitHub issue bodies, **read-only**.
+   - Relevant **ADRs / concept docs** to ground against.
+   - The **build toolchain** (phi-core host cargo; i-phi `docker-cargo.sh`).
+   - The **output path**: `<cycle-folder-root>/_p0-investigations/<slug>-p0-investigation.md` (a stable pre-archive location — the `<slug>-<8hex>` cycle folder is not minted until Phase 1 step 7). Create `_p0-investigations/` if absent.
+2. **Read the returned report.** **Gate-0.5 (orchestrator verification — mandatory; per "verify every agent-made edit")**:
+   - Spot-check **1–2 findings** by reading the cited `file:line` or re-running a named repro from §7.
+   - Confirm **no hedged conclusions remain**: every §3 finding is `DEFINITIVE` (with evidence) or explicitly `UNRESOLVED — needs <named evidence>`. A soft "probably / may be / by design" that the evidence could settle is a FAIL.
+   - For each `UNRESOLVED` / `needs_live_repro` item that **blocks planning**: either run the flagged live repro yourself (§8 shape), OR re-spawn the investigator with the specific gap. Non-blocking unresolveds (settleable later, not gating a fork) are carried into the plan as open questions.
+3. **Carry the report into Phase 1.** Pass the verified `_p0-investigations/<slug>-p0-investigation.md` path into the Phase 1 planner dispatch prompt (the planner grounds §1/§3/§4 on it instead of re-deriving the facts).
+4. **Archive-time move (at Phase 1 step 7).** Once `chunk-archive-plan` mints the `<slug>-<8hex>/` cycle folder, **move** `_p0-investigations/<slug>-p0-investigation.md` → `<cycle folder>/p0-investigation.md` so it archives beside `plan.md`. Record it in the Outputs list + `cycle-audit.md` §5 paperwork ledger.
+
+The investigator does **not** plan, lock forks, write production code, commit, or modify issues — it establishes facts + surfaces forks; the planner + user still own every lock.
+
 ### Phase 1 — Plan (skip if `resume_from_phase != plan`)
 
 1. Spawn the `chunk-planner` agent (opus). Prompt MUST include:
    - `chunk` (normalised `CH-NN`).
    - `project` and absolute project root.
    - The relevant forward-scope row contents.
+   - **If Phase 0.5 ran (`investigation=true`)**: the verified `p0-investigation.md` path, with the instruction that the planner GROUNDS §1 forks / §3 scope / §4 phi-core leverage on the established facts (§2 surface map, §3 findings, §4 fix-locus, §6 forks-surfaced) rather than re-deriving them, and carries any non-blocking §3 `UNRESOLVED` items into §12 open questions.
    - The cycle folder path the planner should target.
    - The project-specific cargo + CI guard expectations.
 2. Read the draft plan returned by the planner.
@@ -482,6 +507,7 @@ Patch matches **before** dispatching auditors. Iteration accounting: > 1 line = 
 
 On a successful run, the skill produces:
 
+- `<cycle folder>/p0-investigation.md` — deep pre-planning investigation (only when `investigation=true`; moved in from `_p0-investigations/` at archive).
 - `<cycle folder>/plan.md` — approved plan (via chunk-archive-plan sub-skill).
 - `<cycle folder>/audit-<letter>-iter<N>.md` — one per auditor × iteration.
 - `<cycle folder>/cycle-audit.md` — orchestrator's gate-4 audit.
@@ -496,6 +522,7 @@ On a successful run, the skill produces:
 
 - `/root/projects/phi/CLAUDE.md` — outer orchestrator conventions (gates 1–5, audit-fix tiers, cargo-clean two-placement, doc-sync widened sweep, granular Bash discipline).
 - `/root/projects/phi/baby-phi/CLAUDE.md` — baby-phi-specific overlay.
+- `/root/projects/phi/.claude/agents/chunk-p0-investigator.md` (v1) — opt-in deep pre-planning investigation (Phase 0.5; `investigation=true`); establishes facts + surfaces forks for the planner.
 - `/root/projects/phi/.claude/agents/chunk-planner.md` (v15) — planner contract + sub-skills it invokes.
 - `/root/projects/phi/.claude/agents/chunk-implementer.md` (v10) — implementer contract.
 - `/root/projects/phi/.claude/agents/chunk-auditor.md` (v9) — auditor contract.

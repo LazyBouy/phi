@@ -80,6 +80,7 @@ baby-phi chunks (CH-NN) run through a 5-agent pipeline orchestrated by Claude. T
 
 **Agents** at `/root/projects/phi/.claude/agents/`:
 - `phase-planner` (opus) — drafts the per-milestone forward-scope document (chunk-level decomposition + dep graph) from a base build-plan section + pre-scoping alignment audit + prior-milestone deferral markers. Sits one tier above `chunk-planner` (shipped v1 at 2026-05-18 post-CH-27 close, per CH-27 retrospective's M6 plan-mode unblock).
+- `chunk-p0-investigator` (opus) — **opt-in** deep pre-planning (P0) investigation (shipped v1 2026-06-08, user-directed; codifies the manual CC-22 P0 pattern). Given a chunk's forward-scope + the issues/drifts it closes, establishes the load-bearing FACTS by reading + reproducing BEFORE the plan exists — grounds the current surface, reproduces every behavioral claim (never hypothesizes, per `[[feedback_never_hedge]]`), determines fix-locus (phi-core kernel vs consumer per `[[feedback_phi_core_kernel_minimal]]`), rules out non-viable approaches with evidence, surfaces the genuine forks the planner will lock. Writes `p0-investigation.md`; does NOT plan/implement/commit/modify-issues. Wired as `chunk-initiate` **Phase 0.5**, gated by `investigation=true` (default off → backward-compatible). Sits one tier above `chunk-planner`.
 - `chunk-planner` (opus) — drafts the 12-section plan from a forward-scope row.
 - `chunk-implementer` (opus) — executes phases per the approved plan.
 - `chunk-auditor` (opus) — independent post-implementation audit; writes per-iteration audit log.
