@@ -1,6 +1,6 @@
 ---
 name: chunk-archive-plan
-description: Generate the 8-hex cycle ID and create the per-cycle folder structure under the active project's plan-build directory. Copies the plan-mode plan stub into the folder + appends a row to the project's cycle-index. Used by chunk-planner at chunk-open. Project-aware via PROJECT_ROOT (baby-phi default; i-phi when set).
+description: Generate the 8-hex cycle ID and create the per-cycle folder structure under the active project's plan-build directory. Copies the plan-mode plan stub into the folder + appends a row to the project's cycle-index. Used by chunk-planner at chunk-open. Project-aware via PROJECT_ROOT (baby-phi default; i-phi or phi-core when set).
 ---
 
 # chunk-archive-plan
@@ -17,6 +17,11 @@ The orchestrator passes `PROJECT_ROOT` in the caller context. Resolve all paths 
   - Cycle-index path: `<PROJECT_ROOT>/docs/v0/proposal/plan/_cycle-index.md` (NOT `…/docs/specs/plan/build/_cycle-index.md`).
   - Doc-links check: `bash <PROJECT_ROOT>/scripts/check-doc-links.sh` if the script exists; **skip with a paperwork-side note** if it doesn't (i-phi has no `scripts/` at v0).
   - Cycle-index row format: same column shape as baby-phi (`Hex | Slug | Phases | Auditors | Iterations | Status | Retro`); see the project's `_cycle-index.md` header for the canonical "Column semantics" paragraph (added 2026-05-17 per CH-01-i-phi retro Row 3).
+- **`/root/projects/phi/phi-core`** → phi-core (kernel lane; added 2026-06-08 per KC-01 retro candidate #1): paths use the **baby-phi shape rooted at phi-core** —
+  - Cycle folder: `<PROJECT_ROOT>/docs/specs/plan/build/<slug>-<8hex>/` (identical layout to baby-phi).
+  - Cycle-index path: `<PROJECT_ROOT>/docs/specs/plan/build/_cycle-index.md`.
+  - Doc-links check: **none** — phi-core has no `scripts/check-*.sh`; **skip with a paperwork-side note**.
+  - Cycle-index row format: same column shape; the phi-core `_cycle-index.md` carries its own "Column semantics" header (minted at the first phi-core cycle, KC-01 `a79c7669`).
 
 For PROJECT_ROOT unset, all baby-phi paths apply unchanged.
 
@@ -24,7 +29,7 @@ For PROJECT_ROOT unset, all baby-phi paths apply unchanged.
 
 1. **Chunk slug** — e.g., `ch-11-per-session-consent-gating`.
 2. **Plan-mode plan path** — typically `/root/.claude/plans/<some-name>.md`. Optional; if absent, the planner writes the plan from scratch into `<cycle folder>/plan.md`.
-3. **PROJECT_ROOT** (optional) — `/root/projects/phi/baby-phi` (default) or `/root/projects/phi/i-phi`.
+3. **PROJECT_ROOT** (optional) — `/root/projects/phi/baby-phi` (default), `/root/projects/phi/i-phi`, or `/root/projects/phi/phi-core`.
 
 ## Procedure
 
@@ -40,6 +45,8 @@ For PROJECT_ROOT unset, all baby-phi paths apply unchanged.
    mkdir -p /root/projects/phi/baby-phi/docs/specs/plan/build/<slug>-<8hex>/
    # i-phi:
    mkdir -p /root/projects/phi/i-phi/docs/v0/proposal/plan/build/<slug>-<8hex>/
+   # phi-core (baby-phi shape rooted at phi-core):
+   mkdir -p /root/projects/phi/phi-core/docs/specs/plan/build/<slug>-<8hex>/
    ```
 4. **Copy or initialize plan.md:**
    - If the orchestrator passed a plan-mode plan path: `cp <plan-mode plan> <cycle folder>/plan.md`.
@@ -53,6 +60,7 @@ For PROJECT_ROOT unset, all baby-phi paths apply unchanged.
 7. **Verify** project-appropriate doc-links script if it exists:
    - baby-phi: `bash /root/projects/phi/baby-phi/scripts/check-doc-links.sh` must exit 0.
    - i-phi: no `scripts/check-doc-links.sh` exists at v0 → skip with a paperwork-side note in the output.
+   - phi-core: no `scripts/check-*.sh` exists → skip with a paperwork-side note in the output.
 
 8. **Locked-fork-details appendix hard-assertion (v3 — added 2026-05-18 per CH-04-i-phi retro P14, cycle hex `8a9c50ea`; v4 — skill-based assertion added 2026-05-26 per Chunk D intermediate-stabilization `36caa39f` Deliverable #6b; belt-and-suspenders to chunk-planner v22 P13 + v23 P-plan-3 + v32 P-plan-1-v32 planner end-of-draft self-check)**: BEFORE archiving the plan (step 4 copy / step 6 cycle-index row append), invoke skill `chunk-template-validate-locked-appendix` against the plan path. The skill performs the 4-step mechanical validation (heading exists / subsection count ≥ lock count / each subsection body ≥ 3 sentences) + returns PASS/FAIL.
 
@@ -83,7 +91,7 @@ For PROJECT_ROOT unset, all baby-phi paths apply unchanged.
 
 ```
 chunk-archive-plan:
-  Project: baby-phi | i-phi (per PROJECT_ROOT)
+  Project: baby-phi | i-phi | phi-core (per PROJECT_ROOT)
   Slug: <slug>
   Hex: <8hex>
   Cycle folder: <project-appropriate path>/<slug>-<8hex>/
