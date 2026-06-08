@@ -7,7 +7,7 @@
 #
 # Subcommands (T1-T5 surface):
 #   issue-create  --title TITLE --body-file PATH [--label CSV]
-#   issue-update  ISSUE# [--state closed|open] [--add-label L] [--comment TEXT]
+#   issue-update  ISSUE# [--state closed|open] [--add-label L] [--comment TEXT] [--body-file PATH] [--title TITLE]
 #   issue-list    [--label X] [--state open|closed|all] [--json] [--limit N]
 #   issue-comment ISSUE# --body-file PATH
 #   issue-pull    ISSUE#
@@ -175,12 +175,14 @@ cmd_issue_update() {
   local issue_num="$1"; shift
   [[ -n "$issue_num" ]] || die "issue-update: ISSUE# required"
 
-  local state="" add_label="" comment=""
+  local state="" add_label="" comment="" body_file="" title=""
   while [[ $# -gt 0 ]]; do
     case "$1" in
       --state) state="$2"; shift 2 ;;
       --add-label) add_label="$2"; shift 2 ;;
       --comment) comment="$2"; shift 2 ;;
+      --body-file) body_file="$2"; shift 2 ;;
+      --title) title="$2"; shift 2 ;;
       *) die "issue-update: unknown arg '$1'" ;;
     esac
   done
@@ -189,6 +191,21 @@ cmd_issue_update() {
     local req
     req=$(jq -nc --arg s "$state" '{state: $s}')
     api_call PATCH "/repos/${REPO}/issues/${issue_num}" "$req"
+  fi
+
+  # Edit the issue body (and/or title) in place. --body-file replaces the body.
+  if [[ -n "$body_file" || -n "$title" ]]; then
+    [[ -z "$body_file" || -f "$body_file" ]] || die "issue-update: --body-file must point to an existing file"
+    local req fields='{}'
+    if [[ -n "$body_file" ]]; then
+      local body_json
+      body_json=$(file_as_json_string "$body_file")
+      fields=$(jq -nc --argjson b "$body_json" '{body: $b}')
+    fi
+    if [[ -n "$title" ]]; then
+      fields=$(printf '%s' "$fields" | jq -c --arg t "$title" '. + {title: $t}')
+    fi
+    api_call PATCH "/repos/${REPO}/issues/${issue_num}" "$fields"
   fi
 
   if [[ -n "$add_label" ]]; then
