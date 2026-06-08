@@ -1,11 +1,11 @@
 ---
 name: chunk-initiate
-description: Orchestrate an end-to-end chunk implementation cycle (optional deep investigation → plan → user-approval gate → implement → audit → final cycle re-audit → cleanup → optional retrospective) for either baby-phi or i-phi. Wraps the chunk-p0-investigator (opt-in, investigation=true) / chunk-planner / chunk-implementer / chunk-auditor / chunk-retrospector agents under the orchestrator gates documented in CLAUDE.md.
+description: Orchestrate an end-to-end chunk implementation cycle (optional deep investigation → plan → user-approval gate → implement → audit → final cycle re-audit → cleanup → optional retrospective) for baby-phi, i-phi, or phi-core (the kernel lane). Wraps the chunk-p0-investigator (opt-in, investigation=true) / chunk-planner / chunk-implementer / chunk-auditor / chunk-retrospector agents under the orchestrator gates documented in CLAUDE.md.
 ---
 
 # chunk-initiate
 
-Run an end-to-end chunk implementation cycle on either **baby-phi** or **i-phi**. The skill plays the orchestrator role: it spawns `chunk-planner`, gates plan approval, spawns `chunk-implementer`, dispatches one or more `chunk-auditor` agents, runs the mandatory final cycle re-audit, cleans up `target/`, and optionally runs `chunk-retrospector`.
+Run an end-to-end chunk implementation cycle on **baby-phi**, **i-phi**, or **phi-core** (the kernel lane — for standalone kernel chunks not driven by a consuming CC cycle; added 2026-06-08). The skill plays the orchestrator role: it spawns `chunk-planner`, gates plan approval, spawns `chunk-implementer`, dispatches one or more `chunk-auditor` agents, runs the mandatory final cycle re-audit, cleans up `target/`, and optionally runs `chunk-retrospector`.
 
 When invoked, follow the procedure in this file step-by-step. **Do not skip phases.** The orchestrator gates (especially Phase 4) are non-negotiable; sub-agent auditors cannot fully cover them from sandbox.
 
@@ -18,7 +18,7 @@ Caller provides (slash-command style: `key=value`):
 | Input | Required? | Type / values | Default | Notes |
 |---|---|---|---|---|
 | `chunk` | yes | `CH-NN` or `NN` | — | Normalise to `CH-NN`. Must correspond to a forward-scope row in the project. |
-| `project` | yes | `baby-phi` \| `i-phi` | — | Determines paths, CI guards, MUST-RUN list. |
+| `project` | yes | `baby-phi` \| `i-phi` \| `phi-core` | — | Determines paths, CI guards, MUST-RUN list. `phi-core` = the kernel lane (host cargo, no CI-guard scripts, leverage-check N/A — see Per-project configuration). |
 | `approval` | yes | `yes` \| `no` | — | `yes` = always prompt the user via AskUserQuestion before implementation. `no` = auto-approve **only when the Direct-approval criteria hold** (else fall back to `yes`). |
 | `investigation` | no | `true` \| `false` (aliases `yes` \| `no`) | `false` | When `true`, run **Phase 0.5 — Deep investigation** (`chunk-p0-investigator`) BEFORE planning, producing `p0-investigation.md` that grounds the planner on established facts. **Default `false` → backward-compatible** (Phase 0.5 skipped entirely; the pipeline runs exactly as before). Only meaningful when `resume_from_phase=plan`. |
 | `resume_from_phase` | no | `plan` \| `implement` \| `audit` \| `retro` | `plan` | Skip earlier phases when resuming an interrupted cycle. Reads on-disk artifacts only. |
@@ -34,19 +34,30 @@ If a required input is missing or malformed, abort immediately with a clear erro
 
 Resolve these values from `project`:
 
-| Field | baby-phi | i-phi |
-|---|---|---|
-| Project root | `/root/projects/phi/baby-phi` | `/root/projects/phi/i-phi` |
-| Cargo manifest | `<root>/Cargo.toml` (exists) | `<root>/Cargo.toml` (does **not** exist before CH-01) |
-| Cycle folder root | `<root>/docs/specs/plan/build/` | `<root>/docs/v0/proposal/plan/build/` |
-| Cycle-index path | `<cycle root>/_cycle-index.md` | `<root>/docs/v0/proposal/plan/_cycle-index.md` |
-| Forward-scope source | `<root>/docs/specs/plan/forward-scope/*.md` | TBD — i-phi will need a forward-scope file once CH-01 is on deck |
-| CI guards | `bash <root>/scripts/check-{doc-links,ops-doc-headers,phi-core-reuse,spec-drift}.sh` | `bash <root>/scripts/check-{doc-links,verified-headers,phi-core-reuse,spec-drift}.sh` (shipped at CH-07a per F-iphi-ci-guards-deadline.b USER-DIVERGENT lock; ADR-0010a §D10.13) |
-| MUST-RUN list | `RUSTFLAGS="-Dwarnings" cargo clippy -j 4 --workspace --all-targets` + the 4 CI guards | clippy + the 4 CI guards (CH-07a onwards) |
-| Cargo-clean target | `<root>/target` | `<root>/target` |
-| Default branch | `dev` | `dev` |
+| Field | baby-phi | i-phi | phi-core |
+|---|---|---|---|
+| Project root | `/root/projects/phi/baby-phi` | `/root/projects/phi/i-phi` | `/root/projects/phi/phi-core` |
+| Cargo manifest | `<root>/Cargo.toml` (exists) | `<root>/Cargo.toml` (does **not** exist before CH-01) | `<root>/Cargo.toml` (exists) |
+| Cycle folder root | `<root>/docs/specs/plan/build/` | `<root>/docs/v0/proposal/plan/build/` | `<root>/docs/specs/plan/build/` (NEW — created on first phi-core cycle) |
+| Cycle-index path | `<cycle root>/_cycle-index.md` | `<root>/docs/v0/proposal/plan/_cycle-index.md` | `<cycle root>/_cycle-index.md` (NEW) |
+| Forward-scope source | `<root>/docs/specs/plan/forward-scope/*.md` | TBD — i-phi will need a forward-scope file once CH-01 is on deck | `<root>/docs/specs/plan/forward-scope/*.md` (NEW — inline-draft on first chunk) |
+| CI guards | `bash <root>/scripts/check-{doc-links,ops-doc-headers,phi-core-reuse,spec-drift}.sh` | `bash <root>/scripts/check-{doc-links,verified-headers,phi-core-reuse,spec-drift}.sh` (shipped at CH-07a per F-iphi-ci-guards-deadline.b USER-DIVERGENT lock; ADR-0010a §D10.13) | **none** — phi-core has no `check-*.sh`; the CI-equivalent is `fmt --check` + `clippy --all-targets` + `test` + `build` (see phi-core specifics below) |
+| MUST-RUN list | `RUSTFLAGS="-Dwarnings" cargo clippy -j 4 --workspace --all-targets` + the 4 CI guards | clippy + the 4 CI guards (CH-07a onwards) | `RUSTFLAGS="-Dwarnings" /root/rust-env/cargo/bin/cargo clippy -j 4 --all-targets` + `cargo test -j 4` + `cargo fmt -- --check` (host cargo; single crate, **no** `--workspace`) |
+| Cargo-clean target | `<root>/target` | `<root>/target` | `<root>/target` |
+| Default branch | `dev` | `dev` | `dev` |
 
 Reuse absolute paths in commands (e.g. `cargo --manifest-path /root/projects/phi/<project>/Cargo.toml ...`) per granular Bash discipline.
+
+**phi-core specifics (the kernel lane — added 2026-06-08, user-directed, to support standalone phi-core kernel chunks like #77 that are not driven by a consuming CC cycle):**
+
+- **Host cargo, no Docker.** Every cargo call uses `/root/rust-env/cargo/bin/cargo` directly (the i-phi `docker-cargo.sh` wrapper + `IPHI_ROOT` override do **not** apply). `cargo clean --manifest-path /root/projects/phi/phi-core/Cargo.toml` for the cargo-clean discipline (both placements).
+- **No CI-guard scripts exist.** phi-core ships a `scripts/pre-commit` hook (`fmt --check` + `clippy --all-targets -D warnings`) — there are **no** `check-{doc-links,…}.sh` guards. The MUST-RUN list is the gate: `clippy --all-targets` (RUSTFLAGS=-Dwarnings) + `test` + `fmt --check`. Optionally `cargo build` (CI runs it; clippy `--all-targets` already compiles). Single crate → omit `--workspace`.
+- **phi-core-leverage-check is N/A.** phi-core IS the kernel; there is no "consume phi-core minimally" axis to check. Skip the Phase 1 `phi-core-leverage-check` sub-skill for `project=phi-core` (it measures consumer leverage of the kernel; inapplicable to the kernel itself). The kernel-minimality concern instead becomes a **surface-discipline** check: does the chunk add only genuinely-general primitives (per `[[feedback_phi_core_kernel_minimal]]`), not consumer-specific leakage?
+- **k8s-readiness-check is N/A** (already baby-phi-only).
+- **Verified-headers apply** (phi-core docs carry `<!-- Last verified: YYYY-MM-DD by Claude Code -->` per phi-core `CLAUDE.md` Documentation Alignment) — manual refresh, no check script. Treat like baby-phi's verified-header discipline at gate-4 paperwork.
+- **Doc-sync widened sweep paths**: phi-core docs live under `<root>/docs/{specs,concepts,architecture}/**/*.md` (NOT the i-phi `docs/v0/**` or baby-phi `docs/specs/v0/implementation/m*/**` trees). Adapt the canonical stale-narrative phrase grep to that tree.
+- **Plan/cycle scaffold is created on first use.** No `docs/specs/plan/build/` or `_cycle-index.md` exists yet; the first phi-core cycle mints them (Phase 0 step 7 inline-draft for the forward-scope; `chunk-archive-plan` creates the cycle folder + cycle-index row). Chunk-id convention: reuse `CH-NN` (or a `KC-NN` kernel-chunk prefix if the user prefers a distinct namespace — decide at first phi-core chunk).
+- **Sibling agents** (`chunk-planner`/`implementer`/`auditor`/`retrospector`) encode baby-phi paths; as with i-phi, pass the phi-core project root + host-cargo MUST-RUN list **explicitly** in every agent dispatch prompt until they honour a `$PROJECT_ROOT` param.
 
 **Worktree override — `IPHI_ROOT` prefix (added per i-phi v0.5 joint-retro `4e4d7547..7cdc82fa` proposal #1)**: when `project=i-phi` AND the cycle runs in a **git worktree** (e.g. `/root/projects/phi/worktrees/phi-v05/i-phi` on `dev-v0.5`), EVERY `docker-cargo.sh` invocation — Phase 2 phase-boundary checks, Phase 4 gate-4 MUST-RUN, and every sub-agent (implementer/auditor) dispatch prompt — MUST be prefixed with `IPHI_ROOT=<worktree-i-phi-root>` so the wrapper builds the worktree tree (not the primary checkout). Canonical form: `IPHI_ROOT=/root/projects/phi/worktrees/phi-v05/i-phi bash /root/projects/phi/.claude/scripts/docker-cargo.sh <args> -j 4` (volumes auto-tag to `iphi-cargo-target-v05`; gate-5 clean = `docker volume rm iphi-cargo-target-v05`). The settings.json allow-list carries both the bare `IPHI_ROOT=...* ` form and the stacked `RUSTFLAGS="-Dwarnings" IPHI_ROOT=... bash .../docker-cargo.sh *` form so the prefix triggers no permission prompts. Restate the prefix in each sub-agent dispatch prompt (sub-agents are stateless; the orchestrator owns the override).
 
@@ -129,8 +140,8 @@ The investigator does **not** plan, lock forks, write production code, commit, o
    - The cycle folder path the planner should target.
    - The project-specific cargo + CI guard expectations.
 2. Read the draft plan returned by the planner.
-3. Run sub-skill `phi-core-leverage-check` on the diff prediction (relevant for both projects since both consume phi-core).
-4. Run sub-skill `k8s-readiness-check` **only if** `project = baby-phi` (skip for i-phi — no K8s posture yet).
+3. Run sub-skill `phi-core-leverage-check` on the diff prediction — **only for `project = baby-phi` / `i-phi`** (both consume phi-core). **Skip for `project = phi-core`**: the kernel does not consume itself, so there is no leverage axis to measure; substitute the kernel-minimality surface-discipline check (does the chunk add only genuinely-general primitives, not consumer-specific leakage, per `[[feedback_phi_core_kernel_minimal]]`).
+4. Run sub-skill `k8s-readiness-check` **only if** `project = baby-phi` (skip for i-phi + phi-core — no K8s posture).
 5. Run sub-skill `audit-envelope-size` **unless** `audit_envelope != auto`.
 6. **Split decision** — evaluate the triggers (see "Split decision" below). If two-or-more fire, surface a split proposal via AskUserQuestion. User options:
    - **Approve split** → re-spawn planner with narrowed scope; file the remainder as a new forward-scope row for a later chunk. **Split-decision routing protocol (added 2026-05-21 per CH-16a-i-phi retro `066799f3` proposal #2)**: when user chooses Split: (a) orchestrator drafts NEW chunk's forward-scope file inline (mirroring the current chunk's forward-scope shape; cite the locked outcomes that bind to the new chunk); (b) orchestrator updates `chunk-order.md` to insert a NEW row for the new chunk + advance §2 serial ⮕ NEXT to the narrowed current chunk + update §3 parallel groups; (c) orchestrator commits both new forward-scope + chunk-order.md update as a **prerequisite commit** with message `<current-chunk> split-decision prerequisite: <NNa>/<NNb> forward-scopes + chunk-order`; (d) iter-2 planner re-spawn proceeds against the narrowed slice with explicit cross-reference to the new chunk's forward-scope file path. **Precedents**: CH-16a `066799f3` (Split A: CH-16 → CH-16a + CH-16b); CH-02a `1bd3bdd1` (multi-chunk split into CH-02a/02b/02c).
@@ -235,12 +246,14 @@ Codifies + extends the user's standing rule (saved as `feedback_locked_fork_deta
    - Explicit instruction to use the cargo-clean discipline (see "Cargo-clean discipline" below).
    - For `project = baby-phi`: instruction to run the 4 CI guards at phase boundaries.
    - For `project = i-phi`: instruction that CI guards / cargo may not apply yet for the very first chunk.
+   - For `project = phi-core`: instruction to run the MUST-RUN list (host cargo `clippy --all-targets` + `test` + `fmt --check`) at phase boundaries — there are **no** CI-guard scripts.
 2. At **each phase boundary** the implementer hits, the skill:
    - Reads the diff (`git -C <root> diff` or staged equivalent).
    - Runs the cargo invocations enumerated in the "Cargo-clean discipline" section below.
    - For `project = baby-phi`: runs the 4 CI guards.
    - For `project = i-phi`: runs clippy + tests **iff** `Cargo.toml` exists; otherwise skip.
-3. **Doc-sync widened sweep** (per CH-15 retro): after any gate-2 inline correction OR drift closure with cross-cutting impact, grep the canonical stale-narrative phrase set across `<root>/docs/specs/v0/implementation/m*/architecture/*.md` + `…/operations/*.md` + `…/user-guide/*.md` (baby-phi paths; adapt to `<root>/docs/v0/**/*.md` for i-phi). The phrase set: `FOLLOWUP-NN`, `deferred per`, `is NOT emitted`, `not emitted at CH-NN`, `advisory at M5`, `Step 0 only blocking`, `M6+ tightens the gate`, `at M5/P4`, `not blocking at M5`. Patch any matches **before** dispatching auditors. Trivial-multi tier if > 1 line; Trivial-1L if ≤ 1 line.
+   - For `project = phi-core`: runs host-cargo `clippy --all-targets` (RUSTFLAGS=-Dwarnings) + `test` + `fmt --check` (no CI-guard scripts exist).
+3. **Doc-sync widened sweep** (per CH-15 retro): after any gate-2 inline correction OR drift closure with cross-cutting impact, grep the canonical stale-narrative phrase set across `<root>/docs/specs/v0/implementation/m*/architecture/*.md` + `…/operations/*.md` + `…/user-guide/*.md` (baby-phi paths; adapt to `<root>/docs/v0/**/*.md` for i-phi; adapt to `<root>/docs/{specs,concepts,architecture}/**/*.md` for phi-core). The phrase set: `FOLLOWUP-NN`, `deferred per`, `is NOT emitted`, `not emitted at CH-NN`, `advisory at M5`, `Step 0 only blocking`, `M6+ tightens the gate`, `at M5/P4`, `not blocking at M5`. Patch any matches **before** dispatching auditors. Trivial-multi tier if > 1 line; Trivial-1L if ≤ 1 line.
 4. **Mid-implementation route-selection on v15 P-impl-1 LOC-cap pause (added 2026-05-20 per CH-06-i-phi retro `da221147` P-skill-1; codifies Route A / Route B / Route C named routing classes after first activation)**: when the implementer pauses at a >2× LOC cap breach per chunk-implementer v15 P-impl-1, the orchestrator surfaces THREE named routing classes via AskUserQuestion (the v23 fork-template applies: each option's `description` field includes user-impact + pros/cons). The 3 named classes:
 
    - **Route A — Deviation-acceptance**: ship the overrunning file(s) at their actual LOC + log per v15 P-impl-2 cap-to-1.5×-ceiling deviation entry at P-SEAL. Use when functional scope is load-bearing for the locked fork semantic + further extraction would break cohesion + actual LOC stays within 1.5× ceiling. **CH-05 precedent (parser.rs 5× overrun)** — functional scope (9 frontmatter fields + render_memory_md inverse + 5 robustness tests) cannot be shrunk; deviation accepted.
@@ -289,14 +302,15 @@ This is the orchestrator's gate-4. **Sub-agent auditors cannot run the MUST-RUN 
 
 1. Re-read every diff in the cycle (`git -C <root> log --oneline <cycle-start>..HEAD` plus the staged set).
 2. Run the **MUST-RUN list** authoritatively:
-   - `RUSTFLAGS="-Dwarnings" cargo clippy -j 4 --manifest-path <root>/Cargo.toml --workspace --all-targets`.
+   - baby-phi: `RUSTFLAGS="-Dwarnings" cargo clippy -j 4 --manifest-path <root>/Cargo.toml --workspace --all-targets`.
    - For `project = baby-phi`: `bash <root>/scripts/check-doc-links.sh`, `…/check-ops-doc-headers.sh`, `…/check-phi-core-reuse.sh`, `…/check-spec-drift.sh`.
    - For `project = i-phi`: clippy only (no CI guard scripts exist yet — note this in the cycle-audit).
-3. Run `cargo fmt --manifest-path <root>/Cargo.toml -- --check` (if cargo exists).
+   - For `project = phi-core`: `RUSTFLAGS="-Dwarnings" /root/rust-env/cargo/bin/cargo clippy -j 4 --manifest-path <root>/Cargo.toml --all-targets` (single crate — **no** `--workspace`) + `cargo test -j 4`. No CI-guard scripts exist — note this in the cycle-audit (the MUST-RUN list IS the gate).
+3. Run `cargo fmt --manifest-path <root>/Cargo.toml -- --check` (if cargo exists; host cargo for baby-phi + phi-core).
 4. Verify all paperwork:
    - Cycle-index row exists and Status is correct.
-   - Plan archive at `<root>/docs/v0/proposal/plan/<slug>-<hex>.md` (i-phi) or `<cycle folder>/plan.md` (baby-phi).
-   - All touched docs have updated verified-headers (baby-phi convention; i-phi currently skips verified-headers).
+   - Plan archive at `<root>/docs/v0/proposal/plan/<slug>-<hex>.md` (i-phi) or `<cycle folder>/plan.md` (baby-phi + phi-core).
+   - All touched docs have updated verified-headers (baby-phi + phi-core convention; i-phi currently skips verified-headers).
    - ADR / drift / FOLLOWUP entries present where the plan called for them.
 5. Write `<cycle folder>/cycle-audit.md` with these sections:
    - §1 audit-pipeline summary (one row per auditor letter × iteration).
@@ -461,13 +475,14 @@ Both placements are mandatory.
 
 Always run at Phase 4 (orchestrator gate-4), authoritatively:
 
-- `RUSTFLAGS="-Dwarnings" cargo clippy -j 4 --manifest-path <root>/Cargo.toml --workspace --all-targets`
+- baby-phi: `RUSTFLAGS="-Dwarnings" cargo clippy -j 4 --manifest-path <root>/Cargo.toml --workspace --all-targets`
 - For `project = baby-phi`:
   - `bash <root>/scripts/check-doc-links.sh`
   - `bash <root>/scripts/check-ops-doc-headers.sh`
   - `bash <root>/scripts/check-phi-core-reuse.sh`
   - `bash <root>/scripts/check-spec-drift.sh`
 - For `project = i-phi`: clippy only (no CI guards yet).
+- For `project = phi-core`: `RUSTFLAGS="-Dwarnings" /root/rust-env/cargo/bin/cargo clippy -j 4 --manifest-path <root>/Cargo.toml --all-targets` (single crate, no `--workspace`) + `cargo test -j 4` + `cargo fmt -- --check`. No CI-guard scripts.
 
 Sub-agent auditors mark these `NOT-EXECUTED-IN-AUDIT`. Phase 4 closes them.
 

@@ -118,6 +118,7 @@ Pre-existing chunks (CH-09, CH-10, CH-23) keep their flat-file legacy layout; th
    - **baby-phi**: `RUSTFLAGS="-Dwarnings" /root/rust-env/cargo/bin/cargo clippy -j 4 --workspace --all-targets` + the 4 `bash /root/projects/phi/baby-phi/scripts/check-*.sh` CI guards.
    - **i-phi**: `RUSTFLAGS="-Dwarnings" bash /root/projects/phi/.claude/scripts/docker-cargo.sh clippy --all-targets -j 4` + the 4 `bash /root/projects/phi/i-phi/scripts/check-*.sh` CI guards.
      - **Worktree override (added per i-phi v0.5 joint-retro `4e4d7547..7cdc82fa` proposal #1)**: when the i-phi cycle runs in a git worktree (e.g. `dev-v0.5` at `/root/projects/phi/worktrees/phi-v05/i-phi`), prefix EVERY `docker-cargo.sh` call with `IPHI_ROOT=<worktree-i-phi-root>` so the wrapper builds the worktree tree (volumes auto-tag `…-v05`; gate-5 = `docker volume rm iphi-cargo-target-v05`); run the 4 CI guards from the worktree's `scripts/`. settings.json allow-lists both the bare `IPHI_ROOT=…* ` and stacked `RUSTFLAGS="-Dwarnings" IPHI_ROOT=… bash …docker-cargo.sh *` forms.
+   - **phi-core** (kernel lane, added 2026-06-08 user-directed for standalone kernel chunks like #77): `RUSTFLAGS="-Dwarnings" /root/rust-env/cargo/bin/cargo clippy -j 4 --manifest-path /root/projects/phi/phi-core/Cargo.toml --all-targets` (single crate — **no** `--workspace`) + `/root/rust-env/cargo/bin/cargo test -j 4 --manifest-path …` + `cargo fmt -- --check`. **No `check-*.sh` CI guards exist** (phi-core ships only a `scripts/pre-commit` fmt+clippy hook) — the MUST-RUN list IS the gate; note the guard-absence in the cycle-audit. phi-core-leverage-check is **N/A** (kernel does not consume itself) → substitute the kernel-minimality surface-discipline check per `[[feedback_phi_core_kernel_minimal]]`; k8s-readiness-check N/A. Host cargo, no Docker.
 
    Sub-agent auditors will mark these claims `NOT-EXECUTED-IN-AUDIT` (sandbox-blocked) — orchestrator closes them at this gate.
 
@@ -157,12 +158,14 @@ Pre-existing chunks (CH-09, CH-10, CH-23) keep their flat-file legacy layout; th
 (1) **Immediate-post-test cleanup (NEW per CH-18; PROJECT-CONDITIONAL as of Phase 1.5 2026-05-28)**: AFTER each `cargo test` invocation across the cycle (sub-agent audits A + B, orchestrator gate-4 final test, retrospector permissions-audit script), the invoker MUST issue a clean BEFORE the next cargo invocation:
    - **baby-phi**: `/root/rust-env/cargo/bin/cargo clean --manifest-path /root/projects/phi/baby-phi/Cargo.toml`
    - **i-phi**: `docker volume rm iphi-cargo-target` (then re-create on next `docker-cargo.sh` call)
+   - **phi-core**: `/root/rust-env/cargo/bin/cargo clean --manifest-path /root/projects/phi/phi-core/Cargo.toml` (host cargo, same shape as baby-phi)
 
 Per-invocation cleanup ensures the next invocation starts from clean target/ and prevents accumulation across multiple test runs within a single cycle. CH-18 evidence: 2 duplicate cargo-test workspace background runs accumulated target/ to 146 GB → 100% disk → 1h24m hung process → user-directed kill + cargo clean reclaimed 151 GiB. The user directive that codified this: *"tests should be cleaned up immediately after the run as it may block future tests"* (2026-05-10).
 
 (2) **Gate-5 final close cleanup (CH-17 retro Row 1, USER REQUESTED 2026-05-09, cycle hex `40c4d759`; PROJECT-CONDITIONAL as of Phase 1.5)**: after standards updates landed + cycle-index row flipped to `retro-complete`, the orchestrator runs the cleanup:
    - **baby-phi**: `/root/rust-env/cargo/bin/cargo clean --manifest-path /root/projects/phi/baby-phi/Cargo.toml`. Capture `du -sh /root/projects/phi/baby-phi/target` BEFORE + `df -h /root | head -3` AFTER.
    - **i-phi**: `docker volume rm iphi-cargo-target`. Capture `docker system df` BEFORE + AFTER.
+   - **phi-core**: `/root/rust-env/cargo/bin/cargo clean --manifest-path /root/projects/phi/phi-core/Cargo.toml`. Capture `du -sh /root/projects/phi/phi-core/target` BEFORE + `df -h /root | head -3` AFTER.
 
 Log disk reclaimed in the cycle-audit's §7 metrics row.
 
