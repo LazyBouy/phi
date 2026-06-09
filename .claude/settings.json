@@ -25,6 +25,7 @@
       "Bash(/root/rust-env/cargo/bin/cargo clean *)",
       "Bash(RUSTFLAGS=\"-Dwarnings\" /root/rust-env/cargo/bin/cargo clippy *)",
       "Bash(RUSTFLAGS=\"-Dwarnings\" /root/rust-env/cargo/bin/cargo build *)",
+      "Bash(RUSTFLAGS=\"\" /root/rust-env/cargo/bin/cargo test *)",
       "Bash(RUSTFLAGS=\"-Dwarnings\" bash /root/projects/phi/.claude/scripts/docker-cargo.sh clippy *)",
       "Bash(RUSTFLAGS=\"-Dwarnings\" bash /root/projects/phi/.claude/scripts/docker-cargo.sh build *)",
       "Bash(RUST_LOG=\"i_phi=*\" bash /root/projects/phi/.claude/scripts/docker-cargo.sh *)",
