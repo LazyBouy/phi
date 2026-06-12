@@ -39,8 +39,14 @@ echo "$COMMAND" | grep -qE '\bsudo\b|\bsu\s' && deny "Privilege escalation block
 echo "$COMMAND" | grep -qE '\bgit\s+(commit|push|reset\s+--hard|rebase|merge|tag|clean\s+-[df]|checkout\s+--)' && deny "Destructive git operation blocked; user owns commit/push/rebase."
 # Network
 echo "$COMMAND" | grep -qE '\b(curl|wget|nc|ssh|scp|rsync|sftp|telnet)\b' && deny "Network I/O blocked; use WebFetch tool for URL access."
-# Package install
-echo "$COMMAND" | grep -qE '\b(npm|yarn|pnpm)\s+(install|i|add)\b|\bpip3?\s+install\b|\bbrew\s+(install|uninstall)\b|\b(apt|apt-get)\s+(install|remove)\b|\bdpkg\s+-i\b|\bcargo\s+install\b' && deny "Package install blocked; user authorizes installs in their terminal."
+# Package install — anchored on COMMAND POSITION (start of command, after
+# stripping any leading `VAR=val ` env-assignments), NOT substring-anywhere. So a
+# command that merely MENTIONS an install verb inside a quoted arg / comment body
+# / grep pattern (e.g. `grep "npm install"`, `gh-rest --comment "...npm install..."`)
+# is no longer false-positive-blocked, while a real `npm install …` / `cargo install …`
+# at command position is still blocked. (joint-retro CC-22..CC-27 #9, 2026-06-12.)
+INSTALL_CMD="$(echo "$COMMAND" | sed -E 's/^([[:space:]]*[A-Za-z_][A-Za-z0-9_]*=[^[:space:]]+[[:space:]]+)+//')"
+echo "$INSTALL_CMD" | grep -qE '^(npm|yarn|pnpm)[[:space:]]+(install|i|add)\b|^pip3?[[:space:]]+install\b|^brew[[:space:]]+(install|uninstall)\b|^(apt|apt-get)[[:space:]]+(install|remove)\b|^dpkg[[:space:]]+-i\b|^cargo[[:space:]]+install\b' && deny "Package install blocked; user authorizes installs in their terminal."
 # Disk / filesystem
 echo "$COMMAND" | grep -qE '\bdd\s+(if|of)=|\bmkfs(\.|\b)|>\s*/dev/sd[a-z]' && deny "Disk-level operation blocked."
 # Permissive chmod
