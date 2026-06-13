@@ -1215,6 +1215,28 @@ Extends outer CLAUDE.md gate-3 audit-prompt-authoring cross-check (6-axis script
 
 **Cross-reference**: outer CLAUDE.md gate-3 "Audit review" subsection lists 6 axes (F-token / lock-body / test-name / method-signature / arg-shape / literal-count); axis-7 adds path-citation freshness as a sibling. CC-07 already operates under this discipline (D-5 explicitly logged in cycle-audit §6).
 
+## v37 additions (joint-retro KC-04..CC-30b 5-chunk batch `91a175a4-to-73057f1a`, 2026-06-13)
+
+### P-plan-1-v37 — "Minimal-now + file-forward" as an explicit 3rd fork option (proposal #12; companion to bundle-framing v36)
+
+When a divergence-watch fork is a **correctness-floor option (a)** vs a **richer-policy option (b)** (the .a fixes the must-fix minimally; the .b adds an opinionated policy on top), the AskUserQuestion MUST explicitly offer a **third option: "lock .a NOW + file .b as a forward GitHub issue"** — not just the binary a/b. **CC-30a evidence**: the user reached for exactly this (locked F4.a minimal footgun render-fix + directed filing #85 / D-TEST-0080 for the richer posture→starter-rules design), but the planner's binary a/b framing didn't surface it; the orchestrator had to improvise the third option at gate-1.5. Surface it in the fork's `## Forks for orchestrator` description so the user sees it as a first-class choice. Pairs with bundle-framing (v36) + diagnostic-first (P-plan-2-v37) as the divergence-handling toolkit.
+
+### P-plan-2-v37 — Diagnostic-first phase sequencing as a named plan pattern (proposal #5)
+
+When forks **co-vary on a single UNMEASURED runtime behavior** (e.g. "does any model actually invoke this tool / hit this path / benefit from this content?"), structure the **measurement as P1 (a diagnostic phase that runs FIRST)** and lock the disposition on its evidence at gate-2.5 — rather than locking the fork on a hypothesis at gate-1.5. **CC-29 evidence**: the wire-in / retire / operator-reference forks all hinged on one empirical question ("does any model invoke `tool_help` + benefit?"); running the never-run efficacy diagnostic as P1 produced the decisive 0/4 evidence and made the USER-DIVERGENT Bundle-1 F1.b RETIRE lock obvious. The user opts in at gate-1.5 ("lock now on prior evidence" vs "diagnostic-first — lock on evidence at gate-2.5"). Pairs with bundle-framing (the diagnostic routes the bundle).
+
+### P-plan-3-v37 — FS-authoring: own a predecessor's deferred live-gate (proposal #2)
+
+When drafting a forward-scope for a chunk that **consumes or follows a chunk that DEFERRED its live close-gate**, the FS MUST make that deferred live gate a **first-class, LOAD-BEARING deliverable** (not "ideally re-run"), run on the **PRODUCT-generated artifact**. See `[[feedback_render_transcript_close_gate]]` Rule 6. **Precedents**: KC-04→CC-28, CC-30a→CC-30b. A deferral is only legitimate if a named downstream chunk owns it; the planner authoring the downstream FS is that owner.
+
+### P-plan-4-v37 — §3.C doc-tier candidates must be CONTENT-grounded (proposal #9)
+
+When naming §3.C user-facing-doc-tier candidates (where a chunk's doc edits land), verify the candidate doc actually **carries the relevant content section** (grep it), not by doc-name heuristic. **CC-28 evidence**: the plan named `api.md` as a config-doc home, but `api.md` carries no config tables — the real home was `cli.md`'s Skills-policy block; the implementer corrected it mid-cycle. One grep at plan-draft prevents the mid-cycle doc-home correction.
+
+### P-plan-5-v37 — §3.B render-fn LOC caps weight TOML-table-count (proposal #10)
+
+When deriving a §3.B per-file LOC cap for a **bootstrap/scaffold render fn** that emits TOML, weight the **number of growing TOML tables** the fn emits (each table = an emit-helper + escape + emit-only-when-set guard + a render test). **CC-30a evidence**: `scaffold.rs` ran 1.55× its cap (Route-A accepted) because `render_permissions_toml` + `render_credentials_toml` grew to emit multiple tables (`defaultMode` + `[permissions]` + `[agent]`/`[debug]`/`[skills]`); a render-fn emitting N growing tables is a structural LOC-magnet the precedent-baseline cap under-weights.
+
 ## Output handoff format (return this verbatim)
 
 ```
