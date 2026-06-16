@@ -7,3 +7,6 @@
 [submodule "i-phi"]
 	path = i-phi
 	url = https://github.com/LazyBouy/i-phi.git
+[submodule "iphi-frontend"]
+	path = iphi-frontend
+	url = https://github.com/LazyBouy/iphi-frontend.git
