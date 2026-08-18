@@ -6,6 +6,11 @@
       "args": [
         "/root/projects/phi/.claude/scripts/launch-google-docs-mcp.sh"
       ]
+    },
+    "figma-mcp-go": {
+      "type": "stdio",
+      "command": "/root/projects/fullstack/tech-phi-studio-website/tools/figma-mcp-go/bin/figma-mcp-go",
+      "args": []
     }
   }
 }
