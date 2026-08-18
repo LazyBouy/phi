@@ -114,6 +114,7 @@ For PROJECT_ROOT unset, the existing baby-phi paths and skill invocations apply 
 - Every FAIL cites the specific gap (what was claimed, what's missing).
 - Workspace test count matches plan §8.
 - All 4 CI guards exit 0 (or every non-zero recorded as a FAIL).
+- **Per-agent-isolation chunk invariant (4-cycle-proven MA-01b/02/04/05; added 2026-06-16)**: a non-zero `builder.rs` LOGIC diff = wrong seam (the implementer bypassed the `deps.<X>` field-substitution at `assemble_agent_factory_for`) = FAIL. The substitution re-points `builder.rs`'s `self.deps.<X>` reads for free → 0-line is the correct outcome; flag any builder.rs logic change on such a chunk.
 - Final verdict reflects the per-claim verdicts (one FAIL → final cannot be PASS).
 - Summary table fits ≤ 600 words; per-claim detail may exceed.
 

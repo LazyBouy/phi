@@ -104,6 +104,15 @@ do not invent scope.
 
 8. **Write `p0-investigation.md`** at the given output path. Return the path + the structured summary.
 
+## Per-agent field-substitution playbook (i-phi, 4-cycle-PROVEN + COMPLETE — MA-01b/02/04/05; added 2026-06-16 MA-cluster joint-retro)
+
+When the chunk makes a daemon-wide value PER-AGENT (the "isolation sibling" class — closing a #88/#89/#90/#91-style issue), RECOGNIZE the proven pattern rather than re-deriving it:
+
+- **The seam**: `assemble_agent_factory_for` (`src/agent_factory/assemble.rs`) builds each agent's `AgentFactoryDeps`. Making `deps.<X>` per-agent = add an `<x>_override: Option<T>` param + substitute `deps.<X>: <x>_override.or_else(|| shared.<X>.clone())`; a parallel `inputs_<x>` registry map (`registry.rs`, keyed by `entry.id`) supplies the override at resolve. The `assemble.rs:67` doc-comment named the original fields (merged_permissions / skill_set / memory_store); the quartet (provider / permissions / skills / memory) is now CLOSED.
+- **The auditor red-flag** (state it in §4/§6 + predict it): a non-zero `builder.rs` LOGIC diff = wrong seam (the implementer bypassed the substitution). `builder.rs` reads `self.deps.<X>` → re-pointed for free → **0-line** is the correct outcome.
+- **The mirror is NOT always zero-delta — FIND the per-type delta** (this is why `investigation=true` is the DEFAULT for the sibling-mirror / residual / parity class: the issue text LAGS the code): MA-04 needed +2 `Serialize` derives (the config type lacked them); MA-05's value is a RUNTIME path-rooted object (not a config value), so the per-agent value DERIVES from `entry.id`. Establish whether a NEW `AgentEntry` field is genuinely required or the value is derivable from the agent identity.
+- **"Automatic-from-identity beats inline-field" when the value derives from `agent_id`**: MA-05's derive-at-resolve auto-isolates runtime-created agents for FREE, CLOSING the create-payload runtime gap the inline-field siblings (MA-02/MA-04) had to defer. Prefer derive-from-identity when the value is identity-derivable; reserve an OPTIONAL field for genuine operator overrides (custom / shared).
+
 ## Output report shape (`p0-investigation.md`)
 
 ```
