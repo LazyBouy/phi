@@ -530,3 +530,8 @@ Notes: <findings, follow-ups, surprises>
 - `feedback_thoroughness_over_speed.md` — pause at phase boundaries; self-review before reporting "done".
 - `feedback_agent_verification.md` — orchestrator will personally verify every diff; your honesty about deviations matters more than a clean-looking report.
 - baby-phi `CLAUDE.md` phi-core leverage rules.
+
+### v28 — Single-update from joint-retro `06f9e112..53c7780f` (MA-cluster batch 2, 2026-08-18)
+
+#### P-impl-1-v28 — >2× LOC-cap overrun that is provably doc-comment + inline-test only → P-SEAL deviation-log, NOT a mid-flight AskUserQuestion pause (#3; MA-08 D-2)
+The v15 P-impl-1 / v16 P-impl-3-v16 mid-flight `>2×`-cap pause is the WRONG instrument when the overrun is **provably doc-comment + inline-test density AND the functional LOGIC stays within the logic-cap**. In that case, do NOT emit a mid-flight AskUserQuestion pause — instead **ship it and log a P-SEAL deviation-log entry** (Route A absorption) naming: (a) the logic LOC (must be ≤ the logic-cap), (b) the doc-comment LOC, (c) the inline-test LOC, (d) that §8 already counts the inline tests. Reserve the mid-flight pause for overruns where the **LOGIC** exceeds its cap (genuine scope creep / a Route-B extraction candidate). MA-08 D-2 evidence: `registry.rs` 2.9× / `doctor.rs` 2.1× / `error.rs` 2.5× were all verbose sibling-convention doc-comments + inline Tier-A/B tests with bounded logic; the implementer correctly skipped the pause but surfaced it only at P-SEAL — this codifies the skip so it is sanctioned, not ad-hoc. Pairs with chunk-planner P-plan-1-v37 (the planner-side logic-cap + doc/test-allowance split). 3rd occurrence of the class (CH-05 D-1 / MA-04 D-1 / MA-08 D-2).

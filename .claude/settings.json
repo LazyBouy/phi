@@ -68,6 +68,7 @@
       "Bash(bash /root/projects/phi/.claude/scripts/backport-bump.sh*)",
       "Bash(bash /root/projects/phi/.claude/scripts/launch-google-docs-mcp.sh*)",
       "Bash(bash /root/projects/phi/.claude/scripts/docker-cargo.sh*)",
+      "Bash(bash /root/projects/phi/.claude/skills/live-close-gate/*.sh*)",
       "Bash(bash /root/projects/phi/.claude/scripts/docker-cargo.sh test*)",
       "Bash(bash /root/projects/phi/.claude/scripts/docker-cargo.sh clippy*)",
       "Bash(bash /root/projects/phi/.claude/scripts/docker-cargo.sh fmt*)",
