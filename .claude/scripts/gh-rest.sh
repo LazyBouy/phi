@@ -282,6 +282,32 @@ cmd_issue_pull() {
   api_call GET "/repos/${REPO}/issues/${issue_num}"
 }
 
+# ---------- subcommand: issue-comments ----------
+
+# Read (GET) the comment thread on an issue. Read-only; prints each comment as
+# a "=== @login  created_at ===" header followed by the body.
+cmd_issue_comments() {
+  local issue_num="$1"; shift || true
+  [[ -n "${issue_num:-}" ]] || die "issue-comments: ISSUE# required"
+
+  local want_json=0
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --json) want_json=1; shift ;;
+      *) die "issue-comments: unknown arg '$1'" ;;
+    esac
+  done
+
+  local raw
+  raw=$(api_call GET "/repos/${REPO}/issues/${issue_num}/comments?per_page=100")
+
+  if [[ $want_json -eq 1 ]]; then
+    printf '%s\n' "$raw"
+  else
+    printf '%s' "$raw" | jq -r '.[] | "=== @\(.user.login)  \(.created_at) ===\n\(.body)\n"'
+  fi
+}
+
 # ---------- subcommand: label-create ----------
 
 cmd_label_create() {
@@ -364,6 +390,7 @@ main() {
     issue-list)     load_token; cmd_issue_list "$@" ;;
     issue-comment)  load_token; cmd_issue_comment "$@" ;;
     issue-pull)     load_token; cmd_issue_pull "$@" ;;
+    issue-comments) load_token; cmd_issue_comments "$@" ;;
     label-create)   load_token; cmd_label_create "$@" ;;
     pr-create)      load_token; cmd_pr_create "$@" ;;
     self-test)      load_token; cmd_self_test "$@" ;;
