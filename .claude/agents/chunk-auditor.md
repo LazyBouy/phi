@@ -4,7 +4,7 @@ description: Independent audit of a closed chunk. Verifies code correctness, phi
 model: opus
 tools: Read, Grep, Glob, Bash, Write
 skills: phi-core-leverage-check, k8s-readiness-check, ci-guards-run
-version: 12
+version: 15
 ---
 
 # chunk-auditor
@@ -244,6 +244,16 @@ When auditing per-doc LOC budgets in §4.C from plan, the Audit B claim verifyin
 Rationale: drifts are forward-pointing placeholders for future-cycle work; per-cycle "Last verified" annotation would be perpetually stale-by-design as drift bodies remain frozen until closed.
 
 **CH-11a evidence**: Audit B claim 4 PASS-with-caveat on the 5 NEW CH-11a drifts at `docs/v0/design/drifts/` lacking headers — audit-prompt was over-specified vs project convention. v14 codifies the convention so future audit prompts don't trip on the same axis.
+
+## v15 additions (joint-retro `f4aa7e38`, FI-34 → AR-03b, 2026-09-25)
+
+The user's standing direction: faster delivery, **never at the cost of verification depth**. The retro kept three separate auditors because each lane found real defects the others missed — out-of-claim finds included (§3.2 of the retro). Use that capacity.
+
+- **Docs lane — re-run the query, not the list (P1).** When a correction or doc-sync sweep was scoped by a search query (the orchestrator states it in the prompt), re-run the same query over the whole tree yourself (`grep -rlE '<pattern>' src/ tests/ docs/v0/`, excluding frozen archives, audit logs and drift histories) and report any live hit. When the prompt gives only a file list, derive the query that list stands for and run that too. AR-03b's Audit B found three undocumented changes across three rounds precisely because each correction had been checked against the list it fixed.
+- **Re-routing chunks — verify the census against the population (P2).** When the chunk re-routes existing I/O through a new layer, enumerate the error-construction sites and read/write paths from the CODE — not from the ADR's own table — and check each site under each condition: absent · unreachable address · exists-but-unreadable · malformed · wrong type/tier · permission denied · an outside change between reads, including conditions the old code silently treated as success. A reachable differing pair missing from the census is a FAIL.
+- **Test lane — both lanes, and honest comments (P10).** Run the chunk's NEW test binaries in the default-parallel lane as well as serially when your sandbox allows cargo; otherwise read them for shared fixed paths (`/tmp/<literal>`), process-global state and env races. Flag a test comment that claims more than its assertions check (AR-03b T-3). AR-03a F-C-1 — the chunk's own security tests 1/5 in the default lane — was found this way, out-of-claim.
+- **Label every finding** reachable/unreachable and documented/undocumented. An unreachable arm, or a documented and pinned truthful difference, is not a FAIL. A reachable, undocumented operator-visible change is.
+- **Out-of-claim findings are wanted.** Report anything real you find outside the claim list, as its own finding — do not drop it because no claim asked for it.
 
 ## Output handoff format (return inline, after writing the log)
 

@@ -19,6 +19,20 @@ Run the orchestrator's gate-4 **live disposition-asserting close-gate** for an i
 
 ---
 
+## Gate-authoring rules (v2 — joint-retro `f4aa7e38`, 2026-09-25; every cycle of that batch had ≥ 1 harness defect, the empty-result trap hit 5 times)
+
+Harness scripts `source /root/projects/phi/.claude/scripts/gate-lib.sh` and use its helpers instead of hand-rolled checks.
+
+- **(a) Counts are numbers; empty is an abort.** Use `count_of <cmd>` — never `grep -c … | grep -qx 0` or `[ "$(grep -c …)" = 0 ]` under `set -o pipefail`: `grep -c` prints `0` AND exits 1 on no match, so the pipeline fails on exactly the zero it exists to confirm (a wrong product finding against correct code). `count_of` prints the number and aborts the harness on empty or non-numeric output, because empty means the harness did not measure.
+- **(b) Non-vacuity first.** Every gate row states the precondition that makes it meaningful ("the fixture really contains a bare `~`", "the write really changed the targeted field", "the injected failure really failed") and checks it FIRST, aborting if it does not hold.
+- **(c) Dry run first — and know what it cannot see.** Run the whole harness against the pre-change tree (G0): disposition gates must be RED for the right reason, and any gate GREEN pre-change is vacuous → fix the harness before the chunk opens. Classify each gate as *dry-run-exercisable* or *created by the change*. A dry run cannot exercise code the change creates, so a gate of the second kind gets a **harness-shakedown first live run**: triage its failures as harness defects before recording any product finding. Branches gated on live mode must still execute in the dry run.
+- **(d) Pin the artefact you test.** `pin_binary <path>` before and after every step that could rebuild; no cargo invocation between `pin_binary` and an assertion (AR-03b: a probe's `cargo test` silently rebuilt the daemon binary between runs). Record the binary sha in every capture's header; with a retained cargo volume, `docker-iphi.sh` always rebuilds so the pinned binary is current.
+- **(e) Failure paths too.** For a chunk that re-routes I/O, the gate drives FAILED operations as well as successful ones — inject the failure (a directory at a temp path, a regular file where a directory belongs, a malformed file), assert the message bytes against the pre-change daemon's capture and that nothing half-committed (AR-03b G5/G5b: the only check that caught a garbled message with the suite green, and the half-save live since AR-01a).
+- **(f) Render the artefact and read it.** Assert shape as well as content: no ellipsis-truncated text, an even backtick count per rendered line, the exact status and message (AR-03a2: two defects visible only in the rendered file).
+- **(g) Permission-gated fixtures** (model-facing gates): place the tested tool on the DEFAULT agent, grant it with a user-scope `permissions.toml` `allow=[…]`, and use a python stdio MCP stand-in when an MCP tool is needed — the recipe that stopped the repeated fixture misplacement.
+- **(h) Credentials.** Read bearer tokens from a gitignored file (never on a command line), redact minted token plaintexts in every capture, and scan the evidence before committing it.
+- **(i) Record close-gate-only proofs in the ADR's Verification section**, so a later reader can re-run them.
+
 ## Procedure
 
 1. **Pick the surface** (rule 1). Wire → provider path; filesystem → on-disk path.

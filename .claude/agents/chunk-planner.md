@@ -4,7 +4,7 @@ description: Drafts the 12-section per-chunk plan from a forward-scope entry. Pe
 model: opus
 tools: Read, Grep, Glob, Bash, Write
 skills: chunk-template-fill, phi-core-leverage-check, k8s-readiness-check, audit-envelope-size, chunk-archive-plan
-version: 29
+version: 39
 ---
 
 # chunk-planner
@@ -1279,3 +1279,19 @@ For any per-agent isolation / create-payload chunk (the field-substitution class
 
 #### P-plan-4-v37 — Weight security-adjacent forks by the config's ROLE, not a flat "security-adjacent" signal (#6; MA-08 F2.b non-fire)
 When framing a security-adjacent fork's default-recommendation, weight it by **what the config GOVERNS**: **trusted operator-authored config** (a `permissions_path` / `system_prompt_path` / memory-root / skills-dirs — same trust tier the operator already controls) → planner-rec (sibling-consistent, not max-defensive) is the likely user lock; an **untrusted-input boundary** (network-facing, LLM-tool-arg, external request) → the more-defensive option is the likely divergence. MA-08 F2.b (cwd-verbatim path resolution) did NOT diverge despite being flagged an axis-(c) security-adjacent watch, because `permissions_path` is trusted operator-config; the planner over-predicted divergence toward fail-loud (mirroring the CC-28 F2 skills-format over-prediction). Extends v33 P-plan-3-v33 axis-(c) anticipation + the CLAUDE.md domain-conditional refinement.
+
+### v39 — Joint-retro `f4aa7e38` bundle (FI-34 → AR-03b, 2026-09-25)
+
+The user's standing direction for the MVP: faster, but **quality is never traded for speed**. These items move checks that arrived late in the batch (8-of-10 cycles had plan-side errors; AR-03b's Audit B ran 4 rounds) into the plan itself.
+
+- **P-plan-1-v39 — Site × condition census + failure-path parity for re-routing chunks (P2; HIGHEST for the remaining AR-03 rows).** When a chunk re-routes existing I/O through a new layer (a seam, dispatcher, format arm or remote store — AR-03d through AR-03i all will), the plan carries a census table: every site × every condition — success · absent · unreachable address · exists-but-unreadable · malformed · wrong type/tier · permission denied · an outside change between two reads — **including conditions the old code silently treated as success** (`Path::exists()`, `unwrap_or_default`, `if !x.exists()`). For each pair, state the pre-change disposition and the intended one. §8 mandates failure-path parity tests (same message bytes, no partial commit) beside the success-path ones. The ADR's "operator-visible changes" list is generated from this census. AR-03b found three differing pairs only across four audit rounds because the plan had no census.
+- **P-plan-2-v39 — Four-column LOC cap table, logic-only PAUSE (P5; ≥24 non-logic breaches this batch).** §4.B caps carry four columns — logic · doc-comment · inline tests · data constants. The mid-flight PAUSE threshold is set on the logic column only; doc, test and data overruns up to 2× are P-SEAL log lines. Supersedes the two-number form of P-plan-1-v37.
+- **P-plan-3-v39 — Plans are internally consistent and runnable (P4; 8-of-10 cycles).**
+  - **Run** every §10/§13 recipe against HEAD at draft time; paste the baseline output and state each post-change expectation as a delta from it.
+  - Recipes and ADR Verification blocks are **coordinate-free**: grep for the symbol, never `file:NNN`.
+  - Before archiving, an **§1-vs-derived pass**: §4.B cap rows vs §9 mandated tests, §8 signatures vs §1, §12 audit claims vs §9 tiers. State in the plan header that §1 governs on conflict.
+  - Every stated reason, invariant rationale and replacement sentence carries the `file:line` that makes it true. AR-03b's I-5 reason and AR-03a2's replacement text (wrong three times) were written with the code open and still wrong; the citation is what lets the auditor check it.
+  - A sentence summarising a contract table is written from the table, row by row, and cites it.
+- **P-plan-4-v39 — Use the reserved IDs (P9).** The ADR number and the drift-ID block come from the cycle-index row that `chunk-archive-plan` reserved at cycle mint. Never pick a number by scanning or from memory.
+- **P-plan-5-v39 — Joint planning of coupled rows (S2; `CLAUDE.md` § Pipelined, jointly-planned and parallel rows).** When a joint P0 covers several rows, write ONE PLAN PER ROW — each with its own §1, §8, §13 and audit envelope. Facts about a predecessor that is not built yet are written as **interface-contract obligations**, and added to that predecessor's acceptance criteria. Each downstream plan carries a "re-ground at <predecessor> seal" step: a factual refresh, with forks re-opened only on a refuted premise.
+- **P-plan-6-v39 — The close-out issue comment is part of P-SEAL paperwork (P13).** §8's final phase lists "draft the frontend-first GitHub issue comment" — the orchestrator posts it after the seal commit (`CLAUDE.md` gate-4, chunk-initiate Phase 5 step 0).

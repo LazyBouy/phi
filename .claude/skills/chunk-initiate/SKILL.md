@@ -286,7 +286,7 @@ Codifies + extends the user's standing rule (saved as `feedback_locked_fork_deta
 2. Spawn the auditors **in parallel** (single message, multiple Agent tool calls). Each gets a distinct prompt focus:
    - **Letter A** — code-correctness + phi-core leverage + tests.
    - **Letter B** — docs / paperwork / verified-headers / cycle-index row / ADR / drift entries.
-   - **Letter C** (only at `large`) — cross-cutting concerns: cross-file consistency, interface contracts, security implications.
+   - **Letter C** (only at `large`) — carry-forward regression and tests: 0-edit carry-forward suites, invariants the suite cannot enforce, cross-file consistency, and security implications where the chunk warrants (the practiced i-phi AR-lane definition, joint-retro `f4aa7e38` P14). Keep all three lanes: the retro rejected merging them because each lane found real defects the others missed (§3.2 of that retro).
 3. Each auditor writes `<cycle folder>/audit-<letter>-iter1.md` and returns the file path + a one-line verdict.
 4. Read all audit logs.
 5. **Triage findings per CLAUDE.md tiers**:
@@ -294,7 +294,7 @@ Codifies + extends the user's standing rule (saved as `feedback_locked_fork_deta
    - **Trivial-multi** (> 1-line trivial patch like a small docstring or cross-ref): orchestrator applies the patch; re-spawn the **same auditor** at iter N+1 to confirm. **Direct-verification release (P7; added 2026-05-27 per joint-retro proposal #7)**: when the orchestrator-applied Trivial-multi patch is verified-clean via direct read of the patched file at gate-4 (the orchestrator reads the post-patch file content + confirms each finding closed), the same-auditor re-spawn MAY be skipped with the deviation logged in `cycle-audit.md` §"Iteration accounting" as `Trivial-multi (direct-verification; no re-spawn)`. Saves ~5-10 min + token cost per cycle when applicable.
    - **Tactical FAIL**: re-spawn `chunk-implementer` with the audit log path. Then re-spawn all auditors at iter N+1.
    - **Architectural FAIL**: re-spawn `chunk-planner` with the audit log path. **Always escalate to the user** via AskUserQuestion before re-spawning. Then re-spawn implementer + auditors.
-6. **Iteration cap**: if any finding hits iter ≥ 3 → STOP, escalate to the user via AskUserQuestion.
+6. **Iteration cap**: if any finding CLASS hits iter ≥ 3 → STOP, escalate to the user via AskUserQuestion. Count rounds per class, not per literal finding; at round 2 on a class the next dispatch must change method (re-derive from the whole tree or a site × condition census). Full rule: outer `CLAUDE.md` Audit-fix loop "Iteration cap" (refined per joint-retro `f4aa7e38` P8).
 
 ### Phase 4 — Final cycle re-audit (mandatory, never skipped)
 
@@ -304,13 +304,14 @@ This is the orchestrator's gate-4. **Sub-agent auditors cannot run the MUST-RUN 
 2. Run the **MUST-RUN list** authoritatively:
    - baby-phi: `RUSTFLAGS="-Dwarnings" cargo clippy -j 4 --manifest-path <root>/Cargo.toml --workspace --all-targets`.
    - For `project = baby-phi`: `bash <root>/scripts/check-doc-links.sh`, `…/check-ops-doc-headers.sh`, `…/check-phi-core-reuse.sh`, `…/check-spec-drift.sh`.
-   - For `project = i-phi`: clippy only (no CI guard scripts exist yet — note this in the cycle-audit).
+   - For `project = i-phi`: `bash /root/projects/phi/.claude/scripts/docker-cargo.sh fmt -- --check` + `RUSTFLAGS="-Dwarnings" bash …/docker-cargo.sh clippy --all-targets -j 4` + the full suite `bash …/docker-cargo.sh test -j 4 -- --test-threads=1` **starting cold** from a removed `iphi-cargo-target` volume + the 5 CI guards `bash /root/projects/phi/i-phi/scripts/check-{doc-links,verified-headers,phi-core-reuse,spec-drift,no-env-config}.sh` (shipped at CH-07a/CC-14; the earlier "clippy only" note was stale — joint-retro `f4aa7e38` P14). Also run the chunk's NEW test binaries in the default-parallel lane (P10).
    - For `project = phi-core`: `RUSTFLAGS="-Dwarnings" /root/rust-env/cargo/bin/cargo clippy -j 4 --manifest-path <root>/Cargo.toml --all-targets` (single crate — **no** `--workspace`) + `cargo test -j 4`. No CI-guard scripts exist — note this in the cycle-audit (the MUST-RUN list IS the gate).
 3. Run `cargo fmt --manifest-path <root>/Cargo.toml -- --check` (if cargo exists; host cargo for baby-phi + phi-core).
 4. Verify all paperwork:
    - Cycle-index row exists and Status is correct.
    - Plan archive at `<root>/docs/v0/proposal/plan/<slug>-<hex>.md` (i-phi) or `<cycle folder>/plan.md` (baby-phi + phi-core).
-   - All touched docs have updated verified-headers (baby-phi + phi-core convention; i-phi currently skips verified-headers).
+   - All touched docs have updated verified-headers (all three projects; for i-phi `check-verified-headers.sh` enforces it over `docs/v0/{specs,design,user-guide}/`, and drift files are header-less by convention).
+   - Every ruling in `i-phi/docs/tmp/<cycle>/rulings.md` has its CHECK re-run and passing (outer `CLAUDE.md` gate-2 rulings ledger).
    - ADR / drift / FOLLOWUP entries present where the plan called for them.
 5. Write `<cycle folder>/cycle-audit.md` with these sections:
    - §1 audit-pipeline summary (one row per auditor letter × iteration).
@@ -324,9 +325,20 @@ This is the orchestrator's gate-4. **Sub-agent auditors cannot run the MUST-RUN 
 
 ### Phase 5 — Cleanup
 
-1. Skip entirely in `dry_run = yes` mode.
-2. Capture `du -sh <root>/target` (before).
-3. Run `cargo clean --manifest-path <root>/Cargo.toml`.
+0. **Issue close-out comment (NEW 2026-09-25; user-directed standing rule; joint-retro `f4aa7e38` P13; memory `[[feedback_chunk_issue_comment]]`)** — after the seal commit lands and BEFORE the cleanup below (the draft may quote close-gate captures the sweep deletes):
+   - Draft `i-phi/docs/tmp/<chunk>-issue-<N>-comment.md` for the GitHub issue the chunk implements, **frontend first**:
+     1. **What the frontend can observe**: new or changed routes, request/response fields with types, status codes and the error envelope, exact error texts a UI might match on, log lines visible on `/v1/logs`, auth requirements, the openapi floor — and say plainly when there is no API contract change;
+     2. **Behaviour changes** and how a UI should handle them;
+     3. **What shipped** (backend summary, ADR, key locks) and **what was verified**;
+     4. **Not done yet**: drift IDs → the row they are allocated to;
+     5. **Next row**, and **commit hashes** (say if not yet pushed).
+   - Technical-prerequisite rows still get one, opening "No frontend-visible change in this row" and saying what the next row will expose. Chunks with no issue post on the parent epic, or record `N/A — no issue`. Cross-crate seals post once and link both commits.
+   - Verify every route path and quoted string against the code and the close-gate evidence; scan the body for credential-shaped material.
+   - Post with `bash /root/projects/phi/.claude/scripts/gh-rest.sh issue-comment <N> --body-file <path>` — **never** `issue-update --body-file`, which overwrites the issue body. Posting is outward-facing: post when the user has authorised it (per the memory), otherwise present the draft.
+   - Record `Issue comment: <URL>` (or `drafted — awaiting go-ahead`) as a `cycle-audit.md` §5 paperwork row. The seal is not complete without that row.
+1. Skip the steps below entirely in `dry_run = yes` mode.
+2. Capture the target size before: `du -sh <root>/target` (baby-phi, phi-core) or `docker system df -v` (i-phi).
+3. Clean: `cargo clean --manifest-path <root>/Cargo.toml` (baby-phi, phi-core) or `docker volume rm iphi-cargo-target` (i-phi; plus any `IPHI_ROOT`-tagged volumes the cycle created).
 4. Capture `df -h /root | head -3` (after).
 5. Log "disk reclaimed" into `cycle-audit.md` §7 metrics row.
 
@@ -340,6 +352,8 @@ This is the orchestrator's gate-4. **Sub-agent auditors cannot run the MUST-RUN 
 - **Dispatch chunk-retrospector now (legacy per-cycle path)** → spawn the retrospector per the steps below; produces full `retrospective.md` + proposes standards updates surfaced one-by-one via AskUserQuestion. Status flips to `retro-complete` if proposals applied.
 - **Joint-retro session NOW (batched mode)** → spawn the retrospector with the **list of accumulated `retro-context.md` paths** + cycle-audit references from the prior 2-4 chunks; produces a single consolidated `retrospective.md` covering the batch. Use this when 3-4 retro-context.md files have accumulated. All batch chunks' Status flips to `retro-complete` together.
 - **Pause / abort** → stop at Phase 5; paperwork stays complete; Status stays `audited-pending-retro` for batched-retro path or `in-flight` for abort.
+
+**Practiced default since FI-34 (joint-retro `f4aa7e38` P14)**: no `retro-context.md` is written; instead each `cycle-audit.md` carries a "For the retrospective" / "Carried forward" section, and the joint retro reads the cycle-audits directly. Either form is acceptable — what matters is that every item routed to a retrospective lands in one of them and is picked up by the next joint retro.
 
 **Retro-context.md shape** (canonical CH-11b precedent at `i-phi/docs/v0/proposal/plan/build/ch-11b-web-chat-ui-bf1139be/retro-context.md`): Cycle context block + Observations worth carrying (process gaps / hypothesis updates / notable wins / code observations / plan-narrative inconsistencies / LOC absorption) + Standards-update proposals drafted (NOT applied; joint-retro decides) + Cycle-folder artifacts + Status.
 
@@ -457,13 +471,14 @@ On a split-prompt, AskUserQuestion options:
 
 Per CH-18 retro and the outer CLAUDE.md:
 
-**Placement 1 — Immediate-post-test.** After **every** `cargo test --workspace` invocation inside the cycle (sub-agent audits A + B, orchestrator gate-4 test, retrospector permissions-audit script), run:
+**Placement 1 — Within-chunk retention with guards (AMENDED 2026-09-25 per joint-retro `f4aa7e38` S5, user sign-off; supersedes the per-invocation clean).** The target volume / dir MAY be kept between cargo invocations within one chunk only while: ≥ 120 GB free (`df -h /root`) and the target ≤ 60 GB; never two cargo invocations against one volume at once; the gate-4 authoritative MUST-RUN starts COLD from a removed target; every close-gate rebuilds its binary (`docker-iphi.sh` always runs `cargo build`) and pins the binary sha (`.claude/scripts/gate-lib.sh` `pin_binary`). When a guard fails, clean before the next invocation:
 
 ```
-cargo clean --manifest-path <root>/Cargo.toml
+cargo clean --manifest-path <root>/Cargo.toml        # baby-phi, phi-core
+docker volume rm iphi-cargo-target                   # i-phi
 ```
 
-before the next cargo invocation. Per-invocation cleanup ensures the next invocation starts from a clean `target/` and prevents accumulation.
+(Superseded rule, CH-18: clean after **every** `cargo test` invocation. Retired because the guards above prevent the disk-pressure incident it answered, and the cold gate-4 run keeps the evidence standard.)
 
 **Placement 2 — Gate-5 final close.** After standards updates land + cycle-index row flipped to `retro-complete` (or `audited-pending-retro`), run the same `cargo clean` as the closing step before user commit. Capture `du -sh <root>/target` BEFORE + `df -h /root | head -3` AFTER and log disk reclaimed in `cycle-audit.md` §7.
 

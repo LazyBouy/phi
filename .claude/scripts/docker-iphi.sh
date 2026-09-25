@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Docker wrapper for running the built i-phi binary inside the container.
-# Builds on demand if target/<profile>/i-phi is absent, then exec's it.
+# Always runs `cargo build` first (a no-op when fresh), then exec's target/<profile>/i-phi.
 #
 # Usage:
 #   bash /root/projects/phi/.claude/scripts/docker-iphi.sh <iphi-subcmd> [args...]
@@ -117,7 +117,8 @@ if [[ ! -d "${IPHI_ROOT}" ]]; then
   exit 1
 fi
 
-# Phase 1: build-on-demand if binary missing inside the named target volume
+# Phase 1: always build inside the named target volume (a no-op when fresh)
+# Always build, never `test -x || build`: a retained volume must not exec a stale daemon (joint-retro f4aa7e38 S5 guard 4).
 build_flag=""
 [[ "${PROFILE}" == "release" ]] && build_flag="--release"
 
@@ -128,7 +129,7 @@ docker run --rm \
   -v "iphi-cargo-git:/usr/local/cargo/git" \
   -w /work \
   "${RUST_IMAGE}" \
-  bash -c "test -x ${BIN_REL_PATH} || cargo build ${build_flag}"
+  bash -c "cargo build ${build_flag}"
 
 # Phase 2: exec the binary
 if [[ "${IPHI_AUTO_DAEMON}" == "1" ]]; then

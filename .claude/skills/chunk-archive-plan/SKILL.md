@@ -52,10 +52,30 @@ For PROJECT_ROOT unset, all baby-phi paths apply unchanged.
    - If the orchestrator passed a plan-mode plan path: `cp <plan-mode plan> <cycle folder>/plan.md`.
    - If not: create an empty file; chunk-planner will Write the full plan content.
 5. **Update placeholders** in lines 4–5 of the archived copy if it carries `<8hex>` token-placeholder markers (per chunk-plan convention; the meta-plan archive convention differs).
-6. **Append cycle-index row** (project-aware): add a new row to `<cycle-index path>` under the "Active cycles" table with shape:
+6. **Reserve IDs, then append the cycle-index row** (project-aware).
+
+   **6a. Reserve the next ADR number + a drift-ID block** (added per joint-retro `f4aa7e38` P9 / §5 row 18). No ADR number or drift ID is ever assigned from memory: concurrent planning produced a three-way ADR-number clash (FI-34 D-3), and ID reservation at mint is a **precondition for running chunks in parallel lanes or pipelined** (planning N+1 while N is in audit). One call per line:
+   ```bash
+   # ADR: highest NNNN- prefix on disk (0010a/0010b count as 0010). Lexical order = numeric order within one dir.
+   ls -1 <PROJECT_ROOT>/docs/v0/design/decisions/[0-9][0-9][0-9][0-9]*.md | tail -1          # i-phi
+   ls -1 <PROJECT_ROOT>/docs/decisions/[0-9][0-9][0-9][0-9]*.md | tail -1                    # phi-core
+   find <PROJECT_ROOT>/docs/specs/v0/implementation -path '*/decisions/[0-9]*.md' -printf '%f\n' | sort   # baby-phi (numbered across m*/decisions/; read the last line)
+   # ...AND the highest number already RESERVED by another row (an in-flight cycle has no ADR file yet):
+   grep -oE 'Reserved IDs: ADR-[0-9]{4}' <cycle-index path>
+   # Drift block: the chunk's prefix must be unused, case-insensitively (both D-FI30- and d-fi30- exist).
+   grep -rliE 'D-<CHUNK>-FOLLOWUP-[0-9]' <drift dir>                                       # expect no output
+   grep -ciE 'D-<CHUNK>-FOLLOWUP-' <cycle-index path>                                     # expect 0
    ```
-   | [`<8hex>`](build/<slug>-<8hex>/plan.md) | <slug> — <one-line summary> | <phase count or n/a> | <auditor count or n/a> | <iter count, default `pending` until first audit> | `in-flight` | TBD |
+   - Reserve `ADR-<max(on-disk, reserved) + 1>`. `<CHUNK>` is the chunk id without the dash (`AR-03c` → `AR03C`).
+   - Drift dir: i-phi `docs/v0/design/drifts/`; baby-phi `docs/specs/v0/implementation/m*/drifts/`; phi-core has none, so check `<PROJECT_ROOT>/docs/` plus i-phi's drift dir (consumer-side KC drifts land there).
+   - Reserve the open-ended block `D-<CHUNK>-FOLLOWUP-01..`. If the prefix is already in use (a re-run chunk id), start the block at the next free number and say so in the output.
+   - A chunk that later needs a second ADR re-runs 6a and appends the new number to its own row. It never picks one from memory.
+
+   **6b. Append the cycle-index row**: add a new row to `<cycle-index path>` under the "Active cycles" table with shape:
    ```
+   | [`<8hex>`](build/<slug>-<8hex>/plan.md) | <slug> — Reserved IDs: ADR-<NNNN>, D-<CHUNK>-FOLLOWUP-<NN>.. — <one-line summary> | <phase count or n/a> | <auditor count or n/a> | <iter count, default `pending` until first audit> | `in-flight` | TBD |
+   ```
+   The `Reserved IDs: …` text is the reservation record, and 6a greps for it. Whoever later rewrites the slug cell (e.g. the P-SEAL narrative) keeps it verbatim. The plan and the ADR use the reserved number.
    If the planner cannot reliably produce the phase / auditor / iteration counts at chunk-open (the plan body may not be drafted yet), use placeholder values (`pending`, `TBD`) — the implementer / orchestrator fills them in at chunk-seal per the plan's P-SEAL paperwork checklist.
 7. **Verify** project-appropriate doc-links script if it exists:
    - baby-phi: `bash /root/projects/phi/baby-phi/scripts/check-doc-links.sh` must exit 0.
@@ -96,6 +116,7 @@ chunk-archive-plan:
   Hex: <8hex>
   Cycle folder: <project-appropriate path>/<slug>-<8hex>/
   Plan file: <cycle folder>/plan.md (initialized | copied from <plan-mode path>)
+  Reserved IDs: ADR-<NNNN> (on-disk max <NNNN>, reserved max <NNNN>) · D-<CHUNK>-FOLLOWUP-<NN>.. (prefix unused ✅ | in use → block starts at <NN>)
   Cycle-index row: ✅ appended at line <N> | ❌ <error>
   Doc-links check: ✅ exit 0 | ⏭ skipped (project has no script) | ❌ exit <code>
 ```
@@ -106,6 +127,7 @@ chunk-archive-plan:
 - Folder name is `<slug>-<8hex>` per memory `feedback_plan_archive_naming.md` (slug-first, hex suffix).
 - Folder path is under the project's canonical plan-build directory — never under baby-phi paths for an i-phi cycle, and never under the meta-plan's `agentic-workflow/` folder.
 - Cycle-index row IS appended (was a silent omission in v1; CH-01-i-phi retro Row 1 caught it).
+- The row carries `Reserved IDs: ADR-<NNNN>, D-<CHUNK>-FOLLOWUP-<NN>..`, and the ADR number is above both the on-disk maximum and every other row's reservation (joint-retro `f4aa7e38` P9).
 
 ## Reference
 

@@ -15,10 +15,12 @@ IMG="${RUST_IMAGE:-iphi-rust:1.95-slim}"
 SRC=/root/projects/phi/i-phi
 BINREL="target/debug/i-phi"
 
-# Build the binary on demand into the named volume.
+# Always build (a no-op when fresh), never `test -x || build`: with the target volume
+# retained between runs, a stale binary would otherwise be exec'd (joint-retro f4aa7e38 S5 guard 4).
 docker run --rm -v "$SRC:/work" -v iphi-cargo-target:/work/target \
   -v iphi-cargo-registry:/usr/local/cargo/registry -v iphi-cargo-git:/usr/local/cargo/git \
-  -w /work "$IMG" bash -c "test -x $BINREL || cargo build -j 4"
+  -w /work "$IMG" bash -c "cargo build -j 4"
+echo "binary: $(docker run --rm -v iphi-cargo-target:/t "$IMG" sha256sum "/t/${BINREL#target/}" | cut -c1-16)"
 
 docker run --rm -v "$SRC:/work" -v iphi-cargo-target:/work/target \
   -v "$FIX:/fixture" -e HOME=/fixture -w /work \
