@@ -397,6 +397,10 @@ Each Bash tool invocation runs **one logical operation**. Multiple operations = 
 
 **For multi-step audit/research scripts**: write the script to a file via the Write tool (e.g., `/root/projects/phi/baby-phi/scripts/audit-tmp.sh`), then run `bash /abs/path/audit-tmp.sh` as a single Bash call. Each line of the script runs in the bash process; only the outer `bash <file>` call is matched against allow rules.
 
+**Commit form the hooks accept** (backlog harvest U23, joint retro `f4aa7e38`; practised at every seal since CC-31b): write the message to a file under `i-phi/docs/tmp/`, stage with `git -C <root> add <paths>` in one call, then commit with `git -C <root> commit -F <file>` in a separate call. Heredoc messages, `cd … &&` and chained `add && commit` are blocked by the hooks.
+
+**Cargo output**: use `bash /root/projects/phi/.claude/scripts/docker-cargo-logged.sh <log-path> <cargo args>` instead of piping `docker-cargo.sh` into `tail` / `grep` — a trailing pipe defeats the allow rule and prompts every time (185 prompts in the f4aa7e38 window). The wrapper writes the full output to the log and prints the last 40 lines plus the exit code.
+
 This discipline applies to the orchestrator (Claude with full conversation context). chunk-implementer + chunk-auditor agent prompts carry compatible discipline (CH-12 retro Row 6 cd-overuse + CH-13 retro Row 4 replace_all-avoidance, refactored to lead with the granular principle in v4). CH-14 retrospective will validate prompt-count drop (target: < 5 in CH-14, vs CH-13's 312).
 
 ## Commit-subject drift-id-prefix discipline

@@ -30,6 +30,12 @@ Scaffold templates below use `<PROJECT_ROOT>` placeholder; caller substitutes at
    | 3–5 | Medium (2) | A (code + phi-core + K8s) + B (concept + docs + ADR) |
    | 6+ | Large (3) | A (code + phi-core + K8s) + B (concept + docs + ADR) + C (carry-forward regression) |
 
+   **Security-lens trigger (added 2026-09-25, joint retro `f4aa7e38` backlog harvest U4)**: when the chunk adds, stores, moves or reports a **secret** (tokens, keys, credentials, secret files, anything behind a secrets tier), a dedicated **security-lens auditor** is required whatever the phase count:
+   - at Small or Medium, add it as the next letter (B or C);
+   - at Large, fold it into C (carry-forward and security), or add a fourth letter D if C's claim list is already full.
+
+   Its brief hunts the unhappy paths — error messages, logs, `doctor` output, events and SSE streams — not only the happy path. Evidence: MVP-01's security auditor found a real secret leak in `iphi doctor` that every other check missed.
+
 2. **Draft the per-letter audit prompt scaffold** for §11. Each scaffold is ≤ 600 words and lists numbered claims. Templates:
 
 ### Audit A (code + phi-core + K8s) scaffold
@@ -98,6 +104,7 @@ audit-envelope-size:
 - Each scaffold's claims are numbered.
 - Each scaffold cites concrete plan sections (§3, §3.B, §5, §6, §7, §8) rather than handwaving.
 - The "carry-forward" scaffold (Audit C) only appears when phase count ≥ 6.
+- A secret-handling chunk always has a security-lens auditor (the trigger in step 1), at any phase count.
 
 ## Reference
 

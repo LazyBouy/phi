@@ -122,7 +122,7 @@ Until those updates ship, running `/chunk-initiate project=i-phi` requires passi
    - The **build toolchain** (phi-core host cargo; i-phi `docker-cargo.sh`).
    - The **output path**: `<cycle-folder-root>/_p0-investigations/<slug>-p0-investigation.md` (a stable pre-archive location — the `<slug>-<8hex>` cycle folder is not minted until Phase 1 step 7). Create `_p0-investigations/` if absent.
 2. **Read the returned report.** **Gate-0.5 (orchestrator verification — mandatory; per "verify every agent-made edit")**:
-   - Spot-check **1–2 findings** by reading the cited `file:line` or re-running a named repro from §7.
+   - Spot-check **1–2 findings** by reading the cited `file:line` or re-running a named repro from §7. **Always include every composition finding** ("try A, then fall back to B"): confirm the P0 reproduced the whole sequence, not each step alone (backlog harvest U1; CC-31b's P0 got the chunk's risk backwards this way).
    - Confirm **no hedged conclusions remain**: every §3 finding is `DEFINITIVE` (with evidence) or explicitly `UNRESOLVED — needs <named evidence>`. A soft "probably / may be / by design" that the evidence could settle is a FAIL.
    - For each `UNRESOLVED` / `needs_live_repro` item that **blocks planning**: either run the flagged live repro yourself (§8 shape), OR re-spawn the investigator with the specific gap. Non-blocking unresolveds (settleable later, not gating a fork) are carried into the plan as open questions.
 3. **Carry the report into Phase 1.** Pass the verified `_p0-investigations/<slug>-p0-investigation.md` path into the Phase 1 planner dispatch prompt (the planner grounds §1/§3/§4 on it instead of re-deriving the facts).
@@ -150,6 +150,8 @@ The investigator does **not** plan, lock forks, write production code, commit, o
 7. Archive the approved plan via the `chunk-archive-plan` sub-skill — produces `<cycle folder>/plan.md` with an 8-hex token, appends a row to the cycle-index.
 
 ### Phase 1.5 — Approval gate (skip if `resume_from_phase != plan`)
+
+**Frontend fork delegation (backlog harvest U5; codifies the practice of FI-01 and FI-04a/b/c/d)**: every fork goes to the user via AskUserQuestion, with ONE exception. When the user has **explicitly delegated** an issue's design choices to the consuming frontend agent, forks that shape the **consumer-facing contract** (a route's shape, a field's name or type, an error code) MAY be locked by that agent through the tracking GitHub issue. The plan's §1 then records the comment link and the rationale. **Backend architecture, dependency and security forks always go to the user**, delegation or not. Only an explicit user delegation counts — never infer one from silence or from a previous issue.
 
 **Gate-1 fork-lock decision flow (added 2026-05-18 per CH-03-i-phi retro P1, cycle hex `c542648f`; STRENGTHENED 2026-05-19 per CH-05-i-phi retro P-skill-1, cycle hex `f7a354b6` — mandatory iter-2 re-spawn after fork-locks regardless of divergence)**:
 

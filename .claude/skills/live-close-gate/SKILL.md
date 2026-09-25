@@ -13,7 +13,7 @@ Run the orchestrator's gate-4 **live disposition-asserting close-gate** for an i
    - **Storage-isolation** (per-agent memory roots, on-disk credentials, session files) → the **filesystem**: boot the daemon, mutate, and read the on-disk artifact (per-agent memory dir, `credentials.toml`, emitted event, DB row) — NOT the wire.
    - Identify the surface FIRST, then render THAT.
 
-2. **Distinguishing-fixture rule** — the per-agent value MUST **observably differ** from the daemon-wide default, or the gate cannot tell "applied" from "fell back". MA-06 almost mis-PASSed with an `allow=[]` fixture that is INDISTINGUISHABLE from the block-all default. Author the fixture so agent-A's rendered surface is provably different from agent-B's AND from the daemon default (e.g. agent-A DENIES a custom tool, agent-B ALLOWS it → the tool is absent/present in the respective wire catalogs). For a file-vs-inline parity claim, include an inline-equivalent agent and assert byte-identical (identical tool set + identical input-token count).
+2. **Distinguishing-fixture rule** — the per-agent value MUST **observably differ** from the daemon-wide default, or the gate cannot tell "applied" from "fell back". MA-06 almost mis-PASSed with an `allow=[]` fixture that is INDISTINGUISHABLE from the block-all default. Author the fixture so agent-A's rendered surface is provably different from agent-B's AND from the daemon default (e.g. agent-A DENIES a custom tool, agent-B ALLOWS it → the tool is absent/present in the respective wire catalogs). For a file-vs-inline parity claim, include an inline-equivalent agent and assert byte-identical (identical tool set + identical input-token count). **Also run the consumer's common case** — the default provider kind, the keyless payload the frontend really sends — not only a case that happens to pass (backlog harvest U14: FI-03's gate passed on the easy provider, and the frontend then hit a 400 on the default one).
 
 3. **IPC readiness probe** — the daemon on `--ipc-listen=tcp:<port>` speaks the **IPC protocol, NOT HTTP**. Poll readiness with the IPC client `iphi --ipc-listen=tcp:127.0.0.1:<port> status`, NOT `curl http://127.0.0.1:<port>/v1/status` (that is the HTTP-API mode; it will time out even though the daemon is up). This cost MA-08 a re-run.
 
@@ -32,6 +32,16 @@ Harness scripts `source /root/projects/phi/.claude/scripts/gate-lib.sh` and use 
 - **(g) Permission-gated fixtures** (model-facing gates): place the tested tool on the DEFAULT agent, grant it with a user-scope `permissions.toml` `allow=[…]`, and use a python stdio MCP stand-in when an MCP tool is needed — the recipe that stopped the repeated fixture misplacement.
 - **(h) Credentials.** Read bearer tokens from a gitignored file (never on a command line), redact minted token plaintexts in every capture, and scan the evidence before committing it.
 - **(i) Record close-gate-only proofs in the ADR's Verification section**, so a later reader can re-run them.
+
+## Mock-provider and offline recipes (joint retro `f4aa7e38` backlog harvest U12, U13, U15)
+
+Proven recipes from the FI cycles. Use them rather than re-deriving:
+
+- **Park an interactive Ask** (FI-04a, FI-06): drive mock tool calls against an **`ask`-only** permissions file, and hold `/v1/attach` open to observe the parked decision. Do not put an `allow` rule alongside: an `allow` auto-approves, so nothing parks. FI-06 lost a run to exactly this. Rule (g) above is for *allow*-gated fixtures; interactive-park fixtures are the opposite.
+- **Same-session effect**: put two tool calls in ONE turn — i-phi runs tools sequentially, so the second observes the first's effect (FI-04d).
+- **Latency**: measure absolute wall-clock from request to the terminal event. SSE inter-event gaps are corrupted by buffering (FI-08).
+- **Offline wire gate, no key and no network** (FI-03): turn on `[debug] transcript = true` and point the provider at an unreachable `base_url` (`http://127.0.0.1:1`). The turn still builds and records its request under `wire/`, so the gate can assert on the recorded request body.
+- **Operator-tunable settings**: when a chunk ships a tunable, the gate SETS it to a non-default value and asserts its effect live (FI-02A `max_pending_inputs`) — a default-valued run proves nothing about the knob.
 
 ## Procedure
 
