@@ -1,0 +1,24 @@
+# One extended-regex per line, matched case-insensitively against ADDED lines of the
+# Activepieces diff. Lines starting with # are comments.
+\bn8n\b
+ff6d5a
+255, ?109, ?90
+--color--
+--canvas--
+--node--
+--spacing--
+--radius--
+--text-color--
+--background--
+--border-color--
+--icon-color--
+\bN8n[A-Z]
+vue-flow
+execute workflow
+what triggers this workflow
+what happens next\?
+add first step
+node details view
+5b60e8
+aa7bec
+ec7b8e

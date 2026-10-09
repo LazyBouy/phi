@@ -22,3 +22,8 @@ iphi-worktrees/
 # under .git/backport-work/ and is never tracked.
 .claude/skills/propagate-fixes/.pr-body-*.md
 .claude/skills/propagate-fixes/.last-scan
+
+# iphi-flow n8n look-and-feel work: local helper scripts, reference-instance data,
+# and screenshots of the n8n reference UI (internal reference only, never committed).
+iphi-flow/.work/
+iphi-flow/docs/specs/n8n-vibe/_ref/
