@@ -10,3 +10,9 @@
 [submodule "iphi-frontend"]
 	path = iphi-frontend
 	url = https://github.com/LazyBouy/iphi-frontend.git
+[submodule "iphi-flow/n8n"]
+	path = iphi-flow/n8n
+	url = https://github.com/LazyBouy/n8n.git
+[submodule "iphi-flow/activepieces"]
+	path = iphi-flow/activepieces
+	url = https://github.com/LazyBouy/activepieces.git
