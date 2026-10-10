@@ -547,3 +547,23 @@ Design produced this session; the facts below were spot-checked in code.
   - The builder header stays at 57px until Phase 10.
 - **Pre-existing e2e defect found:** the page object's `button:has(svg.lucide-more-horizontal)` matches nothing, because lucide 0.576 renamed that class to `lucide-ellipsis`. Fix it in Phase 12.
 - **Known for Phase 5:** with the rail expanded at 1440px, the automations table's fixed 1200px grid overflows the 1144px container. PAG-02 removes that grid.
+
+## Amendment 2026-10-10 (h) — Phase 5 sealed
+- **Phase 5 sealed:** fork `dev` commit `b990663af8` (`feat(web): restyle dashboard pages, data tables and auth`).
+  - Requirements: PAG-01–27.
+  - Gate run by the orchestrator:
+    - typecheck and lint: 0 errors;
+    - web tests 1312/1312 (29 new); shared tests 574/574;
+    - clean-room audit: PASS, 94 files, 0 overlap, 0 forbidden text. The implementer's first run had flagged generic fake-timer test boilerplate, which was rewritten.
+  - Diff review:
+    - The removed project-members query was dead code: the old row declared the prop as `any` and never read it.
+    - The auth rewrite is presentation only; submit, captcha and mutation wiring are unchanged.
+  - e2e checked live: auth ids, the "Create New" / "New Flow" names, select-all first, the trash bulk button and "Delete" confirm, the empty-project texts.
+  - Visual check: row cards, folder expansion, the filter row, the auth card.
+  - The Phase 3 filter-trigger border side effect is fixed.
+- **Deviations:**
+  - Dark `--lift` is black 25%, per PAG-06/PAG-21; TOK-13 had it theme-neutral.
+  - Table-editor data rows stay 42px.
+  - The no-projects illustration is replaced by the standard glyph.
+  - The PAG-20 platform sub-pages and dialogs were not all audited; re-check in Phase 11.
+- **Local dev data** created for captures: "Phase 5 folder" (2 flows), "Phase 5 table", and team project "Phase 5 empty".
