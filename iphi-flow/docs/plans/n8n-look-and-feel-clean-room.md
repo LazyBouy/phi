@@ -658,3 +658,32 @@ Design produced this session; the facts below were spot-checked in code.
   - the layout-state tests;
   - trim the leftover step dnd-kit code.
 - **Local dev data:** flows "Phase 7b1 - Statuses", "Phase 7b1 - Router run", "Phase 7b1 - Slow", and a NO_AUTH Sheets connection.
+
+## Amendment 2026-10-10 (l) — Phase 7b-2 sealed; Phase 7 complete; paused
+- **Phase 7b-2 sealed:** fork `dev` commit `3724158d96` (`feat(builder): draggable steps with saved positions, re-parenting and tidy-up`).
+  - Requirements: NOD-14, HDL-07, EDG-08, CAN-09, CAN-16.
+  - The spike-corrected local-nodes pattern is in use.
+- **Gate run by the orchestrator:**
+  - web typecheck clean, lint 0 errors, tests 1413/1413;
+  - shared tests 574/574;
+  - clean-room audit: PASS, 26 files, 0 overlap.
+- **Diff review:**
+  - `UPDATE_STEP_POSITIONS` is queued directly, with no keyed debounce.
+  - Read-only refuses it, both in `applyOperation` and in all four write paths of the layout slice.
+  - The follow-up queues after ADD, DUPLICATE and MOVE.
+- **Implementer's live proof: 11/11 PASS.** Drag + reload, first-write materialisation, multi-select drag, click still opens settings, re-parent via `MOVE_ACTION`, insert follow-up (+224), tidy-up (button and shortcut), old-version read-only, drag-out to empty canvas, drag-line timing, and notes.
+- **Deviations:**
+  - The re-seed carries `selected` and `measured` over.
+  - `nodesConnectable={!readonly}` is needed to draw the drag line; connections stay impossible.
+  - Follow-up shifts are generalised (k×224 for pastes; join-aware).
+  - Read-only hides the tidy-up button.
+  - The drag-out selector anchors at the stub until Phase 9.
+  - Escape cannot cancel a drag (a React Flow 12.3.5 limit).
+- **Pre-existing from 7b-1:** on loop flows, the back-edge's hover area overlaps the edge into the loop. Fix in Phase 11.
+- **Phase 7 is complete** (7a + 7b-1 + 7b-2). Draggable, persisted, n8n-like graph.
+- **Commit Mono:** the user authorised the download on 2026-10-10.
+  - Release v1.143 is saved in `iphi-flow/.work/fonts/commit-mono-1.143/` (724,227 bytes, sha256 `f7d1f26a7c7554800a996f76f5d706bf0648b936ca2a66b5bc4d46e3a2c49ed0`).
+  - Licence: OFL 1.1, no reserved font names.
+  - The release ships static OTF/TTF files at 400/700, regular and italic, not a variable woff2. The plan is to bundle the OTFs unmodified, with the licence.
+  - TOK-14 integration is pending.
+- **Paused** at the user's request after Phase 7b-2. Next, when resumed: TOK-14 font integration, then Phase 8 (three-pane step modal).
