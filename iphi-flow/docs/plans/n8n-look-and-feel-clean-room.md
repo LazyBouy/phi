@@ -506,3 +506,25 @@ Design produced this session; the facts below were spot-checked in code.
   - use `--` separators, because the fork's dev server creates a `dev/` folder that made `dev` ambiguous;
   - fail loudly on git errors.
 - **Dev servers** now start detached with `setsid` (`iphi-flow/.work/start-ap-dev.sh`). A background-task restart had killed esbuild's helper processes.
+
+## Amendment 2026-10-10 (f) — Phase 3 sealed
+- **Phase 3 sealed:** fork `dev` commit `a9ea598bd2` (`feat(web): restyle the shared ui primitives`).
+  - Requirements: PRM-01–27, TOK-11, TOK-18, TOK-19, TOK-20, MOT-01–17, MOT-19.
+  - New pieces: the `segmented-control` primitive, a badge `tag` variant and sizes, an alert `notice` layout, a dialog `size` prop.
+  - `cn()` now knows the `text-xss` / `text-xsm` sizes and the custom shadow names (this closes the Phase 2 gap).
+  - Gate run by the orchestrator:
+    - typecheck and lint: 0 errors;
+    - web tests 1253/1253 (15 new); shared tests 574/574;
+    - clean-room audit: PASS, 44 files, 0 overlap, 0 forbidden text;
+    - visual check of dialog and menus done.
+- **Partial items** (spec gaps, carried forward):
+  - PRM-03 input affixes;
+  - PRM-06 unread dot;
+  - PRM-09 bottom fade;
+  - ellipsis for long badge labels (PRM-13).
+- **Interim side effect:** outline buttons whose call sites pass their own `border-*` colour lose that border, because the variant now draws an inset ring. Affected:
+  - the data-table filter triggers (rebuilt in Phase 5, PAG);
+  - `config-detail`;
+  - `test-sample-data-viewer` (rebuilt in Phase 8, NDV).
+  - Re-check in Phase 12.
+- **Phase split:** Phase 4 covers SHL-01–18, SHL-25 and SHL-26. The builder header (SHL-19–24) stays with Phase 10.
