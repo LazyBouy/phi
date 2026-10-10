@@ -106,11 +106,20 @@ Flow JSON schema migration (no): additive and outside `trigger`; a v28→v29 bum
 - Stub `nodes/step-node/output-stub.tsx` (inside the node so it moves during drag): 2px line `STUB` long → 24px "+" box; opens `PieceSelector` with id `${step}-${outputId}`; output label 20px right of the handle.
 
 ## 5. Drag
-- `BUILDER/flow-canvas/index.tsx`: `nodesDraggable` = not readonly; `snapToGrid`; `snapGrid=[16,16]`; `nodeDragThreshold ≈ 4`.
-- `onNodesChange` applies only STEP `position` changes into a transient store map `dragPositions`; nodes = `graph.nodes` with overrides; edges follow.
-- `onNodeDragStop(e, node, nodes)` / `onSelectionDragStop` → snap → skip if unchanged → one `UPDATE_STEP_POSITIONS` → clear `dragPositions`.
-- Notes explicitly `draggable: false` (keep their dnd-kit path).
-- `createGraphKey` (hand-built string key) must include `stepPositions`, or drags won't repaint.
+Corrected after the Phase 7.0 spike (`design/spike-7.0-findings.md`, spike commit `3c57040414` on `spike/rf-drag`). The original "position-only `dragPositions` overlay" loses React Flow's selection on every moved node, so it is replaced.
+- **Pattern:** the canvas keeps a local copy of the nodes, `{ key: graphKey, nodes }`, seeded from `graph.nodes`. `onNodesChange` applies **every** change type with `applyNodeChanges` to that copy. Position changes are applied only for STEP node ids. Whenever the graph key changes, the copy re-seeds from the graph. No `dragPositions` slice in `layout-state.ts`.
+- **ReactFlow props:**
+  - `snapToGrid`, `snapGrid={[16,16]}`, `nodeDragThreshold={4}`, `nodeClickDistance={4}` (without it a click with 2px jitter does not open settings);
+  - `elevateNodesOnSelect={false}`, which keeps today's stacking;
+  - keep `nodesDraggable={false}`;
+  - AP's selection props and handlers stay unchanged.
+- **Readonly is per node:** a node-level `draggable` overrides `nodesDraggable`. So STEP nodes get `draggable: !readonly`, and every other node type stays non-draggable.
+- `onNodeDragStop(e, node, nodes)` / `onSelectionDragStop(e, nodes)` → skip unchanged positions → one `UPDATE_STEP_POSITIONS`.
+  - The positions they receive are already on the 16px grid, so no extra snapping is needed.
+  - They also fire after a tiny click-drag: React Flow compares the snapped pointer with the unsnapped start, so the effective threshold is 0–8px. The skip-unchanged check covers that.
+- After the commit, the optimistic `stepPositions` change alters the graph key, which re-seeds the local copy. `createGraphKey` (the hand-built string key) must include `stepPositions`.
+- **Notes:** `draggable: false` **and** `className: 'nopan'`, so they keep their dnd-kit path. Without `nopan`, grab mode pans the canvas under a note drag.
+- **Until the new layout lands:** today's computed positions are off the 16px grid, so a first drag jumps by up to 8px. This disappears once `flowLayoutUtil` snaps everything to 16.
 - Replace `use-fit-to-view.ts` with `fitView({ padding: 0.2, maxZoom: 1 })`; drop `translateExtent`; call `useUpdateNodeInternals` when the output count changes without a size change (1 ↔ 2 outputs).
 - Re-parenting (keeps `MOVE_ACTION`): while a single step drags, show drop indicators on every edge midpoint and stub, excluding its own edges and descendants (`flowStructureUtil.isChildOf`); release within a 32px target → `MOVE_ACTION { name, newParentStep, stepLocationRelativeToNewParent, branchIndex }`, then position the node at the drop point; elsewhere → position-only; multi-select drags never re-parent; `MOVE_ACTION` carries the step and children, not its `nextAction` chain.
 - Retire dnd-kit for steps: `useDraggable` in `step-node/index.tsx`; droppables in `add-button.tsx` and `big-add-button-node.tsx`; `step-drag-overlay.tsx`; `handleStepDragEnd` in `flow-drag-layer.tsx`. Keep `FlowDragLayer` for notes.
@@ -129,7 +138,7 @@ Flow JSON schema migration (no): additive and outside `trigger`; a v28→v29 bum
 2. Server: migration + entity, `flow.service.ts` routing + side-effect gating, RBAC (2 files), audit case, import sites, MCP.
 3. Web model: `utils/types.ts` (STEP, JOIN, NOTE; FLOW edge), `utils/consts.ts`, rewrite `utils/flow-canvas-utils.ts` (`createFlowGraph` = resolve + outputs + edges + joins), delete orientation code (`layout-consts.ts`, `canvas-state.ts` field, toggle).
 4. Web components: step node (96×96, trigger left radius 36, label 8px below, handles, output labels, stubs), `nodes/join-node.tsx`, `edges/flow-edge.tsx`, `utils/edge-path-utils.ts`; delete old edges and big-add / loop-return / end-widget nodes.
-5. Web interaction: `state/layout-state.ts` (`dragPositions`, `commitStepPositions`, `tidyUp`, `dropTargetId`, insert follow-ups) registered in `builder-hooks.ts`; `flow-state.ts` queue case; canvas props/handlers; re-parent targets; trim `flow-drag-layer.tsx`; tidy-up button + `Shift+Alt+T` (`shortcutHandler` has no Alt support; match `e.code === 'KeyT'` — macOS Option+T yields "†").
+5. Web interaction: local-nodes pattern in the canvas (§5); `state/layout-state.ts` (`commitStepPositions`, `tidyUp`, `dropTargetId`, insert follow-ups) registered in `builder-hooks.ts`; `flow-state.ts` queue case; canvas props/handlers; re-parent targets; trim `flow-drag-layer.tsx`; tidy-up button + `Shift+Alt+T` (`shortcutHandler` has no Alt support; match `e.code === 'KeyT'` — macOS Option+T yields "†").
 6. Import/export plumbing; brain gotchas in `brain/knowledge/flows-execution/flows.md` (also still says schema '27').
 
 ## 8. Tests

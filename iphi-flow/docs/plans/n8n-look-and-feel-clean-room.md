@@ -475,3 +475,34 @@ Design produced this session; the facts below were spot-checked in code.
 - The user accepted the spec as drafted, including every decision in amendment (b).
 - It is frozen at parent-repo tag `n8n-vibe-spec-v1`. Any later change goes through the reference lane, a re-run of `spec-lint.sh` and `spec-index.mjs`, and a new tag.
 - **Next:** the build lane starts with the Phase 7.0 spike and Phase 2 (tokens) on the fork's `dev` branch, in sessions started from `iphi-flow/activepieces` so the clean-room guard applies.
+
+## Amendment 2026-10-10 (d) — Build lane from the parent session
+- The user asked to continue in the existing session, whose working directory is the parent repo.
+- To keep the build lane clean, the same guard is installed at parent level in `/root/projects/phi/.claude/settings.local.json`, which is git-ignored:
+  - deny `Read`, `Grep` and `Glob` on `/root/projects/phi/iphi-flow/n8n/**`;
+  - the PreToolUse `clean-room-guard.sh` hook on `Bash|Read|Grep|Glob`.
+- Verified live: a Read of an n8n file was refused by permissions, and `ls` of the n8n tree was refused by the hook. Every agent spawned from this session inherits both.
+- Remove them only if a new reference-lane task needs n8n again; that task then runs as a separate, recorded step.
+- The build lane may still look at the n8n reference UI over HTTP, and at the `_ref/` screenshots. That is black-box observation, not source.
+
+## Amendment 2026-10-10 (e) — Spike 7.0 done, Phase 2 sealed
+- **Phase 7.0 spike: GO with changes.** Commit `3c57040414` on the fork's `spike/rf-drag`; it will not be merged.
+  - Controlled node dragging works with selection, the selection rectangle and chevron, both context menus, note dragging, and pan/zoom.
+  - The pattern is a local copy of the nodes with `applyNodeChanges`, re-seeded when the graph key changes. The design's position-only overlay lost selection.
+  - `design/graph-positions.md` §5 is corrected. Findings are in `design/spike-7.0-findings.md`.
+- **Phase 2 sealed:** fork `dev` commit `9eb3dfe9c6` (`feat(web): new theme tokens and a fixed default palette`).
+  - Requirements: TOK-01–10, 12, 13, 15, 16, 23.
+  - Generated ramps match the spec: 96 of 96 values.
+  - Gate run by the orchestrator:
+    - web typecheck and lint: 0 errors;
+    - web tests 1238/1238; shared tests 574/574; api lint: 0 errors;
+    - clean-room audit (`dev WORKTREE`): PASS, 16 files, 0 overlap, 0 forbidden text;
+    - visual check done.
+  - Includes a generator fix: contrast is checked on the rounded colour; no stock value changes.
+- **TOK-14 (Commit Mono) deferred:** the upstream font file needs a download, which the project's hook policy reserves for the user. JetBrains Mono stays until the user decides.
+- **Audit tool fixes,** found while gating:
+  - read the audited ref from git rather than the working tree;
+  - add a `WORKTREE` mode for uncommitted changes;
+  - use `--` separators, because the fork's dev server creates a `dev/` folder that made `dev` ambiguous;
+  - fail loudly on git errors.
+- **Dev servers** now start detached with `setsid` (`iphi-flow/.work/start-ap-dev.sh`). A background-task restart had killed esbuild's helper processes.
