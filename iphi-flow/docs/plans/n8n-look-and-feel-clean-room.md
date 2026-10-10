@@ -567,3 +567,27 @@ Design produced this session; the facts below were spot-checked in code.
   - The no-projects illustration is replaced by the standard glyph.
   - The PAG-20 platform sub-pages and dialogs were not all audited; re-check in Phase 11.
 - **Local dev data** created for captures: "Phase 5 folder" (2 flows), "Phase 5 table", and team project "Phase 5 empty".
+
+## Amendment 2026-10-10 (i) — Phase 6 sealed; Phase 7 split
+- **Phase 6 sealed:** fork `dev` commit `6100a22f19` (`feat(builder): new canvas chrome and left-to-right canvas`).
+  - Requirements: CAN-01–13, CAN-15, CAN-16.
+  - Gate run by the orchestrator:
+    - typecheck and lint: 0 errors (69 warnings, down from 72);
+    - web tests 1359/1359 (47 new); shared tests 574/574;
+    - clean-room audit: PASS, 46 files, 0 overlap. The implementer had rewritten two generic snippets the audit flagged.
+  - Diff review:
+    - The new Stop button uses the existing `flowRunsApi.bulkCancel`, only for QUEUED or PAUSED test runs.
+    - Delete and skip no longer pass note or trigger names to step operations.
+  - e2e checked: exactly one "Test Flow", one "Publish", `rf__node-trigger`, `add-action-button`.
+- **Deferred:**
+  - CAN-14 placeholder, the tidy-up action and Shift+Alt+T → Phase 7;
+  - `N` → Phase 9;
+  - Enter → Phase 8;
+  - Publish into the header → Phase 10;
+  - the run-info banner → LOG (Phase 10);
+  - F2, R, Ctrl/Cmd+A, arrow keys, L/I/O → Phase 11.
+- **Interim:** notes seeded for the old vertical layout overlap steps in the left-to-right view (known hard spot 7 in the graph design).
+- **Phase 7 split:**
+  - **7a:** model, operation, layout engine, migration and server (design §1–3, §6, plus the core and server tests in §8).
+  - **7b:** web graph, nodes, edges, drag, re-parent and tidy-up (design §3–5 web parts, 06-graph, CAN-14).
+  - They run one after the other, to respect the user's CPU caps.
