@@ -626,3 +626,35 @@ Design produced this session; the facts below were spot-checked in code.
   - a new `createFlowGraph`;
   - remove the old edges, nodes and orientation code.
 - **Local leftover:** `~/.activepieces/pglite`, created by `check-migrations`. The hook blocks `rm -rf`, so the user removes it if wanted.
+
+## Amendment 2026-10-10 (k) — Phase 7b-1 sealed
+- **Phase 7b-1 sealed:** fork `dev` commit `825dff34d0` (`feat(builder): render the left-to-right graph with new steps and edges`).
+  - Requirements: NOD-01–12, HDL-01–06, EDG-01–07, EDG-09, CAN-14.
+  - Removed: the old edges and nodes, orientation code, `FLOW_CANVAS_*` and `computeRouterChildOffsets`; core-execution is now 0.27.1.
+- **Gate run by the orchestrator:**
+  - web typecheck clean, lint 0 errors (68 warnings), tests 1386/1386;
+  - core-execution tests 214/214; shared tests 574/574;
+  - clean-room audit: PASS, 36 files, 0 overlap.
+- **Visual review:**
+  - linear, branching with the join dot, and the loop back-edge;
+  - a real run: green edges with item counts, a failed step in red, the violet sample-data trigger, a skipped step with its strike line.
+  - Insert locations were verified live through the API.
+- **e2e:**
+  - `rf__node-trigger` with "Select Trigger" is kept.
+  - `add-action-button`: 0 on a brand-new flow (CAN-14) and 1 after a trigger is chosen, which is when the page object clicks.
+  - "Test Flow": 1 at rest, 2 only while the pointer is in the trigger's hover zone.
+- **Deviations carried forward:**
+  - the box still wraps the piece-selector popover until Phase 9;
+  - the toolbar "Test" opens settings and triggers the test there;
+  - the loop iteration picker stays on the canvas until LOG/NDV;
+  - NOD-13 (optional) is not done;
+  - 1.5px borders render as 1px at a 1× device pixel ratio.
+- **Next, 7b-2:**
+  - drag with the local-nodes pattern and persistence;
+  - re-parent through `MOVE_ACTION` drop targets;
+  - materialise on first write, then insert follow-ups (+224);
+  - the tidy-up action and Shift+Alt+T;
+  - NOD-14, HDL-07, EDG-08;
+  - the layout-state tests;
+  - trim the leftover step dnd-kit code.
+- **Local dev data:** flows "Phase 7b1 - Statuses", "Phase 7b1 - Router run", "Phase 7b1 - Slow", and a NO_AUTH Sheets connection.
