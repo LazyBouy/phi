@@ -591,3 +591,38 @@ Design produced this session; the facts below were spot-checked in code.
   - **7a:** model, operation, layout engine, migration and server (design §1–3, §6, plus the core and server tests in §8).
   - **7b:** web graph, nodes, edges, drag, re-parent and tidy-up (design §3–5 web parts, 06-graph, CAN-14).
   - They run one after the other, to respect the user's CPU caps.
+
+## Amendment 2026-10-10 (j) — Phase 7a sealed
+- **Phase 7a sealed:** fork `dev` commit `a665a95e72` (`feat(flows): persist step positions and add a left-to-right layout engine`).
+- **Delivered:**
+  - a version-level `stepPositions` map and the `UPDATE_STEP_POSITIONS` operation;
+  - tail prune, preservation of a moved subtree, and replacement on import;
+  - in-place updates on published versions, with no event and no last-modified bump;
+  - the RBAC lists, the audit description, and the import/export/MCP plumbing;
+  - migration `1867000000000-AddStepPositionsToFlowVersion` (follows AP's synthetic numbering; constant default, no rewrite);
+  - `flowLayoutUtil`;
+  - version bumps: core-execution 0.27.0, shared 0.201.0.
+- **Gate run by the orchestrator:**
+  - core-execution tests 214/214 (40 new); shared tests 574/574;
+  - API unit tests (flows and database) 265/265; flow-operations 42/42; flow-diff 11/11;
+  - API typecheck clean; `check-migrations`: no drift;
+  - web typecheck clean, lint 0 errors, tests 1359/1359;
+  - clean-room audit: PASS, 52 files, 0 overlap.
+- **Implementer's live proof** on the dev API passed 12/12. Saved positions persist; a published version is updated without a draft fork; a deleted step's key is pruned.
+- **Diff review:**
+  - The move snapshot includes the moved step itself (`getAllChildSteps` builds on `getAllSteps`).
+  - The routing shares the note case group.
+- **Deviations:**
+  - The entity column carries `default: '{}'` (needed for the drift check).
+  - `migrateFlowVersionTemplate` keeps a template's positions.
+  - Output ids are `out-i`, with done/loop/success/error as labels.
+  - No collision push-down.
+  - The join y can sit 8px off the grid.
+  - The gap after a join is 80px; the origin is (176, 240).
+- **Left for 7b:**
+  - delete `FLOW_CANVAS_*` and `computeRouterChildOffsets` once the web no longer imports them;
+  - the explicit `flow-state.ts` case and readonly guard;
+  - `createGraphKey` must include `stepPositions`;
+  - a new `createFlowGraph`;
+  - remove the old edges, nodes and orientation code.
+- **Local leftover:** `~/.activepieces/pglite`, created by `check-migrations`. The hook blocks `rm -rf`, so the user removes it if wanted.
