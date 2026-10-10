@@ -528,3 +528,22 @@ Design produced this session; the facts below were spot-checked in code.
   - `test-sample-data-viewer` (rebuilt in Phase 8, NDV).
   - Re-check in Phase 12.
 - **Phase split:** Phase 4 covers SHL-01–18, SHL-25 and SHL-26. The builder header (SHL-19–24) stays with Phase 10.
+
+## Amendment 2026-10-10 (g) — Phase 4 sealed
+- **The user paused work mid-Phase 4** (agent halted). It resumed after a host restart: services restarted, dev servers started only via `start-ap-dev.sh` (turbo `--concurrency=5`, per the user's CPU-cap memory note).
+- **Phase 4 sealed:** fork `dev` commit `c6e2b83caa` (`feat(web): new app shell with resizable sidebar and page header`).
+  - Requirements: SHL-01–18, SHL-25, SHL-26.
+  - Also delivered: the PAG-11 create-menu content, needed because Create New and Import left the filter row.
+  - Gate run by the orchestrator:
+    - typecheck and lint: 0 errors;
+    - web tests 1283/1283 (30 new); shared tests 574/574;
+    - clean-room audit: PASS, 33 files, 0 overlap, 0 forbidden text.
+  - Diff review: the create-flow refactor keeps behaviour, including the same three invalidated query keys.
+  - Visual check: 200px white rail, 20px title, orange split button, underline tabs, full-bleed builder canvas.
+  - e2e names kept: the "Create New" chevron, the "New Flow" item, link "Automations", the select-all checkbox.
+- **Deviations:**
+  - Items the user lacks permission for are shown disabled with a tooltip; this follows AP's own behaviour, as PAG-11 does.
+  - The page container applies on project-tab pages only (other pages until PAG-20).
+  - The builder header stays at 57px until Phase 10.
+- **Pre-existing e2e defect found:** the page object's `button:has(svg.lucide-more-horizontal)` matches nothing, because lucide 0.576 renamed that class to `lucide-ellipsis`. Fix it in Phase 12.
+- **Known for Phase 5:** with the rail expanded at 1440px, the automations table's fixed 1200px grid overflows the 1144px container. PAG-02 removes that grid.
