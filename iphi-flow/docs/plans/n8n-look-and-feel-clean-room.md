@@ -702,3 +702,25 @@ Design produced this session; the facts below were spot-checked in code.
   - web typecheck clean, lint 0 errors, tests 1413/1413; shared tests 574/574;
   - clean-room audit PASS: 4 font assets hashed against the n8n tree, 0 identical; 0 overlap.
 - **Next:** Phase 8, the three-pane step modal.
+
+## Amendment 2026-10-11 (n) — Phase 8 sealed
+- **Phase 8 sealed:** fork `dev` commit `6a738ba62b` (`feat(builder): three-pane step editor replaces the settings sidebar`).
+  - Requirements: NDV-01–21, including the optional NDV-19.
+- **Gate run by the orchestrator:**
+  - web typecheck clean, lint 0 errors, tests 1456/1456;
+  - shared tests 574/574;
+  - clean-room audit: PASS, 69 files, 0 overlap.
+- **Diff review:**
+  - Step-settings autosave is unchanged: same resolver, deep-equal skip and `UPDATE_TRIGGER` / `UPDATE_ACTION` calls.
+  - Drag-to-map goes through the data selector's `createMentionNodeFromText`; proven via the API (`{{trigger['output']['name']}}`).
+- **Implementer's live run: 89/89** (light and dark).
+- **Deviations:**
+  - custom column resizing instead of react-resizable-panels (needed for 8px steps);
+  - a separate trigger layout key;
+  - compact labels only on piece-property fields;
+  - optional pane search, arrow-key tree navigation and the "already referenced" state are not built;
+  - `tracking-widest` instead of 2px;
+  - edit mode no longer shows the tested step's resolved input (it is still in the run view);
+  - read-only run view proven on `/runs/<id>`.
+- **e2e for Phase 12:** after a trigger or action is picked, its modal opens and covers the canvas. `addAction` and `publishFlow` must close it first: press Escape or click `step-modal-close`.
+- **Next:** Phase 9, the piece panel. It also covers the `N` key, the toolbar "+", and drag-out anchoring.
