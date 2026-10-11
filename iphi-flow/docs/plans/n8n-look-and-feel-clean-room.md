@@ -687,3 +687,18 @@ Design produced this session; the facts below were spot-checked in code.
   - The release ships static OTF/TTF files at 400/700, regular and italic, not a variable woff2. The plan is to bundle the OTFs unmodified, with the licence.
   - TOK-14 integration is pending.
 - **Paused** at the user's request after Phase 7b-2. Next, when resumed: TOK-14 font integration, then Phase 8 (three-pane step modal).
+
+## Amendment 2026-10-11 (m) — Resumed; TOK-14 sealed
+- **Resumed** at the user's request; services were restarted after a host restart.
+- **TOK-14 sealed:** fork `dev` commit `b8cd399729` (`feat(web): use Commit Mono as the monospace font`).
+  - Four official v1.143 OTF files (400/700, regular/italic), bundled unmodified and byte-identical to the release, with the OFL 1.1 licence text.
+  - `--font-mono` puts Commit Mono first; JetBrains Mono's face and file are removed.
+  - Done directly by the orchestrator; it is a small change.
+- **Browser check:**
+  - `font-mono` computes to Commit Mono;
+  - the 400 and 700 regular files load with HTTP 200, and the italics load only when used;
+  - 0 JetBrains faces remain.
+- **Gate:**
+  - web typecheck clean, lint 0 errors, tests 1413/1413; shared tests 574/574;
+  - clean-room audit PASS: 4 font assets hashed against the n8n tree, 0 identical; 0 overlap.
+- **Next:** Phase 8, the three-pane step modal.
