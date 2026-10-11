@@ -724,3 +724,23 @@ Design produced this session; the facts below were spot-checked in code.
   - read-only run view proven on `/runs/<id>`.
 - **e2e for Phase 12:** after a trigger or action is picked, its modal opens and covers the canvas. `addAction` and `publishFlow` must close it first: press Escape or click `step-modal-close`.
 - **Next:** Phase 9, the piece panel. It also covers the `N` key, the toolbar "+", and drag-out anchoring.
+
+## Amendment 2026-10-11 (o) — Phase 9 sealed
+- **Phase 9 sealed:** fork `dev` commit `6c830c3bd2` (`feat(builder): slide-in piece panel replaces the piece selector popover`).
+  - Requirements: PCK-01–13, plus the `N` / `R` keys.
+- **Gate run by the orchestrator:**
+  - web typecheck clean, lint 0 errors, tests 1488/1488;
+  - shared tests 574/574;
+  - clean-room audit: PASS, 37 files, 0 overlap.
+- **Implementer's live proof: 79/79** (light, dark, a narrow window, reduced motion). Every opener was verified through the API, and a drag-out pick lands at the release point.
+- **Deviations:**
+  - the panel sits in a container under the header rather than reading the header constant (the constant is 60, but the header renders at 57px);
+  - narrow mode is based on builder width;
+  - canvas chrome z-index is 35;
+  - the search focus colour uses `--focus`;
+  - core steps are direct rows;
+  - sub-view search filters on the client;
+  - replace mode no longer auto-clicks the replaced piece.
+- **e2e for Phase 12:** `getByText(action).nth(1)` can land on the hidden root results (Storage "Append" has 4 matches). Switch to `.last()`.
+- **Pre-existing bug, for Phase 11:** after a right-click, the step stays in React Flow's internal selection, so a later Enter or R acts on it.
+- **Next:** Phase 10, the builder header (SHL-19–24) and the logs panel (LOG-01–12).
