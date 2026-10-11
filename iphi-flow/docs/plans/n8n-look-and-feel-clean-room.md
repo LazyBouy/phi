@@ -768,3 +768,38 @@ Design produced this session; the facts below were spot-checked in code.
   - the trigger icon is gray-11 everywhere;
   - two buttons are named "More".
 - **Next:** Phase 11, polish: dark mode, accessibility, motion, and the carried-over items.
+
+## Amendment 2026-10-11 (q) — Phase 11 sealed; resource caps; paused before Phase 12
+- **Phase 11 sealed:** fork `dev` commit `e7c002dc5b` (`fix(web): look-and-feel polish, selection fixes, dark mode and accessibility`).
+- **Delivered:**
+  - **A1:** canvas selection stays coherent after a right-click.
+  - **A2:** the back-edge hover area no longer overlaps the edge entering the loop.
+  - **A3:** 7 outline-plus-border call sites fixed.
+  - **B:** PRM-03, PRM-06, PRM-09, PRM-13, the remaining CAN-16 keys (Ctrl/Cmd+A, arrow keys), and NOD-13.
+  - **C:** all 27 platform routes are consistent.
+  - **D:** dark-mode fixes — menus under dialog overlays, the toast font, the code editor surface.
+  - **E:** accessibility — names, keyboard access, the default focus halo, reduced motion, contrast.
+  - **F:** motion aligned with the spec.
+- **Gate run by the orchestrator** (capped at 5 cores):
+  - web typecheck clean, lint 0 errors (64 warnings), tests 1579/1579;
+  - shared tests 574/574;
+  - clean-room audit: PASS, 71 files, 0 overlap.
+- **Review:**
+  - the default focus ring uses `:where()`, adding no specificity;
+  - the menu-under-dialog rule only targets menus that precede an open overlay;
+  - the reduced-motion limit applies inside the media query only.
+- **Deviations:**
+  - a pane click keeps AP's selected step haloed, because the logs panel follows it;
+  - Ctrl/Cmd+A excludes the trigger;
+  - config-detail uses a solid destructive button;
+  - `CenteredPage` loses its separator prop;
+  - TOK-22's accepted low-contrast pairs are kept;
+  - some EE-only surfaces were checked by code review only.
+- **Resource caps** (user-directed 2026-10-11):
+  - never 100% CPU or memory for testing; at most 5 cores;
+  - all heavy work runs under `taskset -c 0-4 nice -n 10`, with vitest `--maxWorkers=4` and `NODE_OPTIONS=--max-old-space-size=4096`, one heavy process at a time;
+  - the dev start scripts and gate scripts apply this;
+  - the n8n container is capped to cores 0-4 and 2 GB;
+  - `iphi-flow/.work/scripts/cap-cores.sh` re-pins running processes;
+  - recorded in memory (`feedback_dev_cpu_caps`, Rules 4–7).
+- **Paused** before Phase 12 at the user's request.
