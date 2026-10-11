@@ -744,3 +744,27 @@ Design produced this session; the facts below were spot-checked in code.
 - **e2e for Phase 12:** `getByText(action).nth(1)` can land on the hidden root results (Storage "Append" has 4 matches). Switch to `.last()`.
 - **Pre-existing bug, for Phase 11:** after a right-click, the step stays in React Flow's internal selection, so a later Enter or R acts on it.
 - **Next:** Phase 10, the builder header (SHL-19–24) and the logs panel (LOG-01–12).
+
+## Amendment 2026-10-11 (p) — Phase 10 sealed
+- **Phase 10 sealed:** fork `dev` commit `db1e9b812b` (`feat(builder): new builder header with publish split button and a logs panel`).
+  - Requirements: SHL-19–24, LOG-01–12.
+- **Gate run by the orchestrator:**
+  - web typecheck clean, lint 0 errors, tests 1545/1545;
+  - shared tests 574/574;
+  - clean-room audit: PASS, 39 files, 0 overlap.
+- **Implementer's live proof: 110/110** (light and dark):
+  - header states;
+  - publishing from the header (the API shows LOCKED and `publishedVersionId`);
+  - logs panel live updates, a failed run, loop iterations, panes and persistence;
+  - the run route;
+  - "Publish" and "Run Succeeded" each match exactly one element.
+- **Behaviour note for embedders:** the builder header is no longer hidden by `embedding.dashboard.hidePageHeader`. AP's docs (`docs/embedding/embed-builder.mdx`) scope that flag to the dashboard; the builder header was only hidden because it reused the dashboard `PageHeader`.
+- **Other deviations:**
+  - the runs-list card click could not be exercised (no production runs in dev); the run route was proven instead;
+  - the header stays at z-40;
+  - Escape in a run's step modal only closes the modal;
+  - the open state is persisted;
+  - tokens are the nearest available ones;
+  - the trigger icon is gray-11 everywhere;
+  - two buttons are named "More".
+- **Next:** Phase 11, polish: dark mode, accessibility, motion, and the carried-over items.
