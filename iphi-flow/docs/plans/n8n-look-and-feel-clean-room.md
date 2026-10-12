@@ -836,3 +836,10 @@ Design produced this session; the facts below were spot-checked in code.
 - **Skipped:** a negative control running e2e with the old page objects; `git stash` was denied. The need for each change is on record in amendments (n) and (o).
 - **Plan complete:** Phases 0–12 are sealed. The deferred scope in amendment (r) is next, each item with its own plan.
 - **Local dev data added in Phase 12:** flow "Phase 12 - Empty"; two test runs of the Phase 7b1 flows.
+
+## Amendment 2026-10-12 (t) — Follow-up plans drafted
+- The three items deferred in amendment (r) each have their own plan in this folder, drafted at the user's request and awaiting approval:
+  - `piece-catalogue-full-load.md` — load the full official piece catalogue in the dev instance, then check the restyle at that scale.
+  - `piece-panel-categories-clean-room.md` — regroup the "+" panel by task (clean-room; reference facts gathered black-box first; spec tag `n8n-vibe-spec-v1.2`).
+  - `node-equivalents-clean-room.md` — new fork-owned pieces for list operations, JWT/TOTP and gzip (clean-room; new spec folder `docs/specs/node-equivalents/`).
+- Suggested order: catalogue, then categories, then new pieces.
