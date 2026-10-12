@@ -1,8 +1,8 @@
 # 08 — Piece panel (PCK)
 
-Builder-facing spec for the right slide-in panel that replaces AP's piece-selector popover. It lists AP's pieces, actions and triggers, in AP's own grouping and wording. Colours use AP token steps and the canvas palette `P-NN` from `05-canvas.md` CAN-01; conventions are at the top of `05-canvas.md`.
+Builder-facing spec for the right slide-in panel that replaces AP's piece-selector popover. It lists AP's pieces, actions and triggers, grouped by task (PCK-14 to PCK-20, spec v1.3) in AP's own wording. Colours use AP token steps and the canvas palette `P-NN` from `05-canvas.md` CAN-01; conventions are at the top of `05-canvas.md`.
 
-Plan phase: 9.
+Plan phase: 9. PCK-14 to PCK-20: plan `piece-panel-categories-clean-room.md`. PCK-21 to PCK-24: plan `piece-catalogue-full-load.md`.
 
 | Surface | Light | Dark | Source |
 |---|---|---|---|
@@ -81,22 +81,19 @@ Plan phase: 9.
 
 ### PCK-05 — Root view
 
-- **Values:** The root lists AP's selector groups (today's tabs) as rows with an icon, a title, a one-line description and a trailing arrow. Order and visibility follow AP's current rules and the platform's piece-selector configuration.
+- **Values (revised in v1.3):** The root lists rows with an icon, a title, a one-line description and, for rows that open a list, a trailing arrow. In next-step and replace modes the rows are the six task categories of PCK-14; in trigger mode they are the trigger rows of PCK-17. After them come the platform's custom groups (after a separator, PCK-08), then the "Browse more pieces" row when available (PCK-21).
 
-  | Row | Lucide icon (20px, gray-11) | Title (existing key) | Description (new key) | Shown when |
+  | Row | Lucide icon (20px, gray-11) | Title | Description | Shown when |
   |---|---|---|---|---|
-  | Explore | LayoutGrid | "Explore" | "Popular pieces to get started" | Always |
-  | AI & Agents | Sparkles | "AI & Agents" | "Use AI models and agents in this flow" | Adding or replacing an action, and AI providers plus the AI piece are available |
-  | Apps | Puzzle | "Apps" | "Do something in an app or service" | Always |
-  | Utility | Wrench | "Utility" | "Code, loops, routers, HTTP and other core tools" | Always |
-  | Approvals | CircleCheck | "Approvals" | "Pause the flow until someone responds" | Adding or replacing an action |
-  | Platform custom groups | LayoutGrid | The configured name | none | When the platform configures them; listed after a separator (PCK-08) |
+  | Task categories | PCK-14 | PCK-14 | PCK-14 | Next-step and replace modes |
+  | Trigger rows | PCK-17 | PCK-17 | PCK-17 | Trigger mode |
+  | Platform custom groups | LayoutGrid | The configured name | none | When the platform configures them; listed after a separator (PCK-08), in every mode |
 
-- **States:** Next-step / replace mode shows all eligible rows; trigger mode shows Explore, Apps and Utility.
+- **States:** Next-step / replace mode; trigger mode.
 - **Light/Dark:** Row styling PCK-06.
 - **Motion:** none.
-- **AP target file(s):** `WEB/features/pieces/components/piece-selector-tabs.tsx` (tabs become root rows), `BUILDER/pieces-selector/index.tsx` (`getTabsList`, `pieceSelectorCustomization.buildResolvedTabs`).
-- **Notes:** Activating a row pushes that group's content as a sub-view: Explore → AP's explore categories; AI & Agents → AP's AI actions list; Apps and Utility → piece lists; Approvals → AP's approvals list.
+- **AP target file(s):** `WEB/features/pieces/components/piece-selector-tabs.tsx`, `BUILDER/pieces-selector/index.tsx` (`getTabsList`, `useRootTabs`), `WEB/features/pieces/utils/piece-selector-customization.tsx` (`buildResolvedTabs`).
+- **Notes:** v1.3 replaces the earlier rows (Explore, AI & Agents, Apps, Utility, Approvals) with task categories. The earlier Apps description is retired because it echoed reference wording; every title and description in PCK-14 and PCK-17 is new Activepieces wording.
 
 ### PCK-06 — List rows
 
@@ -213,6 +210,108 @@ Plan phase: 9.
 - **Motion:** PCK-02.
 - **AP target file(s):** `BUILDER/pieces-selector/index.tsx`, `BUILDER/builder-hooks.ts` (`handleAddingOrUpdatingStep` with `selectStepAfter`).
 - **Notes:** e2e: after `selectInitialTrigger`, the tests read `markdown-code-block` and click `test-trigger-button`; both are in the trigger's step modal, which opens after the pick, so they stay reachable.
+
+### PCK-14 — Task categories (next-step and replace modes)
+
+- **Values:** Six category rows, in this order. Each opens a category sub-view (PCK-16). Titles and descriptions are new keys.
+
+  | Order | Key | Lucide icon | Title | Description | Shown when |
+  |---|---|---|---|---|---|
+  | 1 | AI | Sparkles | "AI" | "Run agents, ask models and use AI services" | Always (contents per PCK-15) |
+  | 2 | Apps | Puzzle | "Apps" | "Work with the apps and services you connect" | Always |
+  | 3 | Transform data | Shuffle | "Transform data" | "Reshape text, dates, numbers and files" | Always |
+  | 4 | Flow control | Split | "Flow control" | "Route, repeat, wait or call another flow" | Always |
+  | 5 | Core tools | Wrench | "Core tools" | "HTTP, webhooks, code, storage and other building blocks" | Always |
+  | 6 | Human in the loop | UserCheck | "Human in the loop" | "Wait for someone to approve or answer" | Always in these modes |
+
+- **States:** All six rows show in next-step and replace modes, subject to the platform configuration (PCK-19).
+- **Light/Dark:** As PCK-06.
+- **Motion:** none.
+- **AP target file(s):** `WEB/features/pieces/components/piece-selector-tabs.tsx` (`getTabDescription`), `WEB/features/pieces/stores/piece-selector-tabs-provider.tsx` (tab types), `BUILDER/pieces-selector/index.tsx`, `WEB/public/locales/en/translation.json`.
+- **Notes:** Category rows never add a step themselves; they open a list.
+
+### PCK-15 — Category membership
+
+- **Values:** What each category lists, by section, in order. A section with nothing to show is hidden. A piece that is not downloaded is simply absent. Built-in steps are the Code, Loop on Items, Router and AI Router steps. A few items appear in two categories on purpose (marked "also in").
+
+  | Category | Section (title, new key unless noted) | Contents |
+  |---|---|---|
+  | AI | "Popular" (existing key) | The AI piece's actions as item rows, with AP's current availability rule and connect-provider prompt; then the AI Router step when an AI router provider exists (also in Flow control) |
+  | AI | "AI services" | Every piece whose categories include ARTIFICIAL_INTELLIGENCE or UNIVERSAL_AI, other than the AI piece, plus the pieces named in the AI name list (Azure OpenAI, Cohere); piece rows, alphabetical |
+  | Apps | AP's current sections ("Highlights" for platform-pinned pieces, "Popular", then "Apps"; existing keys) | Every piece that is not a core piece and not in the AI category; messaging apps stay here even though their approval actions are also listed under Human in the loop |
+  | Transform data | "Popular" | Code step (also in Core tools), Text Helper, Date Helper, Data Mapper |
+  | Transform data | "Formats and files" | CSV, XML, Files Helper, PDF, Image Helper, QR Code, Crypto |
+  | Transform data | "Others" (existing key) | Data Summarizer, Math Helper |
+  | Flow control | "Popular" | Router step, Loop on Items step |
+  | Flow control | "Others" (existing key) | AI Router step when available (also in AI), Delay, Sub Flows, Flow Helper |
+  | Core tools | "Popular" | HTTP, Webhook, Code step (also in Transform data), Tables |
+  | Core tools | "Others" (existing key) | Storage, GraphQL, SMTP, FTP/SFTP, Human Input (its "Respond on UI" action), Connections, Tags, Activepieces Platform |
+  | Human in the loop | "Ask a person" | Item rows for the approval actions of Slack, Discord, Microsoft Teams, Microsoft Outlook, Gmail and Telegram (AP's current approvals list and picking rules), then the Approval piece's two actions |
+
+  Every one of the 27 core pieces has exactly one home: actions in the table above; Manual Trigger and Schedule appear only in trigger mode (PCK-17). Within "Popular" sections the order is as listed; elsewhere alphabetical by display name.
+- **States:** n/a.
+- **Light/Dark:** n/a.
+- **Motion:** n/a.
+- **AP target file(s):** `WEB/features/pieces/utils/piece-search-utils.ts` (the classifiers become one category map), `WEB/features/pieces/hooks/pieces-hooks.ts` (`usePiecesSearch`), `BUILDER/pieces-selector/approvals-tab-content.tsx` and `ai-tab-content/` (reused as section sources).
+- **Notes:** Keep the map in one place with a unit test that checks every core piece and every built-in step lands where this table says. When new list pieces are added later, they go in a "Work with lists" section placed second in Transform data.
+
+### PCK-16 — Category sub-view
+
+- **Values:** Header as the sub-view header of PCK-03 (back button, the category's Lucide icon, the title). Sections are group rows (PCK-07), all expanded when the view opens (this replaces "first group expanded" for category views). Inside a section: a built-in step or an action shows as an item row that adds the step directly; a piece with several actions shows as a piece row (with arrow) that pushes the piece sub-view (PCK-10), where its actions are listed.
+- **States:** Loading (skeleton rows, as PCK-11); list.
+- **Light/Dark:** As PCK-06 to PCK-08.
+- **Motion:** PCK-10.
+- **AP target file(s):** `BUILDER/pieces-selector/index.tsx` (`PiecePanelEntry`), `explore-tab-content.tsx` (its category list rendering is reused), `pieces-card-list.tsx`.
+- **Notes:** —
+
+### PCK-17 — Trigger-mode rows
+
+- **Values:** In trigger mode the root lists these rows, in order. Titles and descriptions are new keys. A row whose piece is not downloaded is hidden.
+
+  | Order | Lucide icon | Title | Description | Activating it |
+  |---|---|---|---|---|
+  | 1 | MousePointerClick | "Start manually" | "Run the flow yourself with a button" | Picks Manual Trigger's trigger directly |
+  | 2 | Radio | "From an app" | "Start when something happens in an app you connect" | Pushes a list of app pieces that have triggers, with the Apps sections of PCK-15 |
+  | 3 | Clock | "Scheduled" | "Every few minutes, hours or days, or a cron expression" | Pushes the Schedule piece's triggers |
+  | 4 | Webhook | "When a webhook is called" | "Start when another system sends an HTTP request" | Picks Webhook's catch trigger directly |
+  | 5 | ClipboardList | "When a form is submitted" | "Start when someone fills in a hosted form" | Picks Human Input's web form trigger directly |
+  | 6 | MessageCircle | "When a chat message arrives" | "Start when someone writes in a hosted chat" | Picks Human Input's chat trigger directly |
+  | 7 | Workflow | "When another flow calls it" | "Start when a Sub Flows step in another flow runs this one" | Picks Sub Flows' callable trigger directly |
+  | 8 | Ellipsis | "Other triggers" | "Tables, file servers and other core triggers" | Pushes a list of the remaining core pieces with triggers (Tables, FTP/SFTP), alphabetical |
+
+  Rows 1 and 4 to 7 add the trigger directly (no arrow); rows 2, 3 and 8 open a list. AI-category pieces with triggers appear under "From an app".
+- **States:** n/a.
+- **Light/Dark:** As PCK-06.
+- **Motion:** none.
+- **AP target file(s):** `BUILDER/pieces-selector/index.tsx` (`getTabsList`, the trigger branch), `WEB/features/pieces/hooks/pieces-hooks.ts`.
+- **Notes:** There is no row for adding a second trigger: a flow has exactly one trigger.
+
+### PCK-18 — Search inside a category
+
+- **Values:** Root search is unchanged (PCK-11). Inside a category or a trigger-mode list, the view's own matching rows come first (filtered on the client, as today). Under them, a section label "Found in other groups" (new key) is followed by the root search results (PCK-11 rows) that are not already shown above. When neither part has a match, the no-results state of PCK-11 shows, with the catalogue hint of PCK-21 when available. Inside a piece sub-view, search filters only that piece's actions or triggers, as today.
+- **States:** Category matches only; both parts; other categories only; nothing.
+- **Light/Dark:** As PCK-08 and PCK-11.
+- **Motion:** none.
+- **AP target file(s):** `BUILDER/pieces-selector/pieces-card-list.tsx` (`usePieceSearchResultRows`), `explore-tab-content.tsx`, `piece-panel-utils.ts`.
+- **Notes:** The root results keep their server order.
+
+### PCK-19 — Platform configuration of the root
+
+- **Values:** The platform's piece-selector configuration keeps working with the categories. Saved built-in keys map as follows: AI_AND_AGENTS → AI; APPS → Apps; UTILITY → Core tools; APPROVALS → Human in the loop; EXPLORE → no longer shown (saved entries are ignored). Two new built-in keys: DATA_TRANSFORMATION (Transform data) and FLOW_CONTROL (Flow control). Renaming, re-icon, ordering and hiding apply to the six categories in next-step and replace modes. Custom groups behave as today and also show in trigger mode. The admin dialog that edits this configuration lists the six categories under their new default names.
+- **States:** n/a.
+- **Light/Dark:** n/a.
+- **Motion:** n/a.
+- **AP target file(s):** `@activepieces/shared` `PIECE_SELECTOR_BUILTIN_TABS` and its schema (minor version bump), `WEB/features/pieces/utils/piece-selector-customization.tsx` (`BUILTIN_TAB_DISPLAY`, `buildResolvedTabs`), `WEB/app/routes/platform/setup/pieces/customize-selector-dialog.tsx`.
+- **Notes:** Existing saved configurations must load without errors.
+
+### PCK-20 — Retired parts
+
+- **Values:** The Explore view (its popular and highlighted lists, and the built-in steps placed into it) is retired; its content now lives in the categories. The unmounted tab-provider context and the unreachable AI & Agents and Approvals branches of the search hook are removed. Openers and modes (PCK-12), keyboard (PCK-09), push and pop (PCK-10), root search (PCK-11) and the e2e test ids stay as they are.
+- **States:** n/a.
+- **Light/Dark:** n/a.
+- **Motion:** n/a.
+- **AP target file(s):** `BUILDER/pieces-selector/explore-tab-content.tsx`, `WEB/features/pieces/stores/piece-selector-tabs-provider.tsx`, `WEB/features/pieces/hooks/pieces-hooks.ts`.
+- **Notes:** —
 
 ### PCK-21 — "Browse more pieces" row (Activepieces extension)
 

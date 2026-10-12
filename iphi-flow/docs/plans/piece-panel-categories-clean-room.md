@@ -182,3 +182,23 @@ Dated entries are appended below; the text above is not rewritten.
 
 ### Amendment 2026-10-12 (a) — Spec tag shifts to v1.3
 - `piece-catalogue-full-load.md` adds PCK-21 to PCK-24 to `08-piece-panel.md` and takes tag `n8n-vibe-spec-v1.2`. This plan's spec change therefore freezes at `n8n-vibe-spec-v1.3`, and its new IDs stay within PCK-14 to PCK-20.
+
+### Amendment 2026-10-12 (b) — Approved; decisions locked; B1 started
+- The user approved this plan ("Please go ahead") after `piece-catalogue-full-load.md` was sealed. The recommended options are taken: B-F1 (a) task categories replace the built-in tabs, custom groups stay after a separator; B-F2 (a) web-side classifier; B-F3 (a) new built-in keys with old keys as aliases; B-F4 (a) trigger-kind rows, confirmed by the B1 facts; B-F5 (a) no "add another trigger" row; B-F6 (a) remove the dead code.
+- Since this plan was drafted, the panel gained the "Browse more pieces" row (PCK-21). It stays the last root row, after the categories and any custom groups, in every mode.
+- B0 preconditions met. B1 (reference facts, black-box) started.
+
+### Amendment 2026-10-12 (c) — B1 done; B2 spec drafted, awaiting sign-off
+- **B1:** a reference-lane agent observed the running reference app black-box (member account, UI only; container capped, then stopped). 126 facts in `docs/specs/n8n-vibe/_provenance/r4-node-panel-categories-facts.md` (reference-only), 108 screenshots in `_ref/n8n/40-node-panel-*` (git-ignored). Probe workflows deleted; the four Ref workflows unchanged. No source lift was needed.
+- **Clean-room correction:** the Phase 9 spec (PCK-05) gave the Apps row a description that echoed the reference's own wording ("Do something in an app or service"); it shipped in fork `6c830c3bd2`. The v1.3 spec retires it, and the build replaces it. The audit's forbidden-text list (`tools/clean-room-forbidden.txt`) gained 23 distinctive reference node-panel phrases, so any copy is caught. Before this, only that one phrase appeared in the fork.
+- **B2 spec drafted** in `08-piece-panel.md`:
+  - PCK-05 revised;
+  - PCK-14 six task categories (AI, Apps, Transform data, Flow control, Core tools, Human in the loop);
+  - PCK-15 membership (every core piece and built-in step placed);
+  - PCK-16 category view (sections expanded);
+  - PCK-17 eight trigger-mode rows;
+  - PCK-18 search inside a category with a "Found in other groups" part;
+  - PCK-19 platform configuration (old keys mapped, two new keys);
+  - PCK-20 retired parts.
+- Labels that matched the reference exactly were reworded. `spec-lint.sh` PASS; `00-index.md` regenerated (225 IDs).
+- **Spec signed off** by the user ("Freeze and build") and frozen at parent tag `n8n-vibe-spec-v1.3`. B3 (build) starts.

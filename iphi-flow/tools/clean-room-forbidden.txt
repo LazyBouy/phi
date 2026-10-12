@@ -22,3 +22,27 @@ node details view
 5b60e8
 aa7bec
 ec7b8e
+# Reference node-panel wording (R4, 2026-10-12)
+do something in an app or service
+action in an app
+on app event
+other ways\.\.\.
+human review
+manipulate, filter or convert data
+branch, merge or loop the flow
+run code, make http requests
+request approval via services
+triggers start your workflow
+a trigger is a step that starts your workflow
+send and wait for response
+results in other categories
+more from the community
+build autonomous agents
+add another trigger
+trigger manually
+when executed by another workflow
+on webhook call
+on form submission
+connect to almost any service or api
+need a native integration
+suggest a node
