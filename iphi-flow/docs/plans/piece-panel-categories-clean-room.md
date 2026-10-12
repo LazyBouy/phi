@@ -202,3 +202,28 @@ Dated entries are appended below; the text above is not rewritten.
   - PCK-20 retired parts.
 - Labels that matched the reference exactly were reworded. `spec-lint.sh` PASS; `00-index.md` regenerated (225 IDs).
 - **Spec signed off** by the user ("Freeze and build") and frozen at parent tag `n8n-vibe-spec-v1.3`. B3 (build) starts.
+
+### Amendment 2026-10-12 (d) — B3 and B4 done; plan sealed
+- **Built:** fork `dev` commit `6767bb3e7d` (`feat(builder): group the piece panel by task`), SPEC PCK-05 and PCK-14 to PCK-20. A build-lane agent built it in four gated batches; the orchestrator reviewed the diff and re-gated it.
+- **Orchestrator changes during review:**
+  - "Found in other groups" now leaves out every member of the open category, not only the rows shown for the query. Before, Code could appear there while Core tools was open. A unit test covers it.
+  - "Highlights" stays alphabetical, as the frozen spec text says.
+- **Gate** (capped, orchestrator-run):
+  - web typecheck clean, lint 0 errors (64 warnings), 1622/1622 web tests;
+  - shared lint and 574/574; API typecheck clean; platform integration test 28/28 (cloud edition);
+  - clean-room audit PASS (worktree, 2,936 added lines);
+  - whole branch `main..dev`: PASS with the extended forbidden list (439 files, 33,785 added lines, 0 hits);
+  - CE e2e 2/2 and EE e2e 2/2.
+- **Live proof** (agent, light and dark, about 219 pieces): both roots; all six category views, matching an independent model built from the API; one pick per category, checked through the API; every trigger row; replace mode; search inside a category; the e2e panel paths; "Browse more pieces" in every mode; keyboard; reduced motion. Temporary flows deleted; "Base 1 - Linear" unchanged.
+- **Interpretations:**
+  - a one-action piece still shows as a piece row with an arrow (PCK-16 only covers several actions);
+  - an unplaced core piece falls back to Core tools → Others;
+  - "From an app" and "Other triggers" are hidden when empty;
+  - categories that older saved configurations lack are added after the saved ones;
+  - the approval rows are built from the panel's piece list;
+  - the AI piece is fetched only when the AI category opens.
+- **Not verified live:**
+  - the AI "Popular" section and the AI Router (this instance has no AI provider);
+  - the admin configuration editor (plan-gated on CE; covered by unit tests and the API test);
+  - platform-pinned pieces and custom groups (none exist on the instance).
+- **Plan complete.** Next, when the user says go: `node-equivalents-clean-room.md`. Its list pieces join Transform data in a "Work with lists" section placed second (PCK-15 note).
