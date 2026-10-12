@@ -215,7 +215,7 @@ AP's danger already matches the target: step 9 = TW red-600 `#e7000b`.
 | `--scrim` | black 30% | black 60% | Dialog and sheet overlay (target). Was black 70% in both |
 | `--scrim-strong` (new) | black 60% | black 60% | Step-modal overlay (NDV). No step or the plain scrim can be 60% in light |
 | `--focus` (new) | `#8e51ff` (TW violet-500) | `#8e51ff` | Focus border and solid focus rings. A fixed violet in both themes; no scale holds violet |
-| `--focus-halo` (new) | TW indigo-700 `#432dd7` at 25% alpha (oklch 45.7% 0.24 277.02, alpha 25%) | same | The soft 2px focus outline. The target's halo base is a violet-indigo `#5a4cc2` at 25% that Tailwind lacks; indigo-700 is the nearest TW value (OKLab distance 0.079; violet-600 is 0.12). On white it composites to ≈ `#d0cbf5`, target ≈ `#d6d2f0` |
+| `--focus-halo` (new) | TW indigo-700 `#432dd7` at 25% alpha (oklch 45.7% 0.24 277.02, alpha 25%) | TW violet-400 `#a684ff` at 75% alpha (oklch 70.2% 0.183 293.541, alpha 75%), as a separate `--focus-halo-dark` token; a light-scoped element inside dark mode (solid accent button, badge, logo plate) uses it too | The soft 2px focus outline. Dark value revised 2026-10-12 (user decision): the light value measured 1.03–1.11:1 against dark surfaces; the new value measures 3.63:1 on halo-only controls. The target's halo base is a violet-indigo `#5a4cc2` at 25% that Tailwind lacks; indigo-700 is the nearest TW value (OKLab distance 0.079; violet-600 is 0.12). On white it composites to ≈ `#d0cbf5`, target ≈ `#d6d2f0` |
 | `--canvas-dot` (new) | `gray-9` (`#999999`) | `gray-7` (`#444444`) | Canvas grid dots. The target's dot sits at different steps in the two themes, so no single step can do it (consumed by CAN) |
 
 | Item | Detail |

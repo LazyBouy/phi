@@ -179,3 +179,6 @@
 
 ## Amendments
 Dated entries are appended below; the text above is not rewritten.
+
+### Amendment 2026-10-12 (a) — Spec tag shifts to v1.3
+- `piece-catalogue-full-load.md` adds PCK-21 to PCK-24 to `08-piece-panel.md` and takes tag `n8n-vibe-spec-v1.2`. This plan's spec change therefore freezes at `n8n-vibe-spec-v1.3`, and its new IDs stay within PCK-14 to PCK-20.

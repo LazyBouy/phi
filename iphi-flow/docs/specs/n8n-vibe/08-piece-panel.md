@@ -214,6 +214,51 @@ Plan phase: 9.
 - **AP target file(s):** `BUILDER/pieces-selector/index.tsx`, `BUILDER/builder-hooks.ts` (`handleAddingOrUpdatingStep` with `selectStepAfter`).
 - **Notes:** e2e: after `selectInitialTrigger`, the tests read `markdown-code-block` and click `test-trigger-button`; both are in the trigger's step modal, which opens after the pick, so they stay reachable.
 
+### PCK-21 — "Browse more pieces" row (Activepieces extension)
+
+- **Values:** An Activepieces feature with no reference counterpart, styled with the panel's existing parts. It shows only when the instance downloads pieces selectively (the pieces-sync-mode flag is `OFFICIAL_SELECTED`).
+  - At the end of the root list, after any custom groups and a separator (PCK-08), one row: Lucide PackagePlus icon, title "Browse more pieces" (new key), description "Download pieces from the catalog when you need them" (new key), trailing arrow (PCK-06). It appears in next-step, replace and trigger modes.
+  - In root search with no results, under "No results" (PCK-11): a second line "Not here? Search the catalog" (new key), 14px gray-11, followed by a subtle 28px button "Search the catalog" (new key) that pushes the catalog view (PCK-22) with the current query carried over.
+- **States:** Hidden unless the mode is selective.
+- **Light/Dark:** As PCK-06 and PCK-11.
+- **Motion:** none.
+- **AP target file(s):** `BUILDER/pieces-selector/index.tsx`, `BUILDER/pieces-selector/piece-panel-utils.ts`, `BUILDER/pieces-selector/no-results-found.tsx`.
+- **Notes:** The row is a group row (PCK-07 behaviour, opens a sub-view); Arrow Right and Enter push it like any group.
+
+### PCK-22 — Catalog sub-view
+
+- **Values:** Pushed like any sub-view (PCK-10).
+  - Header: back button, title "More pieces" (new key), subtitle "Download a piece to use it in this flow" (new key) (PCK-03 styling).
+  - Search box (PCK-04) filters the catalog on the client by piece name and description.
+  - Rows are piece rows (PCK-06): logo on its plate, display name, one-line description, and on the right a "Download" label (new key) with Lucide Download 14px in gray-11, replacing the trailing arrow. Sorted by display name. Only pieces not yet downloaded appear; for trigger mode, only pieces that have triggers; for next-step and replace mode, only pieces that have actions.
+  - Loading: three 48px skeleton rows (as PCK-11). Load failure: the shared in-place error state "Trouble loading {entity}" with a retry, entity = "the catalog" (new key). Empty: centred "Every piece is already downloaded" (new key), 14px gray-11.
+- **States:** Loading; list; filtered; empty; failed.
+- **Light/Dark:** As PCK-06.
+- **Motion:** PCK-10.
+- **AP target file(s):** new `BUILDER/pieces-selector/catalog-view.tsx`; `WEB/features/pieces/api/pieces-api.ts` (catalog list and download calls); `WEB/features/pieces/hooks/pieces-hooks.ts`.
+- **Notes:** The list is virtualised like the other panel lists (the catalog has several hundred entries).
+
+### PCK-23 — Downloading a piece
+
+- **Values:**
+  - Activating a catalog row (click or Enter) downloads that piece. While it downloads, the row's trailing label becomes a 14px spinner with "Downloading…" (new key); the row is marked busy; other rows stay usable, and a second activation of the same row does nothing.
+  - On success, the instance's piece list refreshes and the piece's own sub-view (its actions, or its triggers in trigger mode) is pushed on top of the catalog view (PCK-10), so the user can pick at once. Going back from it returns to the catalog, where the piece no longer appears.
+  - On failure, the row stays and shows "Couldn't download. Try again." (new key) in danger-11 under the description; activating the row again retries. No toast.
+- **States:** Idle; downloading; failed; downloaded.
+- **Light/Dark:** Error text danger-11 in both modes.
+- **Motion:** spinner rotation; off under reduced motion (a static icon).
+- **AP target file(s):** `BUILDER/pieces-selector/catalog-view.tsx`, `BUILDER/pieces-selector/piece-panel-utils.ts`.
+- **Notes:** Downloading uses the instance's existing piece sync endpoint with a piece name; it fetches only that piece's latest compatible version.
+
+### PCK-24 — Catalog keyboard and announcements
+
+- **Values:** The catalog view uses the PCK-09 key map. Enter on a row downloads it. A polite live region announces "Downloaded {pieceName}" (new key) on success and "Couldn't download {pieceName}" (new key) on failure.
+- **States:** n/a.
+- **Light/Dark:** n/a.
+- **Motion:** n/a.
+- **AP target file(s):** `BUILDER/pieces-selector/catalog-view.tsx`, `BUILDER/pieces-selector/piece-panel-view.tsx`.
+- **Notes:** —
+
 ## Conflicts with design doc
 
 None. The insert locations used by the openers are exactly those in `design/graph-positions.md` §4.
