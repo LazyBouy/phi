@@ -803,3 +803,36 @@ Design produced this session; the facts below were spot-checked in code.
   - `iphi-flow/.work/scripts/cap-cores.sh` re-pins running processes;
   - recorded in memory (`feedback_dev_cpu_caps`, Rules 4–7).
 - **Paused** before Phase 12 at the user's request.
+
+## Amendment 2026-10-12 (r) — Resumed for Phase 12; extra scope deferred
+- **Resumed** at the user's request for Phase 12 (tests and e2e).
+- **Extra scope found on 2026-10-11, deferred** until Phase 12 and e2e are sealed (user-directed). Each item gets its own approved plan before any work:
+  - load the full piece catalogue (local `.env.dev` uses `AP_PIECES_SYNC_MODE=NONE` with two dev pieces, so the "+" panel shows only those);
+  - group the "+" panel by category the way the reference does (needs reference-lane facts first, then a spec addition and a new tag);
+  - build missing node equivalents as new pieces written from scratch (merge stays out of scope: the engine runs a tree).
+
+## Amendment 2026-10-12 (s) — Phase 12 sealed; look-and-feel plan complete
+- **Phase 12 sealed:** fork `dev` commit `1b3bc7857b` (`test(e2e): update builder page objects for the step editor and piece panel`).
+  - `addAction`, `publishFlow` and `testFlowAndWaitForSuccess` close the step editor first (`step-modal-close`).
+  - The action pick uses `.last()` instead of `.nth(1)`; the Test Flow button takes the first of the two matches; the automations row-menu selector uses `lucide-ellipsis`.
+- **e2e results** (local, 1 worker, cores 0-4):
+  - CE: 2/2 pass (webhook return-response; piece isolation).
+  - EE: 2/2 pass (placeholder; broken-piece isolation). The server confirmed `edition: ee`.
+  - Servers ran with `packages/tests-e2e/.env.e2e` (in-memory PGLITE, store + webhook pieces).
+- **Local e2e runner notes** (files in `iphi-flow/.work/`, not committed):
+  - turbo 2 runs tasks in strict env mode, so most `.env.e2e` variables never reach the servers; the runner starts them with `--env-mode=loose`.
+  - It keeps `.env.dev`'s JWT secret: the e2e secret does not match `.env.dev`'s worker token, so the worker cannot connect and the step's dynamic inputs never finish loading.
+  - The Playwright browser is not downloaded; the runner uses the installed Chromium through a wrapper config and an equivalent global setup.
+- **Final gate** (capped at 5 cores):
+  - web typecheck clean, lint 0 errors (64 warnings), tests 1579/1579;
+  - shared lint clean, tests 574/574; API lint clean;
+  - `lint-dev` (all non-piece packages, `--fix`): 38/38 tasks, 0 errors, no files changed;
+  - e2e package eslint and tsc clean.
+- **Final clean-room audit, whole branch `main..dev`: PASS.** 416 changed files; 7 assets, 0 identical to the reference tree; 0 code overlap; 29,949 added lines, 0 forbidden-text hits.
+- **Visual comparison:** 36 three-pane images (before `main` / reference / after `dev`), light and dark, in `iphi-flow/.work/shots/phase12-compare/` (local only, never committed).
+  - Linear and loop after-run views are missing: those seed flows have empty triggers. Branch and error after-run views come from the Phase 7b1 flows.
+  - After a test run, the canvas follows the last step that ran (live-follow plus LOG-06), so the early steps can sit off-screen until the view is fitted.
+- **Not changed (pre-existing upstream):** `loadSampleData` targets a label that is no longer in the app; the connections table logs "[Table] Column with id 'pieceName' does not exist" (same on `main`).
+- **Skipped:** a negative control running e2e with the old page objects; `git stash` was denied. The need for each change is on record in amendments (n) and (o).
+- **Plan complete:** Phases 0–12 are sealed. The deferred scope in amendment (r) is next, each item with its own plan.
+- **Local dev data added in Phase 12:** flow "Phase 12 - Empty"; two test runs of the Phase 7b1 flows.
