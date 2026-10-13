@@ -27,3 +27,4 @@ iphi-worktrees/
 # and screenshots of the n8n reference UI (internal reference only, never committed).
 iphi-flow/.work/
 iphi-flow/docs/specs/n8n-vibe/_ref/
+iphi-flow/docs/specs/node-equivalents/_ref/

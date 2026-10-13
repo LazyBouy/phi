@@ -203,3 +203,43 @@ Provisional list, from general knowledge of the reference product's core nodes; 
 
 ## Amendments
 Dated entries are appended below; the text above is not rewritten.
+
+### Amendment 2026-10-13 (a) — Approved; decisions locked; C1 started
+- The user approved this plan ("Please continue") after the catalogue and categories plans were sealed. The recommended options are taken:
+  - C-F1 (a) new fork-owned pieces only;
+  - C-F2 (a) `packages/pieces/custom/`;
+  - C-F3 (a) a fork package scope;
+  - C-F4 (a) three pieces (list tools, security tokens, compression);
+  - C-F5 (a) prove the archive upload path, with dev-only as fallback;
+  - C-F6 (a) list tools first;
+  - C-F7 (a) rely on community pieces for gaps they already cover.
+- **C1 sources:** black-box observation of the running reference app only (its UI and small test workflows with sample data). Public documentation is not fetched, to avoid extra network use; if a behaviour cannot be settled black-box, the gap goes to the user.
+- C0 preconditions met. C1 (reference facts) started; C3 (audit extension) runs alongside, since it needs no facts.
+
+### Amendment 2026-10-13 (b) — C3 done
+- `tools/clean-room-audit.sh` extended:
+  - `CLEAN_ROOM_TARGETS` selects the reference folders scanned for code overlap (default `packages/frontend`; for this plan `packages/frontend packages/nodes-base`);
+  - a `CONTROL [TARGET]` mode runs both controls and prints counts only, so no reference content is shown.
+- **Controls against `packages/nodes-base`:**
+  - positive: one reference node file against its own folder gives 92,440 shared shingles;
+  - negative: 49 Activepieces core piece source files (Text Helper, CSV, Data Mapper, Math Helper, Crypto) give 0.
+- A normal audit with both targets scans 7,740 reference node files.
+- `spec-lint.sh` and `spec-index.mjs` already take a spec folder argument; no change needed for `docs/specs/node-equivalents/`.
+- The new folder's `_ref/` is git-ignored (parent `.gitignore`).
+
+### Amendment 2026-10-13 (c) — C1 done; C2 spec drafted, awaiting sign-off
+- **C1:** a reference-lane agent observed 14 reference nodes black-box (UI and throwaway workflows; no source, no internet). About 450 facts are in `docs/specs/node-equivalents/_provenance/r1-node-behaviour-facts.md` (reference-only), with 95 screenshots in `_ref/` (git-ignored). All probe workflows and credentials were deleted, and the four Ref workflows are unchanged.
+- **Side fix:** appending the new `_ref/` ignore line had joined it to the previous line, so both `_ref/` folders were briefly not ignored. The line was split; nothing was ever committed from them.
+- **C2 spec drafted** in `docs/specs/node-equivalents/`: `00-index.md` (scope, never-use list, conventions CNV-01 to CNV-06), `01-list-tools.md` (LST-01 to LST-16), `02-security-tokens.md` (SEC-01 to SEC-07), `03-compression.md` (CMP-01 to CMP-04). `spec-lint.sh` PASS; 27 indexed IDs; 0 forbidden-phrase hits; the one action name that matched a reference node exactly was renamed (Set Fields).
+- **Change to C-F4:** four pieces instead of three. Activepieces gives a piece one connection type, and JWT needs a key while TOTP needs a different secret, so the security tokens become "JSON Web Tokens" and "One-Time Passwords". The others are "List Tools" and "Gzip".
+- **Design choices that differ from the reference** (all to make behaviour predictable):
+  - text comparisons are case-insensitive by default, matching the Activepieces CSV piece;
+  - missing fields never stop a step;
+  - JWT standard claims are written under their standard names, so expiry works;
+  - de-duplication tolerates differently shaped entries;
+  - "Keep New Items" forgets the oldest keys instead of failing when full;
+  - renames read the original entry, so swaps work;
+  - date-only values mean midnight UTC.
+- **Set Fields:** Activepieces resolves mapped values once per step, so per-entry values come from "another field of the entry" or a `{path}` text template.
+- **Scope:** zip stays with the core Files Helper; tar is out of scope; the JWT piece needs one pinned library (user go at batch 4); TOTP and Gzip use Node built-ins.
+- **Spec signed off** by the user ("Freeze and build") and frozen at parent tag `node-equivalents-spec-v1`. C4 (build) starts with List Tools.

@@ -10,6 +10,11 @@
 #   clean-room-audit.sh [BASE] [HEAD]   audit committed range BASE...HEAD (default main...dev);
 #                                       file versions are read from git, not from the working tree
 #   clean-room-audit.sh BASE WORKTREE   audit uncommitted working-tree changes (incl. untracked files)
+#   clean-room-audit.sh CONTROL [TARGET]
+#                                       positive and negative controls of the overlap scan against one
+#                                       reference folder (default packages/nodes-base); prints counts only
+# CLEAN_ROOM_TARGETS (space-separated folders inside the reference tree, default "packages/frontend")
+# selects what check 2 scans, e.g. CLEAN_ROOM_TARGETS="packages/frontend packages/nodes-base".
 # This is the ONLY script the clean-room guard hook lets touch iphi-flow/n8n.
 # Exit 0 = all clean; 1 = at least one finding (review each; some may be false positives).
 set -uo pipefail
@@ -19,9 +24,29 @@ N8N=/root/projects/phi/iphi-flow/n8n
 TOOLS=/root/projects/phi/iphi-flow/tools
 BASE="${1:-main}"
 HEAD="${2:-dev}"
+TARGETS="${CLEAN_ROOM_TARGETS:-packages/frontend}"
 WORK=$(mktemp -d)
 status=0
 ASSET_RE='\.(svg|png|jpe?g|gif|webp|ico|woff2?|ttf|otf|eot|mp4|webm|lottie|json)$'
+
+if [[ "$BASE" == "CONTROL" ]]; then
+  TARGET="${2:-packages/nodes-base}"
+  echo "== overlap-scan controls against $TARGET (counts only; no reference content is printed)"
+  find "$N8N/$TARGET" -type f -name '*.ts' -not -path '*/node_modules/*' -not -name '*.test.ts' -printf '%s %p\n' \
+    | sort -n | tail -1 | cut -d' ' -f2- > "$WORK/positive.txt"
+  if [[ ! -s "$WORK/positive.txt" ]]; then echo "ERROR: no source files under $TARGET"; rm -r "$WORK"; exit 2; fi
+  node "$TOOLS/clean-room-overlap.mjs" "$WORK/positive.txt" "$N8N/$TARGET" 30 > "$WORK/positive.out" 2>&1
+  positive=$(awk '/^OVERLAP /{sum += $2} END {print sum + 0}' "$WORK/positive.out")
+  echo "positive control (one reference file against its own folder): $positive shared shingles (expected > 0)"
+  find "$AP/packages/pieces/core/text-helper/src" "$AP/packages/pieces/core/csv/src" "$AP/packages/pieces/core/data-mapper/src" \
+    "$AP/packages/pieces/core/math-helper/src" "$AP/packages/pieces/core/crypto/src" -type f -name '*.ts' > "$WORK/negative.txt"
+  node "$TOOLS/clean-room-overlap.mjs" "$WORK/negative.txt" "$N8N/$TARGET" 30 > "$WORK/negative.out" 2>&1
+  negative=$(awk '/^OVERLAP /{sum += $2} END {print sum + 0}' "$WORK/negative.out")
+  echo "negative control ($(wc -l < "$WORK/negative.txt") Activepieces core piece files): $negative shared shingles (expected 0 or a few generic idioms)"
+  grep -E '^OVERLAP ' "$WORK/negative.out" | sed -E 's# <-> .*##' | sed "s#$AP/##" | head -20
+  rm -r "$WORK"
+  if [[ "$positive" -gt 0 ]]; then echo "RESULT: CONTROLS OK"; exit 0; else echo "RESULT: POSITIVE CONTROL FAILED"; exit 1; fi
+fi
 
 echo "== clean-room audit: $AP $BASE..$HEAD"
 if [[ "$HEAD" == "WORKTREE" ]]; then
@@ -68,7 +93,7 @@ else
   echo "no changed assets"
 fi
 
-echo "== 2. code overlap (30-token shingles vs n8n/packages/frontend; overlap already on $BASE excluded)"
+echo "== 2. code overlap (30-token shingles vs reference: $TARGETS; overlap already on $BASE excluded)"
 mkdir -p "$WORK/base"
 : > "$WORK/baseline.txt"
 while IFS= read -r rel; do
@@ -79,7 +104,10 @@ while IFS= read -r rel; do
     echo "$WORK/base/$rel" >> "$WORK/baseline.txt"
   fi
 done < "$WORK/changed-rel.txt"
-node "$TOOLS/clean-room-overlap.mjs" "$WORK/changed.txt" "$N8N/packages/frontend" 30 "$WORK/baseline.txt" || status=1
+for target in $TARGETS; do
+  echo "-- target: $target"
+  node "$TOOLS/clean-room-overlap.mjs" "$WORK/changed.txt" "$N8N/$target" 30 "$WORK/baseline.txt" || status=1
+done
 
 echo "== 3. forbidden text in added lines"
 grep -vE '^\s*(#|$)' "$TOOLS/clean-room-forbidden.txt" > "$WORK/forbidden.txt"
