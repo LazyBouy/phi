@@ -264,3 +264,41 @@ Dated entries are appended below; the text above is not rewritten.
   - the "+" panel shows "Work with lists" second in Transform data with only List Tools, and the 13 actions in spec order with Read/Write/Destructive badges; the Sort List form swaps its options correctly; light and dark, 15/15, no console or network errors.
 - **Dev-only finding:** each List Tools step took about 0.8 s on the dev instance. The cause is the engine's dev-piece lookup, which reads every piece folder's `dist/package.json` on each step; production installs pieces normally, and the piece's own work takes milliseconds.
 - **Next:** batch 4. JSON Web Tokens needs the user's go on its library: `jsonwebtoken` 9.0.1 with `@types/jsonwebtoken` 9.0.10, the versions seven workspaces already declare (API, CLI and five community pieces: GitHub, LinkedIn, Metabase, Ghost CMS, LeadConnector), so nothing new is downloaded. One-Time Passwords and Gzip use Node built-ins.
+
+### Amendment 2026-10-13 (e) — Batch 4 built, proven live and committed
+- **Library:** the user chose `jsonwebtoken` 9.0.1 (with `@types/jsonwebtoken` 9.0.10). The workspace link ran in Docker as before; `bun.lock` gained only the three new workspaces.
+- **Fork commit `4412d29360`** on `dev`: JSON Web Tokens, One-Time Passwords and Gzip (0.1.0 each, 67 files), placed in Transform data → "Formats and files" (the section sorts alphabetically, so they sit between Crypto, CSV, Files Helper and the rest rather than right after Crypto).
+- **Build-agent choices, reviewed and kept:**
+  - JSON Web Tokens:
+    - the Algorithm field is optional, and empty means HS256 for a shared secret or RS256 for a key pair (how the spec's "default HS256 or RS256" is met in one dropdown);
+    - a key-pair connection may hold only a private key (the public key is derived) or only a public key (it can verify but not create tokens);
+    - RSA keys under 2048 bits and passphrase-protected keys are refused with plain messages;
+    - PEM text pasted on one line is repaired;
+    - `iat` is written by the piece rather than by the library, because the library's no-timestamp option deletes it;
+    - a Claims `exp` stays when "Expires in" is empty (standard fields only replace Claims when filled in);
+    - `alg` in Extra header fields is ignored, and Key ID wins over a `kid` there;
+    - all three actions are `READ`, idempotent and `audience: 'both'`, like the core Crypto piece.
+  - One-Time Passwords: digit options read "6 digits" to "8 digits"; the base32 reader accepts spaces, lower case and `=` padding.
+  - Gzip:
+    - decompression stops at 256 MB of output with a plain message; the server's default file limit is 25 MB and the sandbox's default memory limit is 1 GiB;
+    - the header always stores the input's own name;
+    - two extra messages: one for damaged gzip content and one for a missing file.
+- **Verified:**
+  - piece tests 61 + 37 + 20 (all 18 RFC 6238 vectors; every JWT failure message; HMAC, RSA, RSA-PSS and EC keys generated in the tests); piece lint, typecheck and build clean;
+  - web typecheck, lint 0 errors, 1626/1626 web tests; shared 574/574;
+  - clean-room audit PASS with `packages/frontend packages/nodes-base` (0 overlap, 0 forbidden-text hits, 0 identical assets).
+- **Live proof (C5 for these pieces):**
+  - connections saved through the API: a shared secret, an ES256 key pair with the private key pasted on one line, and a lower-case spaced TOTP secret;
+  - refused with their plain messages: a mismatched key pair, RS256 with a shared secret, and a bad TOTP secret;
+  - a published webhook flow, 29/29 checks:
+    - tokens created and verified with HS256 and ES256;
+    - Read Token without a connection;
+    - the signature, audience, expiry and not-valid messages, through continue-on-failure;
+    - the code equal to RFC 6238 at run time;
+    - a gzip round trip with the stored name;
+    - the non-gzip message.
+  - UI: the panel section, the three piece views with their logos, the three step forms and the JWT connection dialog, in light and dark.
+    - The first light pass logged a burst of browser `ERR_NETWORK_CHANGED` errors (a host network change during the run).
+    - The light re-run was 16/16 with no console errors; dark was 8/8.
+  - The proof flows and connections were deleted afterwards.
+- **Next:** C6 (archive upload to fresh CE and EE instances), then C7 (CE and EE e2e suites, final audit, memory, seal).
