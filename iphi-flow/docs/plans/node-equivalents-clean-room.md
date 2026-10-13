@@ -243,3 +243,24 @@ Dated entries are appended below; the text above is not rewritten.
 - **Set Fields:** Activepieces resolves mapped values once per step, so per-entry values come from "another field of the entry" or a `{path}` text template.
 - **Scope:** zip stays with the core Files Helper; tar is out of scope; the JWT piece needs one pinned library (user go at batch 4); TOTP and Gzip use Node built-ins.
 - **Spec signed off** by the user ("Freeze and build") and frozen at parent tag `node-equivalents-spec-v1`. C4 (build) starts with List Tools.
+
+### Amendment 2026-10-13 (d) — List Tools built, proven live and committed
+- **Batches 1 to 3 in one piece:** all 13 List Tools actions were built together, as the spec defines one piece. Fork commit `5a2d69fda0` on `dev` (`@iphi-flow/piece-list-tools` 0.1.0, 48 files).
+- **Install rule (user, 2026-10-13):** "use docker to run. Never install anything in the machine directly always use docker". The workspace link ran as `bun install --ignore-scripts` in `oven/bun:1.4.0` (the repo's pinned version), capped at cores 0–4 and 4 GB, with the repo mounted at its own path. It added no third-party packages; `bun.lock` gained only the new workspace (and recorded the shared 0.203.0 bump already on `dev`).
+- **Build-agent choices, reviewed and kept:**
+  - mode-dependent options are wrapped in dynamic properties so they show only for their mode (the spec's "shown for" column); live, the wrapper adds no label of its own;
+  - `audience: 'human'` on the pure transforms and `'both'` on Keep New Items and Forget Seen Items, as the repo's piece-builder rules say for generic transforms;
+  - `minimumSupportedRelease` 0.30.0, as the core pieces that use output schemas (Math Helper, Date Helper);
+  - Keep New Items stores keys in 400 KB pages (the store's value limit is 512 KB, measured as JSON bytes) and limits the memory name to 60 characters (store keys stay under the 128-character limit in either scope);
+  - "Every combination" stops with a clear error above 100,000 entries;
+  - a few extra configuration messages beyond the spec, such as "Add at least one field to sort by." and "A calculation cannot be saved under the name of a group field.", all in plain words (CNV-05).
+- **Verified:**
+  - 161/161 piece tests (the slowest 10,000-entry run is 491 ms); piece lint and typecheck clean;
+  - web typecheck, lint 0 errors, 1624/1624 web tests; shared 574/574;
+  - clean-room audit PASS with `CLEAN_ROOM_TARGETS="packages/frontend packages/nodes-base"` (7,740 reference node files scanned, 0 overlap, 0 forbidden-text hits, 0 identical assets).
+- **Live proof (C5 for this piece):**
+  - three published webhook flows ran all 13 actions in the engine, 26/26 checks;
+  - Keep New Items over four runs: all new, then none new, then the key forgotten from another flow plus one new key pass, then all new again after a full clear (project scope shared across flows);
+  - the "+" panel shows "Work with lists" second in Transform data with only List Tools, and the 13 actions in spec order with Read/Write/Destructive badges; the Sort List form swaps its options correctly; light and dark, 15/15, no console or network errors.
+- **Dev-only finding:** each List Tools step took about 0.8 s on the dev instance. The cause is the engine's dev-piece lookup, which reads every piece folder's `dist/package.json` on each step; production installs pieces normally, and the piece's own work takes milliseconds.
+- **Next:** batch 4. JSON Web Tokens needs the user's go on its library: `jsonwebtoken` 9.0.1 with `@types/jsonwebtoken` 9.0.10, the versions seven workspaces already declare (API, CLI and five community pieces: GitHub, LinkedIn, Metabase, Ghost CMS, LeadConnector), so nothing new is downloaded. One-Time Passwords and Gzip use Node built-ins.
