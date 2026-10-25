@@ -19,3 +19,4 @@
 [submodule "iphi-flow/opencode"]
 	path = iphi-flow/opencode
 	url = https://github.com/LazyBouy/opencode.git
+	branch = dev_merge
