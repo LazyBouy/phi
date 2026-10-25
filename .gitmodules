@@ -16,3 +16,6 @@
 [submodule "iphi-flow/activepieces"]
 	path = iphi-flow/activepieces
 	url = https://github.com/LazyBouy/activepieces.git
+[submodule "iphi-flow/opencode"]
+	path = iphi-flow/opencode
+	url = https://github.com/LazyBouy/opencode.git
