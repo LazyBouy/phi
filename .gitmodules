@@ -20,3 +20,7 @@
 	path = iphi-flow/opencode
 	url = https://github.com/LazyBouy/opencode.git
 	branch = dev_merge
+[submodule "iphi-flow/project_master"]
+	path = iphi-flow/project_master
+	url = git@github.com:LazyBouy/project_master.git
+	branch = main
