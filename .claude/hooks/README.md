@@ -55,6 +55,8 @@ Anything under these paths is allowed; everything else is denied:
 - `/root/.claude/projects/-root-projects-phi/memory/**` — auto-memory.
 - `/root/.claude/plans/**` — plan-mode plan files.
 
+Requirements (project_master) live inside phi as the submodule `iphi-flow/project_master`, so they need no sister root.
+
 These must stay in sync with `settings.json` allow rules + `additionalDirectories`. If you add a sister root in one, add it in both.
 
 ## Blocked patterns (`block-destructive-bash.sh`)

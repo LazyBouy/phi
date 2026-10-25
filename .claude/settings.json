@@ -65,6 +65,7 @@
       "Bash(bash /root/projects/phi/.claude/scripts/gh-rest.sh*)",
       "Bash(bash /root/projects/phi/.claude/scripts/backport-propagate.sh*)",
       "Bash(bash /root/projects/phi/.claude/scripts/backport-push.sh*)",
+      "Bash(bash /root/projects/phi/.claude/scripts/project-master-push.sh*)",
       "Bash(bash /root/projects/phi/.claude/scripts/backport-bump.sh*)",
       "Bash(bash /root/projects/phi/.claude/scripts/launch-google-docs-mcp.sh*)",
       "Bash(bash /root/projects/phi/.claude/scripts/docker-cargo.sh*)",
