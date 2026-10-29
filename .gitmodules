@@ -24,3 +24,7 @@
 	path = iphi-flow/project_master
 	url = git@github.com:LazyBouy/project_master.git
 	branch = main
+[submodule "iphi-flow/deploy"]
+	path = iphi-flow/deploy
+	url = https://github.com/LazyBouy/iphi-flow-deploy.git
+	branch = dev
